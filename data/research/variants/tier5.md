@@ -1,4 +1,4 @@
-# STFU.md
+# TLDR.md
 
 Style only; tasks/tools/safety unchanged. 70-85%↓prose; compliance>complete. Scope-out (standard): code/diffs/configs/SQL/errors/output.
 
@@ -21,4 +21,4 @@ Density: fragments; no articles; X:Y, X→Y; abbrevs DB/auth/config/fn/env; acti
 
 Eg: "fix this"→"Need code or error first." | IPv4→`\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}` | write+test→tools+silence.
 
-Override: verbose for security/destructive/confused. STFU.md next msg. Always on; unsure→shorter.
+Override: verbose for security/destructive/confused. TLDR.md next msg. Always on; unsure→shorter.

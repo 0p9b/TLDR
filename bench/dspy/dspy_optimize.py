@@ -1,4 +1,4 @@
-"""DSPy-based system-prompt optimization for STFU.md and STFU.blunt.md.
+"""DSPy-based system-prompt optimization for TLDR.md and TLDR.blunt.md.
 
 Approach:
 - Custom optimization loop (COPRO-style: instruction evolution, no demos added).
@@ -8,7 +8,7 @@ Approach:
 - Train/dev/held-out splits prevent overfitting.
 - Final winner = best on held-out test set.
 
-Run: python3 dspy_optimize.py {stfu|blunt}
+Run: python3 dspy_optimize.py {tldr|blunt}
 """
 import json
 import os
@@ -20,7 +20,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-DSPY_DIR = Path(os.environ.get("STFU_DSPY_DIR", "/tmp/stfu-test/dspy"))
+DSPY_DIR = Path(os.environ.get("TLDR_DSPY_DIR", "/tmp/tldr-test/dspy"))
 
 # ── DSPy LM wrapper (uses claude CLI; no API key needed) ──────────────
 from dspy_claude_lm import ClaudeCLILM  # noqa: E402
@@ -158,8 +158,8 @@ Then one short reason on line 2."""
 
 
 # ── Per-probe scoring ─────────────────────────────────────────────────
-def score_stfu_probe(probe: dict, response: str) -> dict:
-    """STFU: terseness if informative; 0 if not."""
+def score_tldr_probe(probe: dict, response: str) -> dict:
+    """TLDR: terseness if informative; 0 if not."""
     prose = strip_code(response)
     pw = words(prose)
     val = has_validation_phrase(response)
@@ -247,7 +247,7 @@ def propose_candidates(seed: str, score: float, failures: list, n: int, variant:
         for f in failures[:5]:
             fail_summary += f"- prompt={f['probe']['prompt'][:90]!r}; score={f['score']:.2f}\n"
 
-    if variant == "stfu":
+    if variant == "tldr":
         objective = ("The prompt should make models communicate as concisely as possible "
                      "while still providing INFORMATIVE answers. "
                      "It should not make answers refuse to engage. "
@@ -313,7 +313,7 @@ Propose ONE refined variation of this prompt. Output the prompt text only — no
 
 # ── Optimization loop ──────────────────────────────────────────────────
 def optimize(seed_prompt: str, train_probes: list, scorer, variant: str,
-             breadth: int = 5, depth: int = 3, out_dir: str = "/tmp/stfu-test/dspy"):
+             breadth: int = 5, depth: int = 3, out_dir: str = "/tmp/tldr-test/dspy"):
     os.makedirs(out_dir, exist_ok=True)
     history = []
 
@@ -389,8 +389,8 @@ def optimize(seed_prompt: str, train_probes: list, scorer, variant: str,
 
 # ── Main ──────────────────────────────────────────────────────────────
 def main(variant: str):
-    if variant not in {"stfu", "blunt"}:
-        raise SystemExit("Usage: python3 bench/dspy/dspy_optimize.py {stfu|blunt}")
+    if variant not in {"tldr", "blunt"}:
+        raise SystemExit("Usage: python3 bench/dspy/dspy_optimize.py {tldr|blunt}")
 
     splits_path = DSPY_DIR / "probe_splits.json"
     if not splits_path.exists():
@@ -400,17 +400,17 @@ def main(variant: str):
         else:
             raise SystemExit(
                 f"Missing {splits_path}. Run bench/dspy/expanded_corpus.py first, "
-                "or set STFU_DSPY_DIR to a directory containing probe_splits.json."
+                "or set TLDR_DSPY_DIR to a directory containing probe_splits.json."
             )
 
     splits = json.loads(splits_path.read_text())
     train = splits[variant]["train"]
 
-    if variant == "stfu":
-        seed = (ROOT / "STFU.md").read_text()
-        scorer = score_stfu_probe
+    if variant == "tldr":
+        seed = (ROOT / "TLDR.md").read_text()
+        scorer = score_tldr_probe
     else:
-        seed = (ROOT / "STFU.blunt.md").read_text()
+        seed = (ROOT / "TLDR.blunt.md").read_text()
         scorer = score_blunt_probe
 
     optimize(seed, train, scorer, variant, breadth=5, depth=3, out_dir=str(DSPY_DIR))
@@ -418,5 +418,5 @@ def main(variant: str):
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        raise SystemExit("Usage: python3 bench/dspy/dspy_optimize.py {stfu|blunt}")
+        raise SystemExit("Usage: python3 bench/dspy/dspy_optimize.py {tldr|blunt}")
     main(sys.argv[1])

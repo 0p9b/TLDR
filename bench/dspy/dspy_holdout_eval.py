@@ -11,11 +11,11 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 from dspy_optimize import (
-    run_claude, score_stfu_probe, score_blunt_probe, evaluate_prompt
+    run_claude, score_tldr_probe, score_blunt_probe, evaluate_prompt
 )
 
 ROOT = Path(__file__).resolve().parents[2]
-OUTDIR = os.environ.get("STFU_DSPY_DIR", "/tmp/stfu-test/dspy")
+OUTDIR = os.environ.get("TLDR_DSPY_DIR", "/tmp/tldr-test/dspy")
 
 
 def main():
@@ -26,51 +26,51 @@ def main():
         raise SystemExit(f"Missing {splits_path}. Run bench/dspy/expanded_corpus.py first.")
     splits = json.loads(splits_path.read_text())
 
-    # Read all 4 prompts: STFU shipped, STFU optimized, BLUNT shipped, BLUNT optimized
-    stfu_shipped = (ROOT / "STFU.md").read_text()
-    blunt_shipped = (ROOT / "STFU.blunt.md").read_text()
+    # Read all 4 prompts: TLDR shipped, TLDR optimized, BLUNT shipped, BLUNT optimized
+    tldr_shipped = (ROOT / "TLDR.md").read_text()
+    blunt_shipped = (ROOT / "TLDR.blunt.md").read_text()
 
-    stfu_opt_path = Path(f"{OUTDIR}/stfu_best.md")
+    tldr_opt_path = Path(f"{OUTDIR}/tldr_best.md")
     blunt_opt_path = Path(f"{OUTDIR}/blunt_best.md")
 
-    if not stfu_opt_path.exists():
-        print(f"ERROR: {stfu_opt_path} not found. Run stfu optimization first.")
+    if not tldr_opt_path.exists():
+        print(f"ERROR: {tldr_opt_path} not found. Run tldr optimization first.")
         return
     if not blunt_opt_path.exists():
         print(f"ERROR: {blunt_opt_path} not found. Run blunt optimization first.")
         return
 
-    stfu_opt = stfu_opt_path.read_text()
+    tldr_opt = tldr_opt_path.read_text()
     blunt_opt = blunt_opt_path.read_text()
 
     print("=" * 80)
     print("HELD-OUT EVALUATION (probes the optimizer never saw)")
     print("=" * 80)
 
-    print(f"\nSTFU test probes: {len(splits['stfu']['test'])}")
+    print(f"\nTLDR test probes: {len(splits['tldr']['test'])}")
     print(f"BLUNT test probes: {len(splits['blunt']['test'])}")
     print()
 
-    # STFU comparison
+    # TLDR comparison
     print("=" * 80)
-    print("STFU: shipped (v0.16.0) vs DSPy-optimized")
+    print("TLDR: shipped (v0.16.0) vs DSPy-optimized")
     print("=" * 80)
-    print(f"shipped: {len(stfu_shipped)} chars  |  optimized: {len(stfu_opt)} chars")
+    print(f"shipped: {len(tldr_shipped)} chars  |  optimized: {len(tldr_opt)} chars")
     print()
     print("Evaluating shipped on held-out...")
-    stfu_shipped_res = evaluate_prompt(stfu_shipped, splits["stfu"]["test"], score_stfu_probe)
-    print(f"  shipped: mean={stfu_shipped_res['mean']:.3f}, final={stfu_shipped_res['final']:.3f}")
+    tldr_shipped_res = evaluate_prompt(tldr_shipped, splits["tldr"]["test"], score_tldr_probe)
+    print(f"  shipped: mean={tldr_shipped_res['mean']:.3f}, final={tldr_shipped_res['final']:.3f}")
 
     print("Evaluating optimized on held-out...")
-    stfu_opt_res = evaluate_prompt(stfu_opt, splits["stfu"]["test"], score_stfu_probe)
-    print(f"  optimized: mean={stfu_opt_res['mean']:.3f}, final={stfu_opt_res['final']:.3f}")
+    tldr_opt_res = evaluate_prompt(tldr_opt, splits["tldr"]["test"], score_tldr_probe)
+    print(f"  optimized: mean={tldr_opt_res['mean']:.3f}, final={tldr_opt_res['final']:.3f}")
 
     # Per-probe diff
-    print("\nPER-PROBE BREAKDOWN (STFU held-out)")
+    print("\nPER-PROBE BREAKDOWN (TLDR held-out)")
     print(f"  {'prompt':<55} {'shipped':>10} {'optimized':>11} {'Δ':>8}")
-    sh_by = {r["probe"]["prompt"]: r for r in stfu_shipped_res["details"]}
-    op_by = {r["probe"]["prompt"]: r for r in stfu_opt_res["details"]}
-    for p in splits["stfu"]["test"]:
+    sh_by = {r["probe"]["prompt"]: r for r in tldr_shipped_res["details"]}
+    op_by = {r["probe"]["prompt"]: r for r in tldr_opt_res["details"]}
+    for p in splits["tldr"]["test"]:
         sh = sh_by.get(p["prompt"], {}).get("score", float("nan"))
         op = op_by.get(p["prompt"], {}).get("score", float("nan"))
         diff = op - sh if not (math.isnan(sh) or math.isnan(op)) else float("nan")
@@ -78,7 +78,7 @@ def main():
 
     # Paired t-test
     pairs = [(sh_by[p["prompt"]]["score"], op_by[p["prompt"]]["score"])
-             for p in splits["stfu"]["test"]
+             for p in splits["tldr"]["test"]
              if p["prompt"] in sh_by and p["prompt"] in op_by]
     diffs = [op - sh for sh, op in pairs]
     n = len(diffs)
@@ -89,7 +89,7 @@ def main():
     t = md / se if se else float("inf")
     p_val = math.erfc(abs(t) / 2 ** 0.5) if t != float("inf") else 0.0
     sig = "***" if p_val < 0.001 else "**" if p_val < 0.01 else "*" if p_val < 0.05 else "ns"
-    print(f"\n  STFU paired t-test: mean diff={md:+.3f}, t={t:+.2f}, p={p_val:.4f} {sig}")
+    print(f"\n  TLDR paired t-test: mean diff={md:+.3f}, t={t:+.2f}, p={p_val:.4f} {sig}")
 
     # BLUNT comparison
     print("\n" + "=" * 80)
@@ -133,18 +133,18 @@ def main():
     print("\n" + "=" * 80)
     print("VERDICT")
     print("=" * 80)
-    stfu_better = stfu_opt_res["final"] > stfu_shipped_res["final"]
+    tldr_better = tldr_opt_res["final"] > tldr_shipped_res["final"]
     blunt_better = blunt_opt_res["final"] > blunt_shipped_res["final"]
-    print(f"\nSTFU optimized > shipped on held-out: {'YES' if stfu_better else 'NO'}")
+    print(f"\nTLDR optimized > shipped on held-out: {'YES' if tldr_better else 'NO'}")
     print(f"BLUNT optimized > shipped on held-out: {'YES' if blunt_better else 'NO'}")
 
     # Save full results
     output = {
-        "stfu_shipped": {"chars": len(stfu_shipped), "mean": stfu_shipped_res["mean"], "final": stfu_shipped_res["final"]},
-        "stfu_optimized": {"chars": len(stfu_opt), "mean": stfu_opt_res["mean"], "final": stfu_opt_res["final"]},
+        "tldr_shipped": {"chars": len(tldr_shipped), "mean": tldr_shipped_res["mean"], "final": tldr_shipped_res["final"]},
+        "tldr_optimized": {"chars": len(tldr_opt), "mean": tldr_opt_res["mean"], "final": tldr_opt_res["final"]},
         "blunt_shipped": {"chars": len(blunt_shipped), "mean": blunt_shipped_res["mean"], "final": blunt_shipped_res["final"]},
         "blunt_optimized": {"chars": len(blunt_opt), "mean": blunt_opt_res["mean"], "final": blunt_opt_res["final"]},
-        "stfu_winner": "optimized" if stfu_better else "shipped",
+        "tldr_winner": "optimized" if tldr_better else "shipped",
         "blunt_winner": "optimized" if blunt_better else "shipped",
     }
     with open(f"{OUTDIR}/holdout_results.json", "w") as f:

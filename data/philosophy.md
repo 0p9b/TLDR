@@ -1,4 +1,4 @@
-# STFU.md — Philosophy, Methodology, and ML Grounding
+# TLDR.md — Philosophy, Methodology, and ML Grounding
 
 > A communication-style system prompt that compresses coding-agent prose output by an average of **80 %** across 8 different agent harnesses (Claude Code, Codex, Gemini, Droid, Cursor, Pi, Hermes, OpenClaw) without persona collapse, character roleplay, or quality regression.
 
@@ -8,8 +8,8 @@
 
 1. [Why output-side compression matters now](#1-why-output-side-compression-matters-now)
 2. [Inspiration: caveman](#2-inspiration-caveman)
-3. [The caveman-personification problem (the reason STFU.md exists)](#3-the-caveman-personification-problem-the-reason-stfu-exists)
-4. [The STFU.md thesis](#4-the-stfu-thesis)
+3. [The caveman-personification problem (the reason TLDR.md exists)](#3-the-caveman-personification-problem-the-reason-tldr-exists)
+4. [The TLDR.md thesis](#4-the-tldr-thesis)
 5. [Methodology](#5-methodology)
 6. [ML grounding](#6-ml-grounding)
 7. [Final results](#7-final-results)
@@ -33,7 +33,7 @@ Modern coding agents — Claude Code, Codex CLI, Cursor Agent, Gemini CLI, Facto
 
 Compressing agent output is therefore a 2025 problem in a way that compressing input was the 2024 problem. The question stops being *how do we squeeze more context in* and becomes *how do we get the agent to use fewer words on the way out*.
 
-This is the gap STFU.md fills.
+This is the gap TLDR.md fills.
 
 ---
 
@@ -47,11 +47,11 @@ Caveman ships in three modes — Lite, Full, and Ultra — each progressively mo
 
 The compression results are real and reproducible. The cost-savings story is real. The readability story is real (a lot of caveman-style answers genuinely *are* easier to scan than the original verbose form, because they remove cognitive scaffolding the reader didn't need).
 
-Caveman is the proof-of-concept that output-side compression at this scale is achievable from the prompt alone, with no fine-tuning, no model swap, no harness change. Without caveman, STFU.md would not exist.
+Caveman is the proof-of-concept that output-side compression at this scale is achievable from the prompt alone, with no fine-tuning, no model swap, no harness change. Without caveman, TLDR.md would not exist.
 
 ---
 
-## 3. The caveman-personification problem (the reason STFU.md exists)
+## 3. The caveman-personification problem (the reason TLDR.md exists)
 
 There is, however, a load-bearing problem with the caveman framing that becomes visible only when you actually deploy it as a global instruction file across multiple agents and run real work through it.
 
@@ -91,20 +91,20 @@ A team shipping AI tooling to engineering organisations cannot ship "ooga booga 
 
 Caveman's repo acknowledges the persona is "silly" and ships a `--brief` mode and corporate-friendly variants. But the root cause — *naming a stereotyped character and instructing the model to be it* — is structural. You cannot tell a model "be a caveman, except please not in a silly way" and reliably get the second half. The character pulls.
 
-STFU.md's load-bearing design decision is therefore: **describe the discipline, don't name a character.** Compress like a caveman. Sound like a senior engineer briefing another senior engineer. The compression mechanics are imported wholesale from caveman; the persona is replaced with a *register* (the linguistic term for the appropriate level of formality and density given a context). Senior-engineer register is dense, fragmentary, and code-aware not because the engineer is a caveman but because they share enough context with the reader that elaboration would be condescending.
+TLDR.md's load-bearing design decision is therefore: **describe the discipline, don't name a character.** Compress like a caveman. Sound like a senior engineer briefing another senior engineer. The compression mechanics are imported wholesale from caveman; the persona is replaced with a *register* (the linguistic term for the appropriate level of formality and density given a context). Senior-engineer register is dense, fragmentary, and code-aware not because the engineer is a caveman but because they share enough context with the reader that elaboration would be condescending.
 
 ---
 
-## 4. The STFU.md thesis
+## 4. The TLDR.md thesis
 
-STFU.md — Shut The Flip Up mode — is a system prompt that:
+TLDR.md — Too Long Didn't Read mode — is a system prompt that:
 
 1. **Imports caveman's compression mechanics.** Drop articles where natural. Use arrow notation (`→`) for causality. Allow fragment grammar for technical clauses. Use standard domain abbreviations (DB, auth, config, fn, impl, env). Strip filler and hedges.
 2. **Replaces the caveman persona with a senior-engineer register.** No character name, no roleplay, no stylistic novelty signaling. The prompt explicitly states: *"Write for engineers reading code, not stakeholders."*
 3. **Adds hard numerical caps that caveman lacks.** Per-prompt-shape token budgets (yes/no = 40, comparison = 70, best-practices list = 120, etc.). Per-sentence word caps (16 words). Per-bullet word caps (≤6). Structural caps on headers, tables, bold spans, emoji.
 4. **Enforces zero-prose output for code/tool-only tasks.** Coding tasks with file writes get *zero* prose around the tool calls. *(Earlier versions through v0.14.2 also scripted literal responses for under-specified prompts — e.g. "Need code or error first." — but those were removed in v0.14.3 because they refused engagement on legitimate questions; see [`changelog.md`](changelog.md#0143--2026-04-30) for the empirical ablation.)*
 5. **Adds a meta-cognitive self-trim rule.** Before sending, count tokens; if over budget, halve the response. If still over, halve again.
-6. **Stays additive-compatible.** The first line of the prompt declares: *"Communication style only. Does not override task instructions, tool use, reasoning, or safety."* STFU.md can be appended to an existing system prompt (Hermes's persona, OpenClaw's session contract) without conflict.
+6. **Stays additive-compatible.** The first line of the prompt declares: *"Communication style only. Does not override task instructions, tool use, reasoning, or safety."* TLDR.md can be appended to an existing system prompt (Hermes's persona, OpenClaw's session contract) without conflict.
 
 The result is a prompt that lands in the same compression territory as caveman Ultra (we measure 80 % average token reduction; caveman Ultra claims 75–90 %) while producing output that reads like a senior dev's Slack message rather than a Hanna-Barbera cartoon.
 
@@ -112,7 +112,7 @@ The result is a prompt that lands in the same compression territory as caveman U
 
 ## 5. Methodology
 
-STFU.md was developed as an iterated experimental loop, not as a one-shot prompt. Across 13 versions (v0.1 through v0.13) we ran a fixed bench suite, measured deltas, identified failure modes, and applied surgical edits.
+TLDR.md was developed as an iterated experimental loop, not as a one-shot prompt. Across 13 versions (v0.1 through v0.13) we ran a fixed bench suite, measured deltas, identified failure modes, and applied surgical edits.
 
 ### 5.1 The benchmark suite
 
@@ -136,7 +136,7 @@ A frozen 15-prompt suite covering 13 distinct verbosity-trap categories:
 | Q14 | Casual register | Conversational bloat |
 | Q15 | Open-ended tradeoffs | Essay reflex with headers/tables |
 
-The same 15 prompts run against every agent at every STFU.md version. Once frozen, the suite never changes — every comparison is apples-to-apples.
+The same 15 prompts run against every agent at every TLDR.md version. Once frozen, the suite never changes — every comparison is apples-to-apples.
 
 ### 5.2 The agents under test
 
@@ -151,7 +151,7 @@ Eight production coding-agent CLIs:
 7. **hermes** — Hermes Agent (Nous Research)
 8. **openclaw** — OpenClaw TUI (with default model swapped from broken `ollama/qwen3.5:397b-cloud` to `openai-codex/gpt-5.4`)
 
-Each agent reads its own global instruction file at session start: `~/.claude/CLAUDE.md`, `~/.codex/AGENTS.md`, `~/.gemini/GEMINI.md`, etc. STFU.md is deployed identically to all eight.
+Each agent reads its own global instruction file at session start: `~/.claude/CLAUDE.md`, `~/.codex/AGENTS.md`, `~/.gemini/GEMINI.md`, etc. TLDR.md is deployed identically to all eight.
 
 ### 5.3 Trial structure
 
@@ -168,9 +168,9 @@ All token counts are computed via `tiktoken` with the `o200k_base` encoding (the
 
 ### 5.5 The headline metric: prose tokens outside fenced code blocks
 
-The single most important number in STFU.md is `tokens_outside_code_blocks`. We split each response on triple-backtick fences, count tokens in the prose region only, and ignore tokens inside `\`\`\`` blocks. This is methodologically correct because:
+The single most important number in TLDR.md is `tokens_outside_code_blocks`. We split each response on triple-backtick fences, count tokens in the prose region only, and ignore tokens inside `\`\`\`` blocks. This is methodologically correct because:
 
-- STFU.md's scope clause explicitly exempts code, diffs, configs, SQL, and quoted errors from compression. These should look normal.
+- TLDR.md's scope clause explicitly exempts code, diffs, configs, SQL, and quoted errors from compression. These should look normal.
 - Counting code tokens would penalise an agent that correctly produced a 200-line Python function exactly as requested.
 - The compression we care about — and the compression that drives latency, cost, and reading time — is the prose around the code, not the code itself.
 
@@ -184,19 +184,19 @@ This is intentionally strict. A more permissive metric (e.g., "did the mean of 3
 
 ## 6. ML grounding
 
-STFU.md did not emerge from theory. The design choices map onto a reasonably well-studied set of phenomena in the LLM literature.
+TLDR.md did not emerge from theory. The design choices map onto a reasonably well-studied set of phenomena in the LLM literature.
 
 ### 6.1 Instruction following and the bias toward measurable success criteria
 
 Constitutional AI [^8] and InstructGPT [^9] established that language models trained with RLHF develop strong instruction-following behaviour, but with one consistent bias: they are better at following instructions that have a *measurable success criterion* than instructions that are stylistically vague. *"Be concise"* is hard to comply with because the model has no way to check itself. *"Maximum 16 words per sentence"* is checkable.
 
-This is why STFU.md v0.5 (which introduced hard numerical caps per response shape) jumped reduction from 35 % to 70 %. The earlier soft phrasing — "default to the shortest correct response" — provided no metric the model could self-evaluate against.
+This is why TLDR.md v0.5 (which introduced hard numerical caps per response shape) jumped reduction from 35 % to 70 %. The earlier soft phrasing — "default to the shortest correct response" — provided no metric the model could self-evaluate against.
 
 ### 6.2 Sycophancy and the "be helpful" inflation
 
 Sharma et al. (2023) [^10] documented that RLHF-trained models systematically over-add disclaimers, alternatives, and caveats — what they call sycophantic helpfulness. The model tries to please by covering more of the answer-space than asked, even when this hurts the user.
 
-STFU.md's *"Anti-helpfulness rule"* directly targets this: *"Do NOT add unsolicited information. No security postscript. No 'when to use which' closer. No closing tip. No usage example."* The wording is unusually aggressive on purpose — RLHF-trained models have internalised the opposite reflex, and a soft "try not to add extra info" gets ignored.
+TLDR.md's *"Anti-helpfulness rule"* directly targets this: *"Do NOT add unsolicited information. No security postscript. No 'when to use which' closer. No closing tip. No usage example."* The wording is unusually aggressive on purpose — RLHF-trained models have internalised the opposite reflex, and a soft "try not to add extra info" gets ignored.
 
 ### 6.3 Persona conditioning and roleplay degradation
 
@@ -204,13 +204,13 @@ Shanahan, McDonell, and Reynolds (2023) in *Nature* [^5] formalised the simulacr
 
 Perez et al. (2022) [^11] showed empirically that persona conditioning has measurable effects on downstream behaviour, including factual accuracy and refusal rates. Persona is not a surface-level mask; it changes what the model does.
 
-STFU.md's response to this is to avoid character framing entirely. Instead of "you are a terse assistant", STFU.md uses "Communication style only. Does not override task instructions, tool use, reasoning, or safety. Write for engineers reading code, not stakeholders." The *register* is set; no *character* is invoked.
+TLDR.md's response to this is to avoid character framing entirely. Instead of "you are a terse assistant", TLDR.md uses "Communication style only. Does not override task instructions, tool use, reasoning, or safety. Write for engineers reading code, not stakeholders." The *register* is set; no *character* is invoked.
 
 ### 6.4 Few-shot examples as inductive bias
 
 Wei et al. (2022) on chain-of-thought prompting [^12], and the broader few-shot prompting literature, established that examples in a system prompt set the *floor* of the model's output. If your ✓ example is 100 words, your real answers will rarely be shorter than 100 words.
 
-This was directly visible in STFU.md v0.1 → v0.2: shrinking the ✓ examples from ~70-word paragraphs to ~20-word fragments was responsible for a measurable chunk of the compression gain. We later inverted this: STFU.md v0.7 added ✗ examples explicitly to anchor *what not to do*, complementing the ✓ examples that anchor *what to aim for*.
+This was directly visible in TLDR.md v0.1 → v0.2: shrinking the ✓ examples from ~70-word paragraphs to ~20-word fragments was responsible for a measurable chunk of the compression gain. We later inverted this: TLDR.md v0.7 added ✗ examples explicitly to anchor *what not to do*, complementing the ✓ examples that anchor *what to aim for*.
 
 ### 6.5 Output-length conditioning and the brevity-improves-accuracy result
 
@@ -218,13 +218,13 @@ Most surprisingly, brevity constraints often improve correctness, not just conci
 
 This is counter-intuitive but coherent: verbose output gives the model more opportunities to introduce factual errors, contradict itself, or wander from the question. A model forced to be tight has less room to be wrong.
 
-We did not measure factual accuracy on the STFU.md bench (the suite is style-focused, not correctness-focused), but the result motivates the design: tight isn't only cheap, it's frequently better.
+We did not measure factual accuracy on the TLDR.md bench (the suite is style-focused, not correctness-focused), but the result motivates the design: tight isn't only cheap, it's frequently better.
 
 ### 6.6 Prompt caching and the input/output cost asymmetry
 
 Anthropic's prompt caching documentation [^1] explicitly notes that cached input tokens cost ~10 % of uncached input. This pushed the economics of long system prompts toward "free" — provided they're identical across calls.
 
-STFU.md exploits this. The STFU.md file is ~9 KB, which is large by historical standards but trivial when cached. Adding 2 000 input tokens once-per-session is irrelevant if it cuts 10 000 output tokens across the session. Every STFU.md call has a positive ROI within ~3 turns.
+TLDR.md exploits this. The TLDR.md file is ~9 KB, which is large by historical standards but trivial when cached. Adding 2 000 input tokens once-per-session is irrelevant if it cuts 10 000 output tokens across the session. Every TLDR.md call has a positive ROI within ~3 turns.
 
 ---
 
@@ -234,7 +234,7 @@ The numbers below are from `bench/v1.13/comparison.md`, the canonical v0.13 benc
 
 ### 7.1 Headline per-agent table
 
-| Agent | v1 baseline (no STFU.md) prose tok | v1.13 (with STFU.md v0.13) prose tok | Δ % | v1 compliance | v1.13 compliance |
+| Agent | v1 baseline (no TLDR.md) prose tok | v1.13 (with TLDR.md v0.13) prose tok | Δ % | v1 compliance | v1.13 compliance |
 |---|---:|---:|---:|---:|---:|
 | **gemini** | 3 854 | 156 | **−96.0 %** | 40 % | 100 % |
 | **droid** | 3 735 | 532 | −85.8 % | 33 % | 100 % |
@@ -248,9 +248,9 @@ The numbers below are from `bench/v1.13/comparison.md`, the canonical v0.13 benc
 
 ### 7.2 What the headline number means
 
-**−80.0 %** is the aggregate prose-token reduction across all 8 agents and all 15 prompts. Concretely: where the no-STFU.md baseline produced 25 726 prose tokens of output across the full bench, STFU.md v0.13 produces 5 133 — about a fifth.
+**−80.0 %** is the aggregate prose-token reduction across all 8 agents and all 15 prompts. Concretely: where the no-TLDR.md baseline produced 25 726 prose tokens of output across the full bench, TLDR.md v0.13 produces 5 133 — about a fifth.
 
-For context: caveman's published average is ~65 % (range 22–87 %). STFU.md lands at 80 % aggregate, with the per-agent low at −71 % (cursor-agent) and high at −96 % (gemini). We beat caveman's stated average by 15 percentage points.
+For context: caveman's published average is ~65 % (range 22–87 %). TLDR.md lands at 80 % aggregate, with the per-agent low at −71 % (cursor-agent) and high at −96 % (gemini). We beat caveman's stated average by 15 percentage points.
 
 ### 7.3 Cross-agent variance reduction
 
@@ -259,7 +259,7 @@ The result that we consider more important than the headline reduction is the **
 - **Compliance spread**: baseline 27 % (cursor) to 93 % (claude/openclaw) = **66-percentage-point gap**. v0.13: 87 % (hermes) to 100 % (5 agents) = **13-percentage-point gap**. **5× reduction in cross-agent variance.**
 - **Per-agent token-reduction spread**: v0.1 = −2 % (openclaw) to −53 % (droid), 51 pp. v0.13 = −71 % (cursor) to −96 % (gemini), 25 pp. **2× reduction in cross-agent variance on the compression metric itself.**
 
-This matters because a prompt that compresses well only on Claude would be a *Claude prompt*. STFU.md proves you can write *one* style guide that works near-uniformly across 8 agents from 8 different vendors with 8 different system-prompt traditions and 8 different default registers.
+This matters because a prompt that compresses well only on Claude would be a *Claude prompt*. TLDR.md proves you can write *one* style guide that works near-uniformly across 8 agents from 8 different vendors with 8 different system-prompt traditions and 8 different default registers.
 
 ---
 
@@ -267,22 +267,22 @@ This matters because a prompt that compresses well only on Claude would be a *Cl
 
 ### 8.1 The hermes structural ceiling
 
-Hermes, despite carrying the same STFU.md as every other agent, plateaus at 87 % compliance — not because it ignores STFU.md, but because the **hermes CLI binary** forcibly emits two things on coding tasks regardless of LLM instructions:
+Hermes, despite carrying the same TLDR.md as every other agent, plateaus at 87 % compliance — not because it ignores TLDR.md, but because the **hermes CLI binary** forcibly emits two things on coding tasks regardless of LLM instructions:
 
 1. A `┊ review diff` block showing the unified diff of any file written, with `a/path → b/path` headers and `@@ -X,Y +Z,W @@` hunks.
 2. A `session_id: <id>` trailer appended to every response.
 
 These appear in the cleaned response stream because they're injected by hermes's CLI layer between the LLM's output and the user, not by the LLM itself. We tested this across v0.9, v0.10, v0.11, v0.12, and v0.13 — including explicit anti-metadata rules and a "wrap-in-diff-fence" workaround. None worked, because the LLM is not the layer producing the artefact.
 
-This is not a STFU.md failure. It's a harness-level layout decision. A future companion fix would be either a `hermes chat -Q --quiet --no-diff` flag (if hermes adds one) or a thin wrapper that strips these artefacts post-hoc.
+This is not a TLDR.md failure. It's a harness-level layout decision. A future companion fix would be either a `hermes chat -Q --quiet --no-diff` flag (if hermes adds one) or a thin wrapper that strips these artefacts post-hoc.
 
 ### 8.2 Gemini's tool-loop architecture
 
 Gemini CLI's default behaviour is *agentic exploration*: even for a conceptual debug prompt like "I'm getting EADDRINUSE :::3000 — what's wrong?", gemini launches multi-step tool-use loops (`I'll search the codebase`, `I'll examine package.json`, `I'll use the generalist sub-agent`) before producing an answer. This is gemini-the-CLI's design — it ships as an agentic dev tool, not a chat assistant.
 
-STFU.md's tool-use silence rule prevents gemini from *narrating* these loops, but cannot prevent it from *running* them. On the Q11 prompt ("Fix this bug.", with no context), gemini consistently times out at our 5-minute per-prompt cap because it spawns sub-agents to investigate phantom bugs.
+TLDR.md's tool-use silence rule prevents gemini from *narrating* these loops, but cannot prevent it from *running* them. On the Q11 prompt ("Fix this bug.", with no context), gemini consistently times out at our 5-minute per-prompt cap because it spawns sub-agents to investigate phantom bugs.
 
-We benched gemini at N=1 trials (rather than N=3 like other agents) because of the timeout cost. The numbers are honest single-shot data; users with tighter latency budgets should be aware that gemini's first-response time on debug prompts under STFU.md is still substantially longer than on the other 7 agents.
+We benched gemini at N=1 trials (rather than N=3 like other agents) because of the timeout cost. The numbers are honest single-shot data; users with tighter latency budgets should be aware that gemini's first-response time on debug prompts under TLDR.md is still substantially longer than on the other 7 agents.
 
 ### 8.3 Single-version data on openclaw
 
@@ -290,7 +290,7 @@ OpenClaw's TUI maintains a single in-process conversation session, so multiple t
 
 ### 8.4 The frozen prompt suite is a snapshot, not a population
 
-The 15 prompts in the bench cover 13 verbosity-trap categories. They are representative but not exhaustive. Some prompt classes — IDE refactor requests, multi-file architectural questions, customer-facing technical writing — are not in the suite. STFU.md's behaviour on those is plausibly fine but not measured.
+The 15 prompts in the bench cover 13 verbosity-trap categories. They are representative but not exhaustive. Some prompt classes — IDE refactor requests, multi-file architectural questions, customer-facing technical writing — are not in the suite. TLDR.md's behaviour on those is plausibly fine but not measured.
 
 A v2 prompt suite with broader coverage (40+ prompts spanning 25+ categories) would give tighter confidence intervals and better generalisation guarantees.
 
@@ -300,7 +300,7 @@ A v2 prompt suite with broader coverage (40+ prompts spanning 25+ categories) wo
 
 ### 9.1 Per-agent override blocks
 
-Some agents have idiosyncratic strengths and weaknesses. Hermes needs a wrapper that strips diff/session_id. Gemini needs `--policy plan` for chat-style interaction. Cursor-agent has higher response-length variance than the rest. A v0.14+ STFU.md could include optional `## For [agent]:` override blocks that get appended only to the relevant global file.
+Some agents have idiosyncratic strengths and weaknesses. Hermes needs a wrapper that strips diff/session_id. Gemini needs `--policy plan` for chat-style interaction. Cursor-agent has higher response-length variance than the rest. A v0.14+ TLDR.md could include optional `## For [agent]:` override blocks that get appended only to the relevant global file.
 
 ### 9.2 Dynamic budget tightening
 
@@ -308,15 +308,15 @@ The current per-prompt-shape token budgets are static. A future version could in
 
 ### 9.3 Prompt caching exploitation
 
-STFU.md is 9 KB and identical across calls. Anthropic, OpenAI, and Google all support prompt caching, but the cache hit window is limited (5 minutes for Anthropic's standard tier, longer with the `1h` ephemeral tier). A bench-level recommendation for users: invoke STFU.md-aware sessions in long-running terminals (`claude` started once and used across many turns) rather than short `claude -p` one-shots, to maximise cache reuse.
+TLDR.md is 9 KB and identical across calls. Anthropic, OpenAI, and Google all support prompt caching, but the cache hit window is limited (5 minutes for Anthropic's standard tier, longer with the `1h` ephemeral tier). A bench-level recommendation for users: invoke TLDR.md-aware sessions in long-running terminals (`claude` started once and used across many turns) rather than short `claude -p` one-shots, to maximise cache reuse.
 
 ### 9.4 Companion eval harness
 
-The bench scripts at `bench/v1/scripts/` are functional but specific to this 8-agent / 15-prompt setup. A clean public release would include a `stfu-bench` CLI that any user could point at any agent to verify STFU.md is loading and working as expected on their setup.
+The bench scripts at `bench/v1/scripts/` are functional but specific to this 8-agent / 15-prompt setup. A clean public release would include a `tldr-bench` CLI that any user could point at any agent to verify TLDR.md is loading and working as expected on their setup.
 
 ### 9.5 Style transfer to other registers
 
-The STFU.md methodology — hard caps, response templates, self-trim rules, register specification without persona — is general. The same approach could yield a "STFU.md-Customer-Support" mode (terse + warm), a "STFU.md-Educational" mode (terse + scaffolded), a "STFU.md-Legal" mode (terse + precise + qualified). These are downstream applications.
+The TLDR.md methodology — hard caps, response templates, self-trim rules, register specification without persona — is general. The same approach could yield a "TLDR.md-Customer-Support" mode (terse + warm), a "TLDR.md-Educational" mode (terse + scaffolded), a "TLDR.md-Legal" mode (terse + precise + qualified). These are downstream applications.
 
 ---
 
@@ -350,4 +350,4 @@ The STFU.md methodology — hard caps, response templates, self-trim rules, regi
 
 ---
 
-*This document accompanies STFU.md v0.13. The accompanying `EVOLUTION.md` documents the per-version journey from v0.1 through v0.13 — what changed, what worked, what regressed, and the practical lessons learned.*
+*This document accompanies TLDR.md v0.13. The accompanying `EVOLUTION.md` documents the per-version journey from v0.1 through v0.13 — what changed, what worked, what regressed, and the practical lessons learned.*

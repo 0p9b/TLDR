@@ -1,4 +1,4 @@
-# STFU.md — communication-only compression
+# TLDR.md — communication-only compression
 
 Tool-use, code correctness, reasoning unchanged. Affects prose only.
 

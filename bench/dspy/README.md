@@ -1,6 +1,6 @@
 # DSPy-style optimization bench (v0.17 / v0.18)
 
-Custom DSPy-style instruction-evolution loop for optimizing STFU.md and STFU.blunt.md against multi-objective metrics. Designed for environments without an Anthropic API key — wraps the `claude` CLI as the LM.
+Custom DSPy-style instruction-evolution loop for optimizing TLDR.md and TLDR.blunt.md against multi-objective metrics. Designed for environments without an Anthropic API key — wraps the `claude` CLI as the LM.
 
 ## What it does
 
@@ -14,8 +14,8 @@ Custom DSPy-style instruction-evolution loop for optimizing STFU.md and STFU.blu
 |---|---|
 | `dspy_claude_lm.py` | Custom `dspy.LM` subclass wrapping `claude -p` (no API key needed) |
 | `expanded_corpus.py` | Probe corpus (n=210) with train/test splits |
-| `dspy_optimize.py` | Core optimization loop + scorers (`score_stfu_probe`, `score_blunt_probe`) |
-| `dspy_optimize_v2.py` | Entry point — runs optimization for {stfu,blunt} with v0.18 hyperparameters |
+| `dspy_optimize.py` | Core optimization loop + scorers (`score_tldr_probe`, `score_blunt_probe`) |
+| `dspy_optimize_v2.py` | Entry point — runs optimization for {tldr,blunt} with v0.18 hyperparameters |
 | `cross_model_holdout.py` | Cross-model generation across 5 agents |
 | `cross_model_analyze.py` | Codex-as-judge analysis + paired t-tests |
 | `dspy_holdout_eval.py` | Single-model held-out evaluator (claude only — used in v0.17) |
@@ -24,31 +24,31 @@ Custom DSPy-style instruction-evolution loop for optimizing STFU.md and STFU.blu
 
 ```bash
 # Optional: override scratch output location
-export STFU_DSPY_DIR=/tmp/stfu-test/dspy
+export TLDR_DSPY_DIR=/tmp/tldr-test/dspy
 
 # 1. Install
 python3 -m pip install --user dspy
 
 # 2. Build probe corpus
 python3 bench/dspy/expanded_corpus.py
-# → /tmp/stfu-test/dspy/probe_splits_10x.json
+# → /tmp/tldr-test/dspy/probe_splits_10x.json
 
 # 3. Run optimization on each variant (~30-90 min wall time, ~1500 calls each)
-# Uses the repository's current STFU.md / STFU.blunt.md as seeds.
-python3 bench/dspy/dspy_optimize_v2.py stfu
+# Uses the repository's current TLDR.md / TLDR.blunt.md as seeds.
+python3 bench/dspy/dspy_optimize_v2.py tldr
 python3 bench/dspy/dspy_optimize_v2.py blunt
-# → /tmp/stfu-test/dspy/v2/{stfu,blunt}_best.md
-# → /tmp/stfu-test/dspy/v2/{stfu,blunt}_history.json
+# → /tmp/tldr-test/dspy/v2/{tldr,blunt}_best.md
+# → /tmp/tldr-test/dspy/v2/{tldr,blunt}_history.json
 
 # 4. Cross-model held-out generation (~25 min wall time per variant)
 python3 bench/dspy/cross_model_holdout.py blunt
-python3 bench/dspy/cross_model_holdout.py stfu
-# → /tmp/stfu-test/dspy/cross/{stfu,blunt}_responses.json
+python3 bench/dspy/cross_model_holdout.py tldr
+# → /tmp/tldr-test/dspy/cross/{tldr,blunt}_responses.json
 
 # 5. Independent codex judge + statistical analysis
 python3 bench/dspy/cross_model_analyze.py blunt
-python3 bench/dspy/cross_model_analyze.py stfu
-# → /tmp/stfu-test/dspy/cross/{stfu,blunt}_summary.json
+python3 bench/dspy/cross_model_analyze.py tldr
+# → /tmp/tldr-test/dspy/cross/{tldr,blunt}_summary.json
 # → printed per-agent table with p-values
 ```
 
@@ -61,7 +61,7 @@ python3 bench/dspy/cross_model_analyze.py stfu
 
 ## Method honesty
 
-This bench is COPRO's algorithm (instruction-only optimization, no demos) implemented manually because DSPy's signature-based `Predict` formats prompts as structured Q&A templates, NOT as raw system prompts. STFU.md / STFU.blunt.md are deployed as memory files (raw system prompts). Implementing the loop manually preserves deployment fidelity.
+This bench is COPRO's algorithm (instruction-only optimization, no demos) implemented manually because DSPy's signature-based `Predict` formats prompts as structured Q&A templates, NOT as raw system prompts. TLDR.md / TLDR.blunt.md are deployed as memory files (raw system prompts). Implementing the loop manually preserves deployment fidelity.
 
 The cross-model phase uses prepend-to-user-message for uniform comparison across agents — this is NOT how the prompts are deployed in real use. Treat cross-model results as "does this prompt's intent translate across model families given consistent presentation," not as direct deployment performance numbers.
 

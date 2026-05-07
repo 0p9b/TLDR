@@ -1,6 +1,6 @@
 ## What this PR changes
 
-Brief description of the change to `STFU.md`, `STFU.blunt.md`, docs, or benchmark files.
+Brief description of the change to `TLDR.md`, `TLDR.blunt.md`, docs, or benchmark files.
 
 ## Why
 
@@ -8,7 +8,7 @@ What failure mode, install path, agent behavior, or documentation gap this addre
 
 ## Bench impact
 
-If this changes `STFU.md` or `STFU.blunt.md`, include benchmark or manual before/after evidence:
+If this changes `TLDR.md` or `TLDR.blunt.md`, include benchmark or manual before/after evidence:
 
 | agent/app | current | this PR | Δ / verdict |
 |---|---:|---:|---|

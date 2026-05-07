@@ -1,4 +1,4 @@
-# Contributing to STFU.md
+# Contributing to TLDR.md
 
 See [`../CONTRIBUTING.md`](../CONTRIBUTING.md) for the current contributor guide. This note adds benchmark-specific guidance for prompt changes.
 
@@ -9,7 +9,7 @@ See [`../CONTRIBUTING.md`](../CONTRIBUTING.md) for the current contributor guide
 3. **Prompt edits** — keep them surgical, explain the failure mode, and include before/after examples.
 4. **Benchmark results** — include enough setup detail for someone else to reproduce the run.
 
-## Changing `STFU.md` or `STFU.blunt.md`
+## Changing `TLDR.md` or `TLDR.blunt.md`
 
 Prompt changes should preserve the project goal:
 
@@ -18,7 +18,7 @@ Prompt changes should preserve the project goal:
 For each prompt PR, include:
 
 - problem fixed
-- changed file (`STFU.md` or `STFU.blunt.md`)
+- changed file (`TLDR.md` or `TLDR.blunt.md`)
 - before/after examples
 - agent/app tested
 - risk of regression
@@ -56,9 +56,9 @@ DSPy/cross-model harness:
 ```bash
 python3 -m pip install --user dspy
 python3 bench/dspy/expanded_corpus.py
-python3 bench/dspy/dspy_optimize_v2.py {stfu|blunt}
-python3 bench/dspy/cross_model_holdout.py {stfu|blunt}
-python3 bench/dspy/cross_model_analyze.py {stfu|blunt}
+python3 bench/dspy/dspy_optimize_v2.py {tldr|blunt}
+python3 bench/dspy/cross_model_holdout.py {tldr|blunt}
+python3 bench/dspy/cross_model_analyze.py {tldr|blunt}
 ```
 
 See [`methodology.md`](methodology.md), [`benchmarks.md`](benchmarks.md), and [`dspy-cross-model-results.md`](dspy-cross-model-results.md) for caveats and full tables.

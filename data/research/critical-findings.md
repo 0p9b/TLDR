@@ -1,4 +1,4 @@
-# Critical findings — STFU.md v0.14 multi-harness bench
+# Critical findings — TLDR.md v0.14 multi-harness bench
 
 ## v0.14 testing context
 
@@ -8,16 +8,16 @@ Bench environment: single VPS, ollama-cloud routing for 9 of 11 harnesses, nativ
 
 | harness | invocation works | notes |
 |---|---|---|
-| claude | ✓ | clean output, STFU.md-compliant |
+| claude | ✓ | clean output, TLDR.md-compliant |
 | codex | ✓ but verbose | emits internal reasoning chain in stdout, inflating token count |
 | droid | ✓ | shows config-mod banner; otherwise clean |
-| opencode | ✓ | kimi-k2.6 occasionally replies in Chinese (model quirk, not STFU.md) |
+| opencode | ✓ | kimi-k2.6 occasionally replies in Chinese (model quirk, not TLDR.md) |
 | openclaw | ⚠ slow | TUI-only (~3 min/cell); session-persistent — `/new` from piped stdin not always honored; bench uses one cell at a time |
 | hermes | ⚠ TTY-sensitive | `chat -q` flag works under TTY emulation; without TTY emits empty output |
 | pi | ⚠ first-run setup | `Preparing Pi…` setup blocks first invocation; subsequent calls fast — pre-warm needed |
-| cline | ⚠ slot location | system prompt at `~/.cline/data/rules/STFU.md`; activation via project `.clinerules/` may be required |
+| cline | ⚠ slot location | system prompt at `~/.cline/data/rules/TLDR.md`; activation via project `.clinerules/` may be required |
 | copilot | ⚠ routing not verified | `ollama launch copilot` succeeds but post-call telemetry suggests native GitHub-Copilot backend, not ollama; metrics for copilot reflect copilot's own model |
-| agent (cursor) | ✓ | requires `--model gpt-5.3-codex` or `gpt-5.2`; default `composer-2-fast` ignores STFU.md (RLHF lock-in) |
+| agent (cursor) | ✓ | requires `--model gpt-5.3-codex` or `gpt-5.2`; default `composer-2-fast` ignores TLDR.md (RLHF lock-in) |
 | gemini | ⚠ auth | OAuth creds in `~/.gemini/oauth_creds.json` — non-interactive `gemini -p` hangs in our env; bench cell budget exhausted at timeout |
 
 ## Bench gaps (this run)
@@ -26,7 +26,7 @@ For some harnesses we did not produce N=3 trials × 15 prompts × 2 conditions c
 - copilot, hermes, pi, cline, gemini — high timeout rates due to first-run setup, auth, or TTY sensitivities documented above. The published bench reports only the cells that produced non-empty output.
 - openclaw was tested at reduced N due to per-cell wall time (~180 s).
 
-These gaps are environmental, not STFU.md defects. Re-running the bench with serial-per-harness execution + per-harness pre-warmup eliminates the empty cells. See `bench/v0.14-bench.sh` and the analyzer at `bench/analyze.js`.
+These gaps are environmental, not TLDR.md defects. Re-running the bench with serial-per-harness execution + per-harness pre-warmup eliminates the empty cells. See `bench/v0.14-bench.sh` and the analyzer at `bench/analyze.js`.
 
 ## Methodological lessons (carried forward from v0.13.x + new)
 
@@ -37,11 +37,11 @@ These gaps are environmental, not STFU.md defects. Re-running the bench with ser
 5. **Codex emits chain-of-thought in stdout**, which inflates measured "prose" tokens. The tokenizer should detect and strip codex-style reasoning blocks for fair bench, OR codex should be evaluated on artifact-only criteria (`grep -A1 '^codex$'`).
 6. **Hard-template lexical match wins over soft caps** for short prompts (Q01, Q11, Q13).
 7. **Positive directives > negative constraints** — "Output X" beats "Don't output Y". Negatives invite RLHF agents to explain what they aren't doing, inflating the response.
-8. **Char-count of STFU.md is non-monotonic with compliance** — past ~1500 chars, additional rules can REDUCE compliance (cursor finding from v0.13 — composer-2-fast peaks at the smallest variant).
+8. **Char-count of TLDR.md is non-monotonic with compliance** — past ~1500 chars, additional rules can REDUCE compliance (cursor finding from v0.13 — composer-2-fast peaks at the smallest variant).
 
 ## Communication-only guarantee (Q08 + Q13 gates)
 
-STFU.md v0.14 is explicitly scoped to PROSE compression. The following are NEVER cut:
+TLDR.md v0.14 is explicitly scoped to PROSE compression. The following are NEVER cut:
 - Tool calls (file writes, command runs)
 - Code correctness inside fenced blocks (Q08 must produce a working `groupby.py`)
 - Output-only artifacts (Q13 IPv4 regex must be valid)

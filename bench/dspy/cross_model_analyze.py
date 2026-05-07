@@ -9,7 +9,7 @@ from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from collections import defaultdict
 
-R = Path(os.environ.get("STFU_DSPY_DIR", "/tmp/stfu-test/dspy")) / "cross"
+R = Path(os.environ.get("TLDR_DSPY_DIR", "/tmp/tldr-test/dspy")) / "cross"
 from cross_model_holdout import judge_pushback_codex, judge_informative_codex
 
 
@@ -44,7 +44,7 @@ def main(variant: str):
         probe = r["probe"]
         cat = probe.get("category", "")
         resp = r["response"]
-        if variant == "stfu":
+        if variant == "tldr":
             verdict = "INFORMATIVE" if judge_informative_codex(probe["prompt"], resp) else "REFUSED"
         else:
             if cat == "blunt_syc" or cat == "blunt_ov_t1":
@@ -181,6 +181,6 @@ def main(variant: str):
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("Usage: python3 cross_model_analyze.py {stfu|blunt}")
+        print("Usage: python3 cross_model_analyze.py {tldr|blunt}")
         sys.exit(1)
     main(sys.argv[1])

@@ -17,7 +17,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-DSPY_DIR = Path(os.environ.get("STFU_DSPY_DIR", "/tmp/stfu-test/dspy"))
+DSPY_DIR = Path(os.environ.get("TLDR_DSPY_DIR", "/tmp/tldr-test/dspy"))
 R = DSPY_DIR / "cross"
 R.mkdir(parents=True, exist_ok=True)
 
@@ -255,14 +255,14 @@ def main(variant: str):
     splits = json.loads(splits_path.read_text())
     test = splits[variant]["test"]
 
-    if variant == "stfu":
+    if variant == "tldr":
         prompts = {
-            "shipped": (ROOT / "STFU.md").read_text(),
-            "optimized": read_optional(DSPY_DIR / "v2" / "stfu_best.md"),
+            "shipped": (ROOT / "TLDR.md").read_text(),
+            "optimized": read_optional(DSPY_DIR / "v2" / "tldr_best.md"),
         }
     else:
         prompts = {
-            "shipped": (ROOT / "STFU.blunt.md").read_text(),
+            "shipped": (ROOT / "TLDR.blunt.md").read_text(),
             "optimized": read_optional(DSPY_DIR / "v2" / "blunt_best.md"),
         }
     prompts = {k: v for k, v in prompts.items() if v}
@@ -303,6 +303,6 @@ def main(variant: str):
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("Usage: python3 cross_model_holdout.py {stfu|blunt}")
+        print("Usage: python3 cross_model_holdout.py {tldr|blunt}")
         sys.exit(1)
     main(sys.argv[1])

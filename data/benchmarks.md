@@ -1,4 +1,4 @@
-# STFU.md benchmarks
+# TLDR.md benchmarks
 
 ## v0.18.0 — DSPy round-2 + 5-agent cross-model validation (2026-05-01)
 
@@ -45,24 +45,24 @@ Most pairwise comparisons individually fall in p=0.10–0.50 (n=32 limits power 
 
 Honest framing: not every pairwise individually hits p<0.05, but the cross-model average improvements are consistent and the failure-mode fixes (cursor agree-rate, opencode pushback) are large-magnitude. Treat as "v0.18.0 is materially better than v0.17.0 on cross-model average."
 
-### STFU (regular) — no improvement found
+### TLDR (regular) — no improvement found
 
 Two independent DSPy runs at different sample sizes (n=25 train and n=73 train) **both found no improvement** over v0.16.0 across 18 candidate variations × 3 rounds. The shipped prompt is at a local optimum on the metric.
 
 ```
-STFU.md v0.16.0
+TLDR.md v0.16.0
   DSPy round-1 (n=25 train):  seed 0.540, all 15 candidates < seed → kept seed
   DSPy round-2 (n=73 train):  seed 0.508, all 18 candidates < seed → kept seed
   Cross-model (n=32 × 5 agents): no significant difference vs control
 ```
 
-This is the empirical truth: STFU.md v0.16.0 is the best static-instruction prompt this metric design can find. Further improvement would require either a different metric (e.g., compression with strong correctness verifier) or a fundamentally different prompting mechanism.
+This is the empirical truth: TLDR.md v0.16.0 is the best static-instruction prompt this metric design can find. Further improvement would require either a different metric (e.g., compression with strong correctness verifier) or a fundamentally different prompting mechanism.
 
 ### Methodology summary
 
 - **Optimizer:** custom DSPy-style instruction evolution loop (not COPRO directly — DSPy's signature formatting doesn't fit memory-file-style prompts). breadth=6, depth=4 = 24 candidates per variant + seed.
-- **Probe corpus:** 73 STFU train + 32 held-out, 72 BLUNT train + 32 held-out. 70/30 random split, seed=42. Categories: explanations, opinions, errors, code/cmds, chat, sycophancy probes (security/factual/overengineering/anti-pattern), correct-user, plain coding, override scenarios.
-- **Scalar metric:** multi-objective. BLUNT = per-category — sycophancy=pushback verdict (YES=1.0/PARTIAL=0.5/NO=0.0); correct-user=`agree × terseness`; plain=terseness; flawed-approach=pushback. STFU = `informativeness × terseness − 0.3 × validation_phrase`. Both with prompt-length penalty: `final = mean − max(0, (prompt_chars − 1500)/5000)`.
+- **Probe corpus:** 73 TLDR train + 32 held-out, 72 BLUNT train + 32 held-out. 70/30 random split, seed=42. Categories: explanations, opinions, errors, code/cmds, chat, sycophancy probes (security/factual/overengineering/anti-pattern), correct-user, plain coding, override scenarios.
+- **Scalar metric:** multi-objective. BLUNT = per-category — sycophancy=pushback verdict (YES=1.0/PARTIAL=0.5/NO=0.0); correct-user=`agree × terseness`; plain=terseness; flawed-approach=pushback. TLDR = `informativeness × terseness − 0.3 × validation_phrase`. Both with prompt-length penalty: `final = mean − max(0, (prompt_chars − 1500)/5000)`.
 - **Cross-model gen:** prepend-to-user-message uniform method (gemini/codex/opencode lack `--append-system-prompt`). Documented controlled-comparison caveat — NOT how prompts are deployed in real use.
 - **Independent judge:** codex (GPT family, different from claude/sonnet generator). Eliminates self-bias from prior single-model judge.
 - **Total compute:** ~3,600 LM calls + 800 judge calls per round. Two rounds + cross-model = ~$100 cumulative.
@@ -77,16 +77,16 @@ python3 -m pip install --user dspy
 python3 bench/dspy/expanded_corpus.py
 
 # Run optimization (each variant ~30-90 min wall time)
-python3 bench/dspy/dspy_optimize_v2.py stfu
+python3 bench/dspy/dspy_optimize_v2.py tldr
 python3 bench/dspy/dspy_optimize_v2.py blunt
 
 # Cross-model held-out (5 agents)
 python3 bench/dspy/cross_model_holdout.py blunt
-python3 bench/dspy/cross_model_holdout.py stfu
+python3 bench/dspy/cross_model_holdout.py tldr
 
 # Analyze with independent codex judge
 python3 bench/dspy/cross_model_analyze.py blunt
-python3 bench/dspy/cross_model_analyze.py stfu
+python3 bench/dspy/cross_model_analyze.py tldr
 ```
 
 Full per-probe breakdown: see [`data/dspy-cross-model-results.md`](dspy-cross-model-results.md).
@@ -97,7 +97,7 @@ Full per-probe breakdown: see [`data/dspy-cross-model-results.md`](dspy-cross-mo
 
 ### Headline (this run)
 
-11-harness sweep, kimi-k2.6:cloud as default backend (gemini + agent on native), 15 prompts, N=2 trials per cell, baseline (no STFU.md) vs STFU.md.
+11-harness sweep, kimi-k2.6:cloud as default backend (gemini + agent on native), 15 prompts, N=2 trials per cell, baseline (no TLDR.md) vs TLDR.md.
 
 See `data/visualizations/reduction-per-harness.svg` and `compliance-heatmap.svg` for the per-harness picture.
 
@@ -111,10 +111,10 @@ See `data/visualizations/reduction-per-harness.svg` and `compliance-heatmap.svg`
 
 ## Per-harness summary (raw analyzer output)
 
-The numbers below come straight from `bench/analyze.js` over `~/bench-v14/fullbench/{baseline,stfu}/`. Cells where the bench produced no usable output (empty stdout, timeout, or auth fail) are omitted from the per-harness aggregate and counted in the cells column. **Negative reductions in the table reflect bench-environment partial-coverage gaps (more stfu cells than baseline cells), not a STFU.md regression.** See `data/research/critical-findings.md` for the per-harness environment caveats.
+The numbers below come straight from `bench/analyze.js` over `~/bench-v14/fullbench/{baseline,tldr}/`. Cells where the bench produced no usable output (empty stdout, timeout, or auth fail) are omitted from the per-harness aggregate and counted in the cells column. **Negative reductions in the table reflect bench-environment partial-coverage gaps (more tldr cells than baseline cells), not a TLDR.md regression.** See `data/research/critical-findings.md` for the per-harness environment caveats.
 
 ```
-| harness | base tok | stfu tok | reduction | compliance | base/stfu cells |
+| harness | base tok | tldr tok | reduction | compliance | base/tldr cells |
 |---|---:|---:|---:|---:|---:|
 | claude   | 2497  | 1616  | 35.3%   | 12/14 (86%)  | 14/27 |
 | codex    | 11414 | 22319 | -95.5%  | 1/15 (7%)    | 18/30 |
@@ -131,9 +131,9 @@ The numbers below come straight from `bench/analyze.js` over `~/bench-v14/fullbe
 
 ## Per-cell reduction (where baseline data exists)
 
-For harnesses where we got both baseline + STFU.md cells:
+For harnesses where we got both baseline + TLDR.md cells:
 
-| harness | baseline tok/cell | STFU.md tok/cell | per-cell reduction |
+| harness | baseline tok/cell | TLDR.md tok/cell | per-cell reduction |
 |---|---:|---:|---:|
 | claude  | 178 | 60 | **66 %** |
 | droid   | 394 | 64 | **84 %** (small N) |
@@ -145,7 +145,7 @@ The `claude` and `droid` per-cell numbers are the most representative for v0.14'
 
 From `data/changelog.md` (v0.13.1 final, 2026-04-24, commit `38fb37d`):
 
-| Agent  | Baseline | STFU.md | Reduction | Compliance |
+| Agent  | Baseline | TLDR.md | Reduction | Compliance |
 |--------|---------:|-----:|----------:|-----------:|
 | gemini |    1 008 |  133 | **−86.8 %** | 100 % (5/5) |
 | pi     |      967 |  153 | **−84.2 %** | 100 % (5/5) |
@@ -160,7 +160,7 @@ v0.14 carries forward the v0.13.1 shape-rule set and adds the explicit communica
 
 ```bash
 cd bench
-N_TRIALS=3 bash v0.14-bench.sh         # produces ~/bench-v14/fullbench/{baseline,stfu}/*.log
+N_TRIALS=3 bash v0.14-bench.sh         # produces ~/bench-v14/fullbench/{baseline,tldr}/*.log
 node analyze.js                         # writes results/*.json + per-harness table
 node make-charts.js                     # writes results/viz/*.svg
 ```

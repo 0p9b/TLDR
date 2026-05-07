@@ -1,4 +1,4 @@
-# Contributing to STFU.md
+# Contributing to TLDR.md
 
 Thanks for helping make AI assistants less yappy.
 
@@ -8,9 +8,9 @@ This repo accepts contributions through normal GitHub issues and pull requests.
 
 The best contributions are small and specific:
 
-- bug reports where STFU.md made an agent worse
+- bug reports where TLDR.md made an agent worse
 - examples of agents/apps where the prompt works or fails
-- tighter wording for [`STFU.md`](STFU.md) or [`STFU.blunt.md`](STFU.blunt.md)
+- tighter wording for [`TLDR.md`](TLDR.md) or [`TLDR.blunt.md`](TLDR.blunt.md)
 - docs fixes, install notes, or agent-specific path updates
 - benchmark results from your own setup
 
@@ -20,7 +20,7 @@ For prompt changes, please keep the goal in mind:
 
 > Shorter output, same intelligence.
 
-STFU.md should reduce filler without hurting correctness, tool use, code quality, reasoning, or safety.
+TLDR.md should reduce filler without hurting correctness, tool use, code quality, reasoning, or safety.
 
 ## How to contribute
 
@@ -37,7 +37,7 @@ docs: add Windsurf install path
 bench: add results for <agent-name>
 ```
 
-## If you change STFU.md
+## If you change TLDR.md
 
 Please include:
 
@@ -55,7 +55,7 @@ Please include:
 - agent/app name
 - version if known
 - where instructions should be installed
-- whether it uses [`STFU.md`](STFU.md) or [`STFU.blunt.md`](STFU.blunt.md)
+- whether it uses [`TLDR.md`](TLDR.md) or [`TLDR.blunt.md`](TLDR.blunt.md)
 - any quirks users should know
 
 ## Running checks

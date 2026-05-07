@@ -1,6 +1,6 @@
-# STFU.md — Evolution: From v0.1 to v0.18
+# TLDR.md — Evolution: From v0.1 to v0.18
 
-> The version-by-version story of how a single Markdown file went from `−33.9 %` prose-token reduction (v0.1) to a DSPy-optimized cross-model-validated v0.18.0 with a sibling anti-sycophancy variant (`STFU.blunt.md`). Eighteen iterations across three eras: hand-crafted (v0.1–v0.13.1), empirical ablation (v0.14.3), and **DSPy + cross-model** (v0.15–v0.18). 8,000+ measured agent responses across the full journey.
+> The version-by-version story of how a single Markdown file went from `−33.9 %` prose-token reduction (v0.1) to a DSPy-optimized cross-model-validated v0.18.0 with a sibling anti-sycophancy variant (`TLDR.blunt.md`). Eighteen iterations across three eras: hand-crafted (v0.1–v0.13.1), empirical ablation (v0.14.3), and **DSPy + cross-model** (v0.15–v0.18). 8,000+ measured agent responses across the full journey.
 
 ## Three eras
 
@@ -14,12 +14,12 @@
 
 | Ver | Variant | Method | Headline metric | Key change |
 |---|---|---|---|---|
-| v0.14.3 | STFU.md | Hand ablation, n=12+24 | −80% prose (single-model) | Removed `## Templates` section (caused engagement refusal on under-specified prompts). |
-| v0.15.0 | STFU.blunt.md (NEW) | Hand-iterated V1→V2 | Pushback 5/6 sycophancy, override 2/2, 0% validation phrases | New variant — anti-sycophancy + override mechanism, mirrors STFU.md terseness rules. |
-| v0.16.0 | STFU.md | Manual unification | Same metrics, single file | Merged `STFU.chat.md` into `STFU.md`. Universal coding+chat. |
-| v0.17.0 | STFU.blunt.md | DSPy round-1 (n=25 train) | Pushback 5/6, +0.118 held-out vs v0.15 | Optimizer added `Confirm` shape rule + "Never open with validation". |
-| **v0.18.0** | STFU.blunt.md | **DSPy round-2 (n=72 train) + 5-agent cross-model validation + codex judge** | **Pushback avg 0.848 across 5 agents (vs 0.750 v0.17), prose −16%, agree-rate 0.912 (vs 0.820 v0.17)** | Optimizer added "Disagree only when clearly warranted", "Pick a side", "Never withhold a verdict" + tighter Confirm rule. |
-| v0.18.0 | STFU.md | DSPy round-2 (n=73 train) | NO improvement found over v0.16.0 | Two independent runs confirmed v0.16.0 is at a local optimum on the metric. |
+| v0.14.3 | TLDR.md | Hand ablation, n=12+24 | −80% prose (single-model) | Removed `## Templates` section (caused engagement refusal on under-specified prompts). |
+| v0.15.0 | TLDR.blunt.md (NEW) | Hand-iterated V1→V2 | Pushback 5/6 sycophancy, override 2/2, 0% validation phrases | New variant — anti-sycophancy + override mechanism, mirrors TLDR.md terseness rules. |
+| v0.16.0 | TLDR.md | Manual unification | Same metrics, single file | Merged `TLDR.chat.md` into `TLDR.md`. Universal coding+chat. |
+| v0.17.0 | TLDR.blunt.md | DSPy round-1 (n=25 train) | Pushback 5/6, +0.118 held-out vs v0.15 | Optimizer added `Confirm` shape rule + "Never open with validation". |
+| **v0.18.0** | TLDR.blunt.md | **DSPy round-2 (n=72 train) + 5-agent cross-model validation + codex judge** | **Pushback avg 0.848 across 5 agents (vs 0.750 v0.17), prose −16%, agree-rate 0.912 (vs 0.820 v0.17)** | Optimizer added "Disagree only when clearly warranted", "Pick a side", "Never withhold a verdict" + tighter Confirm rule. |
+| v0.18.0 | TLDR.md | DSPy round-2 (n=73 train) | NO improvement found over v0.16.0 | Two independent runs confirmed v0.16.0 is at a local optimum on the metric. |
 
 The v0.18.0 BLUNT prompt is the **first variant in the project's history validated across 5 different coding-agent CLIs with an independent (different-model-family) judge.** See [`benchmarks.md` v0.18 section](benchmarks.md) and [`dspy-cross-model-results.md`](dspy-cross-model-results.md) for full per-agent numbers.
 
@@ -27,7 +27,7 @@ The v0.18.0 BLUNT prompt is the **first variant in the project's history validat
 
 ## Era I (v0.1 → v0.13) — original hand-crafted journey
 
-> The version-by-version story of how a single Markdown file went from `−33.9 %` prose-token reduction (with a 66-percentage-point compliance spread across agents) to `−80.0 %` reduction (with a 13-point spread). Thirteen iterations, three thousand nine hundred measured agent responses, and a small library of prompt-engineering lessons that generalize beyond STFU.md itself.
+> The version-by-version story of how a single Markdown file went from `−33.9 %` prose-token reduction (with a 66-percentage-point compliance spread across agents) to `−80.0 %` reduction (with a 13-point spread). Thirteen iterations, three thousand nine hundred measured agent responses, and a small library of prompt-engineering lessons that generalize beyond TLDR.md itself.
 
 ---
 
@@ -48,7 +48,7 @@ The v0.18.0 BLUNT prompt is the **first variant in the project's history validat
 
 ## 1. The bench harness in one paragraph
 
-A frozen 15-prompt suite covering 13 verbosity-trap categories, run against 8 production coding-agent CLIs (claude, codex, gemini, droid, cursor-agent, pi, hermes, openclaw), with **N=3 trials per (agent, prompt)** for the 6 trial-stable agents and **N=1** for gemini (tool-loop timeouts) and openclaw (single TUI session). Each version of STFU.md is deployed identically to all 8 agents' global instruction files (`~/.claude/CLAUDE.md`, `~/.codex/AGENTS.md`, etc.). Token counts use `tiktoken o200k_base` for cross-agent fairness. The headline metric is **prose tokens outside fenced code blocks**. Compliance is **strict ALL-trials-pass per prompt**.
+A frozen 15-prompt suite covering 13 verbosity-trap categories, run against 8 production coding-agent CLIs (claude, codex, gemini, droid, cursor-agent, pi, hermes, openclaw), with **N=3 trials per (agent, prompt)** for the 6 trial-stable agents and **N=1** for gemini (tool-loop timeouts) and openclaw (single TUI session). Each version of TLDR.md is deployed identically to all 8 agents' global instruction files (`~/.claude/CLAUDE.md`, `~/.codex/AGENTS.md`, etc.). Token counts use `tiktoken o200k_base` for cross-agent fairness. The headline metric is **prose tokens outside fenced code blocks**. Compliance is **strict ALL-trials-pass per prompt**.
 
 Total measurements across the v0.1 → v0.13 journey: roughly **3 900 agent responses**.
 
@@ -58,7 +58,7 @@ Total measurements across the v0.1 → v0.13 journey: roughly **3 900 agent resp
 
 > Headline summary. Full per-agent matrices (prose tokens, Δ %, compliance per agent per version) are in [`BENCHMARKS.md`](./benchmarks.md) §2-§4.
 
-| Ver | Total Δ % | Lowest comply | STFU.md size | Key change | Key finding |
+| Ver | Total Δ % | Lowest comply | TLDR.md size | Key change | Key finding |
 |---|---:|---:|---:|---|---|
 | v0.1 | **−33.9 %** | 27 % (cursor) | 2 730 B | Lyra-optimized port of caveman; soft "default to" language | Modern coding agents already kill classical preamble traps; the bloat is now structural (headers, bullets, bold) |
 | v0.2 | **−34.8 %** | 40 % (cursor) | 2 316 B | Hard structure caps (headers, tables, bold per-token); compression target stated (50–70 %) | Structure caps work massively (−86 % headers, −85 % fillers across all agents) but prose-token total barely moves — markdown got cut, word count didn't |
@@ -67,11 +67,11 @@ Total measurements across the v0.1 → v0.13 journey: roughly **3 900 agent resp
 | v0.5 | **−70.5 %** | 53 % (cursor) | 6 106 B | **Hard response templates** for under-specified prompts ("Need code or error first" verbatim for Q11); Q08 zero-prose rule | The first version to cross the −70 % target. Fixed templates eliminated cursor's fabrication failure mode on Q11 |
 | v0.6 | **−75.9 %** | 67 % (cursor) | 6 577 B | **Regex-simplicity rule** ("use `\d{1,3}` not `(25[0-5]\|...)`"); concept cap → 80; coding closing prose → 0 | Q13 universal failure traced to: strict IPv4 regex tokenizes to 58, prompt cap is 40. Telling the model to use the simpler valid form unblocked 7/8 agents on Q13 |
 | v0.7 | **−75.6 %** | 73 % (cursor) | 7 600 B | Anti-helpfulness rule (no security postscript, no "when to use which"); error-interpretation cap → 50; one-liner cap → 20 | Slight regression in delta but cursor crept up. RLHF-trained "be helpful" reflex was visibly inflating responses |
-| v0.8 | **−73.1 %** | 73 % (cursor) | 8 331 B | Concept cap → 60; best-practices cap → 120; "draft-then-halve" meta-cognitive rule | Aggressive cap tightening regressed because STFU.md itself was getting bigger and diluting earlier rules |
+| v0.8 | **−73.1 %** | 73 % (cursor) | 8 331 B | Concept cap → 60; best-practices cap → 120; "draft-then-halve" meta-cognitive rule | Aggressive cap tightening regressed because TLDR.md itself was getting bigger and diluting earlier rules |
 | v0.9 | **−76.0 %** | **87 %** (hermes) | 8 100 B | Cursor jumped 73 % → **100 %** with anti-helpfulness clause; emotionally-loaded debug cap → 100 | Cursor compliance solved. Hermes now the laggard at 87 % due to CLI-level diff-display behaviour |
-| v0.10 | **−78.0 %** | 87 % (hermes) | 8 600 B | Anti-metadata rule (`session_id`, `runId`, diff-views); last-character rule | Hermes still 87 % — the metadata is appended by the CLI binary, not the LLM. STFU.md cannot suppress what the LLM doesn't generate |
-| v0.11 | **−77.2 %** | 87 % (hermes) | 9 200 B | Expanded anti-metadata to multi-clause | Slight regression. Cursor dropped to 87 % too — STFU.md getting bloated, diluting per-shape rules |
-| v0.12 | **−77.9 %** | 87 % (hermes) | 9 053 B | **Reverted** anti-metadata bloat to 2 lines; cursor recovered to 100 % | Confirmed: a leaner STFU.md outperforms a bigger one when the marginal rule has low impact |
+| v0.10 | **−78.0 %** | 87 % (hermes) | 8 600 B | Anti-metadata rule (`session_id`, `runId`, diff-views); last-character rule | Hermes still 87 % — the metadata is appended by the CLI binary, not the LLM. TLDR.md cannot suppress what the LLM doesn't generate |
+| v0.11 | **−77.2 %** | 87 % (hermes) | 9 200 B | Expanded anti-metadata to multi-clause | Slight regression. Cursor dropped to 87 % too — TLDR.md getting bloated, diluting per-shape rules |
+| v0.12 | **−77.9 %** | 87 % (hermes) | 9 053 B | **Reverted** anti-metadata bloat to 2 lines; cursor recovered to 100 % | Confirmed: a leaner TLDR.md outperforms a bigger one when the marginal rule has low impact |
 | **v0.13** | **−80.0 %** | **87 %** (hermes) | 9 377 B | **Diff-fence rule** — wrap auto-injected diffs in code fences so they count as code, not prose | Best total Δ% achieved. Hermes Q08 still hard-capped by CLI but other agents tightened further |
 
 ---
@@ -95,7 +95,7 @@ This taught us the load-bearing distinction: structural caps target the *shape* 
 
 By v0.4 we had token budgets per prompt-shape but cursor-agent had high variance — same prompt, three trials, one would be 90 tokens and another would be 350. The prompt told the model the cap; the model sometimes stuck to it and sometimes didn't.
 
-v0.5 added **hard response templates** for the highest-variance prompt classes. For the implicit-context "Fix this bug." (Q11), STFU.md now scripted the response verbatim:
+v0.5 added **hard response templates** for the highest-variance prompt classes. For the implicit-context "Fix this bug." (Q11), TLDR.md now scripted the response verbatim:
 
 > EXACTLY: "Need code or error first." (or one of: "Need the file path.", "Need more context.")
 
@@ -119,7 +119,7 @@ v0.9 added an explicit *Anti-helpfulness rule*:
 
 Cursor compliance jumped from 73 % to **100 %** in one version. This was the largest single-version compliance gain we ever observed.
 
-The mechanism is the RLHF-trained sycophancy bias documented by Sharma et al. (2023) [^1]. Helpful chatbots are rewarded for "covering the bases" — adding the disclaimer the user didn't ask for, the alternative they didn't request. STFU.md's anti-helpfulness rule is unusually aggressive on purpose: it has to *override* an internalised reflex.
+The mechanism is the RLHF-trained sycophancy bias documented by Sharma et al. (2023) [^1]. Helpful chatbots are rewarded for "covering the bases" — adding the disclaimer the user didn't ask for, the alternative they didn't request. TLDR.md's anti-helpfulness rule is unusually aggressive on purpose: it has to *override* an internalised reflex.
 
 ### v0.13 (diminishing returns and the harness ceiling)
 
@@ -149,7 +149,7 @@ These are the design choices that produced measurable improvements, with the und
 
 - **Arrow notation for causality.** `→` is shorter than "leads to" or "causes" and unambiguous in technical writing. *(Standard typographic convention in math/CS — pre-trained models recognise it.)*
 
-- **Standard domain abbreviations.** STFU.md explicitly lists `DB, auth, config, req, res, fn, impl, env, deps, repo, prod, dev, k8s, sys, lib, opts` as preferred over their long forms. *(Models tokenize abbreviations efficiently; "auth" is one token vs three for "authentication".)*
+- **Standard domain abbreviations.** TLDR.md explicitly lists `DB, auth, config, req, res, fn, impl, env, deps, repo, prod, dev, k8s, sys, lib, opts` as preferred over their long forms. *(Models tokenize abbreviations efficiently; "auth" is one token vs three for "authentication".)*
 
 - **The "no augment" rule.** "If you produced a bullet list, do NOT add prose before/after explaining it. Bullets and code SPEAK FOR THEMSELVES." Eliminated a recurring failure mode where the model would write a tight bullet list, then add a paragraph re-explaining the bullets. *(Counters narrative-coherence training: models are trained to provide framing prose around lists, which is exactly the bloat we want to remove.)*
 
@@ -167,9 +167,9 @@ Equally important: the things we tried that produced no improvement or active re
 
 - **The strict octet-bound regex example.** v0.5's ✓ example for Q13 used the strict pattern `^((25[0-5]|...){3}...)$` which tokenizes to 58 tokens. Models copied this exactly, blowing the 40-token cap. Lesson: examples set the floor; show simplest-correct, not maximally-rigorous-correct.
 
-- **STFU.md size growth.** v0.11 expanded the anti-metadata rule from 2 lines to 6 — and total reduction *regressed* from 78 % to 77 %. Cursor compliance also dropped from 100 % to 87 %. The marginal information added by the longer rule was outweighed by the dilution effect on the rest of the prompt. Reverted in v0.12.
+- **TLDR.md size growth.** v0.11 expanded the anti-metadata rule from 2 lines to 6 — and total reduction *regressed* from 78 % to 77 %. Cursor compliance also dropped from 100 % to 87 %. The marginal information added by the longer rule was outweighed by the dilution effect on the rest of the prompt. Reverted in v0.12.
 
-- **Anti-metadata rules for CLI-level outputs.** STFU.md can tell the LLM "don't include `session_id:` in your response", but if the agent's CLI binary appends `session_id:` *after* the LLM generates its output, no instruction in STFU.md will help. Hermes proved this across v0.10, v0.11, v0.12, v0.13.
+- **Anti-metadata rules for CLI-level outputs.** TLDR.md can tell the LLM "don't include `session_id:` in your response", but if the agent's CLI binary appends `session_id:` *after* the LLM generates its output, no instruction in TLDR.md will help. Hermes proved this across v0.10, v0.11, v0.12, v0.13.
 
 - **The diff-fence wrapper hack.** v0.13 told the LLM "if your CLI inserts a diff view, wrap it in a `\`\`\`diff` code fence so it counts as code". The LLM either couldn't or wouldn't do this on hermes — the CLI emits the diff *after* the LLM is done. Honest write-up: hermes structural ceiling.
 
@@ -177,7 +177,7 @@ Equally important: the things we tried that produced no improvement or active re
 
 ## 6. Per-version per-agent matrices (for plotting)
 
-These are the three time-series you want for visualisation. Each row is one agent; each column is one STFU.md version. The full numerical tables are also in [`BENCHMARKS.md`](./benchmarks.md) §2-§4 — duplicated here so the narrative is self-contained.
+These are the three time-series you want for visualisation. Each row is one agent; each column is one TLDR.md version. The full numerical tables are also in [`BENCHMARKS.md`](./benchmarks.md) §2-§4 — duplicated here so the narrative is self-contained.
 
 ### 6.0 Δ % vs baseline (the headline reduction over time)
 
@@ -231,13 +231,13 @@ The **single most underrated achievement of this project is variance reduction a
 
 | Version | Lowest comply | Highest comply | Spread (pp) |
 |---|---:|---:|---:|
-| v1 baseline (no STFU.md) | 27 % (cursor) | 93 % (claude, openclaw) | **66** |
-| v1.1 (STFU.md v0.1) | 27 % (cursor) | 93 % (claude) | 66 |
-| v1.3 (STFU.md v0.3) | 53 % (cursor) | 93 % (claude) | 40 |
-| v1.5 (STFU.md v0.5) | 53 % (cursor) | 93 % (4 agents) | 40 |
-| v1.6 (STFU.md v0.6) | 67 % (cursor) | 100 % (claude, droid, gemini, openclaw) | 33 |
-| v1.9 (STFU.md v0.9) | 87 % (hermes) | 100 % (5 agents) | 13 |
-| **v1.13 (STFU.md v0.13)** | **87 %** (hermes) | **100 %** (5 agents) | **13** |
+| v1 baseline (no TLDR.md) | 27 % (cursor) | 93 % (claude, openclaw) | **66** |
+| v1.1 (TLDR.md v0.1) | 27 % (cursor) | 93 % (claude) | 66 |
+| v1.3 (TLDR.md v0.3) | 53 % (cursor) | 93 % (claude) | 40 |
+| v1.5 (TLDR.md v0.5) | 53 % (cursor) | 93 % (4 agents) | 40 |
+| v1.6 (TLDR.md v0.6) | 67 % (cursor) | 100 % (claude, droid, gemini, openclaw) | 33 |
+| v1.9 (TLDR.md v0.9) | 87 % (hermes) | 100 % (5 agents) | 13 |
+| **v1.13 (TLDR.md v0.13)** | **87 %** (hermes) | **100 %** (5 agents) | **13** |
 
 **5× reduction in cross-agent compliance variance** (66 pp → 13 pp).
 
@@ -245,11 +245,11 @@ The **single most underrated achievement of this project is variance reduction a
 
 | Version | Worst Δ % | Best Δ % | Spread (pp) |
 |---|---:|---:|---:|
-| v1.1 (STFU.md v0.1) | −2 % (openclaw) | −53 % (droid) | 51 |
-| v1.4 (STFU.md v0.4) | −8 % (gemini) | −76 % (droid) | 68 |
-| v1.6 (STFU.md v0.6) | −12 % (openclaw) | −86 % (droid) | 74 |
-| v1.9 (STFU.md v0.9) | −67 % (cursor) | −89 % (gemini) | 22 |
-| **v1.13 (STFU.md v0.13)** | **−71 %** (cursor) | **−96 %** (gemini) | **25** |
+| v1.1 (TLDR.md v0.1) | −2 % (openclaw) | −53 % (droid) | 51 |
+| v1.4 (TLDR.md v0.4) | −8 % (gemini) | −76 % (droid) | 68 |
+| v1.6 (TLDR.md v0.6) | −12 % (openclaw) | −86 % (droid) | 74 |
+| v1.9 (TLDR.md v0.9) | −67 % (cursor) | −89 % (gemini) | 22 |
+| **v1.13 (TLDR.md v0.13)** | **−71 %** (cursor) | **−96 %** (gemini) | **25** |
 
 **~2× reduction in cross-agent compression-Δ variance** (51 pp → 25 pp).
 
@@ -257,7 +257,7 @@ The **single most underrated achievement of this project is variance reduction a
 
 A prompt that compresses well only on Claude is a *Claude prompt*. It tells you nothing about the prompt's transferability across the AI tooling ecosystem. The headline "−80 % reduction" is impressive but doesn't, by itself, prove generalisation.
 
-The variance-shrinkage chart proves it. STFU.md v0.13 doesn't just compress well *on average*; it compresses *consistently* across:
+The variance-shrinkage chart proves it. TLDR.md v0.13 doesn't just compress well *on average*; it compresses *consistently* across:
 
 - Anthropic's Claude Code (Opus 4.6)
 - OpenAI's Codex CLI (gpt-5.4)
@@ -318,22 +318,22 @@ session_id: 20260416_135544_86cb96
 
 This adds ~15 tokens per response — enough to push the Q13 IPv4 regex from 25 tokens (under the 40 cap) to 43 tokens (over).
 
-### 7.2 Why STFU.md can't fix this
+### 7.2 Why TLDR.md can't fix this
 
-Both artefacts are emitted by the hermes CLI binary, *after* the LLM has produced its response. They are not in the LLM's output stream. STFU.md can instruct the LLM "don't generate a session_id trailer", and the LLM complies — but the CLI appends one anyway.
+Both artefacts are emitted by the hermes CLI binary, *after* the LLM has produced its response. They are not in the LLM's output stream. TLDR.md can instruct the LLM "don't generate a session_id trailer", and the LLM complies — but the CLI appends one anyway.
 
-We tested four versions of STFU.md explicitly targeting these artefacts (v0.10 through v0.13). None moved hermes off 87 %.
+We tested four versions of TLDR.md explicitly targeting these artefacts (v0.10 through v0.13). None moved hermes off 87 %.
 
 ### 7.3 The honest takeaway
 
-STFU.md is a prompt-level tool. Hermes's diff-view and session-id trailer are harness-level artefacts. The two layers don't interact — STFU.md cannot reach the layer that produces the bloat.
+TLDR.md is a prompt-level tool. Hermes's diff-view and session-id trailer are harness-level artefacts. The two layers don't interact — TLDR.md cannot reach the layer that produces the bloat.
 
 A complete fix requires either:
 
 1. A hermes flag (`--quiet --no-diff` or similar) that suppresses these artefacts.
 2. A thin post-processing wrapper around hermes that strips the artefacts before the user sees them.
 
-Both are out of STFU.md's scope. Hermes at 87 % is the realistic prompt-only ceiling.
+Both are out of TLDR.md's scope. Hermes at 87 % is the realistic prompt-only ceiling.
 
 ---
 
@@ -341,11 +341,11 @@ Both are out of STFU.md's scope. Hermes at 87 % is the realistic prompt-only cei
 
 Gemini was a different kind of hard case. Its CLI's *default behaviour* is **agentic exploration**: even on a conceptual debug prompt like "I'm getting EADDRINUSE :::3000 — what's wrong?", gemini launches multi-step tool-use loops (`I'll search the codebase`, `I'll examine package.json`, `I'll use the generalist sub-agent`). On the under-specified Q11 ("Fix this bug.", with no context), gemini consistently spawns sub-agents to investigate phantom bugs and times out at our 5-minute per-prompt cap.
 
-In v1.1 (STFU.md v0.1), gemini was at −38 % reduction with multiple timeouts. The natural conclusion would have been "STFU.md doesn't work on gemini".
+In v1.1 (TLDR.md v0.1), gemini was at −38 % reduction with multiple timeouts. The natural conclusion would have been "TLDR.md doesn't work on gemini".
 
 By v1.13, gemini sits at **−96 % reduction with 100 % compliance** — the *best* of any agent on the bench.
 
-What changed: STFU.md v0.6+ added the explicit tool-use silence rule:
+What changed: TLDR.md v0.6+ added the explicit tool-use silence rule:
 
 > Tool-use narration ("I'll search…", "Let me check…", "I will examine…", "Now I'll…", "Next I'll…") — run tools silently
 
@@ -360,11 +360,11 @@ Gemini didn't stop running tools, but it stopped *narrating them* — which was 
 All bench data is preserved at `bench/v1*/` (relative to repo root). Per-version artefacts:
 
 ```
-bench/v1/          baseline (no STFU.md)
-bench/v1.1/        STFU.md v0.1
-bench/v1.2/        STFU.md v0.2
+bench/v1/          baseline (no TLDR.md)
+bench/v1.1/        TLDR.md v0.1
+bench/v1.2/        TLDR.md v0.2
 […]
-bench/v1.13/       STFU.md v0.13 (final)
+bench/v1.13/       TLDR.md v0.13 (final)
 ```
 
 Each version directory contains:
@@ -393,4 +393,4 @@ The bench harness scripts at `bench/v1/scripts/` are reusable: `run_one.py` (sin
 
 ---
 
-*This document accompanies STFU.md v0.13. The accompanying `PHILOSOPHY.md` covers the design principles, ML grounding, and citations in greater depth.*
+*This document accompanies TLDR.md v0.13. The accompanying `PHILOSOPHY.md` covers the design principles, ML grounding, and citations in greater depth.*

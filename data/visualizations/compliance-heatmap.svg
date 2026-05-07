@@ -3,7 +3,7 @@
 .title{font-size:18px;font-weight:600}
 .gridline{stroke:#e5e7eb;stroke-width:1}
 .bar-base{fill:#ef4444}
-.bar-stfu{fill:#22c55e}
+.bar-tldr{fill:#22c55e}
 .label{fill:#1f2937}
 .label-sm{fill:#6b7280;font-size:11px}
 .pass{fill:#22c55e}
@@ -11,7 +11,7 @@
 .warn{fill:#f59e0b}
 .gone{fill:#9ca3af}
 </style>
-<text x="410" y="24" text-anchor="middle" class="title">STFU.md v0.14 — compliance heatmap (cell-level)</text>
+<text x="410" y="24" text-anchor="middle" class="title">TLDR.md v0.14 — compliance heatmap (cell-level)</text>
 <text x="152" y="68" text-anchor="middle" class="label-sm">Q01</text>
 <text x="196" y="68" text-anchor="middle" class="label-sm">Q02</text>
 <text x="240" y="68" text-anchor="middle" class="label-sm">Q03</text>

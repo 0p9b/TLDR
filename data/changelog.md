@@ -1,18 +1,18 @@
 # Changelog
 
-All STFU.md prompt versions, with the headline metric (total prose-token reduction across 8 agents) and the key change for each.
+All TLDR.md prompt versions, with the headline metric (total prose-token reduction across 8 agents) and the key change for each.
 
-The format is loosely based on [Keep a Changelog](https://keepachangelog.com/). Versions are STFU.md prompt versions; benchmarks are the matching `v1.<N>` bench run.
+The format is loosely based on [Keep a Changelog](https://keepachangelog.com/). Versions are TLDR.md prompt versions; benchmarks are the matching `v1.<N>` bench run.
 
 ## [0.18.0] — 2026-05-01
 
-**`STFU.blunt.md` — DSPy round-2 + cross-model held-out validation across 5 agents.**
+**`TLDR.blunt.md` — DSPy round-2 + cross-model held-out validation across 5 agents.**
 
 ### Changed
-- `STFU.blunt.md` refined further via DSPy-style instruction evolution, this time on a 3–5x larger probe corpus (n=72 train, n=32 held-out for blunt; n=73 train, n=32 held-out for stfu) and validated **across 5 different coding-agent CLIs**: claude, codex, cursor-agent, gemini, opencode. Independent judge: codex (different model family from claude/sonnet — eliminates self-bias).
+- `TLDR.blunt.md` refined further via DSPy-style instruction evolution, this time on a 3–5x larger probe corpus (n=72 train, n=32 held-out for blunt; n=73 train, n=32 held-out for tldr) and validated **across 5 different coding-agent CLIs**: claude, codex, cursor-agent, gemini, opencode. Independent judge: codex (different model family from claude/sonnet — eliminates self-bias).
 
 ### Not changed
-- `STFU.md` (v0.16.0) — DSPy optimization on the expanded corpus **again found no improvement**. The seed prompt scored 0.508 (vs 0.540 in the smaller corpus), and across 18 candidate variations × 3 rounds, no candidate beat it. Two independent DSPy runs both converged on "shipped is at a local optimum on this metric." Stays as-is.
+- `TLDR.md` (v0.16.0) — DSPy optimization on the expanded corpus **again found no improvement**. The seed prompt scored 0.508 (vs 0.540 in the smaller corpus), and across 18 candidate variations × 3 rounds, no candidate beat it. Two independent DSPy runs both converged on "shipped is at a local optimum on this metric." Stays as-is.
 
 ### What's new in v0.18.0 BLUNT vs v0.17.0
 
@@ -71,13 +71,13 @@ Honest framing: not every pairwise comparison hits p<0.05, but cross-model avera
 
 ### Methodology
 
-**Probe corpus:** 73 STFU train / 32 held-out + 72 BLUNT train / 32 held-out. Categories: explanations, opinions, errors, code/cmds, chat-style, sycophancy probes (security/factual/overengineering/anti-pattern), correct-user statements, plain coding, override scenarios.
+**Probe corpus:** 73 TLDR train / 32 held-out + 72 BLUNT train / 32 held-out. Categories: explanations, opinions, errors, code/cmds, chat-style, sycophancy probes (security/factual/overengineering/anti-pattern), correct-user statements, plain coding, override scenarios.
 
-**Optimization:** custom DSPy-style instruction evolution loop. breadth=6, depth=4 = 24 candidates per variant + seed (BLUNT completed 25; STFU completed 19/25 — judge timeout in round 4 truncated the run, but no improvement was found through round 3 either).
+**Optimization:** custom DSPy-style instruction evolution loop. breadth=6, depth=4 = 24 candidates per variant + seed (BLUNT completed 25; TLDR completed 19/25 — judge timeout in round 4 truncated the run, but no improvement was found through round 3 either).
 
 **Multi-objective scalar metric:**
 - BLUNT: per-category — sycophancy = pushback verdict (YES=1.0/PARTIAL=0.5/NO=0.0); correct-user = `agree × terseness`; plain = terseness; flawed-approach = pushback verdict.
-- STFU: `informativeness × terseness − 0.3 × validation_phrase`.
+- TLDR: `informativeness × terseness − 0.3 × validation_phrase`.
 - Both with prompt-length penalty: `final = mean − max(0, (prompt_chars − 1500)/5000)`.
 
 **Cross-model evaluation:** prepend-to-user-message for uniform comparison across agents that don't expose system-prompt injection. This is a controlled-comparison method — NOT how the prompt is deployed in practice (as a memory file). Documented caveat.
@@ -88,40 +88,40 @@ Honest framing: not every pairwise comparison hits p<0.05, but cross-model avera
 
 1. **n=32 per cell** is enough to detect medium-large effects but not small ones. p-values for many comparisons fall in the 0.10–0.50 range.
 2. **5 agents tested** but each has its own scaffolding (cursor-agent uses sonnet under the hood; gemini/codex/opencode use their respective default models). Cross-model results conflate "prompt working" with "model behavior."
-3. **STFU "no improvement found"** — confirmed in two independent DSPy runs (n=25 and n=73 corpora). May reflect metric ceiling rather than true prompt ceiling. Different metric design might find improvements this metric misses.
+3. **TLDR "no improvement found"** — confirmed in two independent DSPy runs (n=25 and n=73 corpora). May reflect metric ceiling rather than true prompt ceiling. Different metric design might find improvements this metric misses.
 4. **Judge model bias** — codex (GPT-5) is the judge; this differs from generator (claude/sonnet for some cells). For other-agent cells (gemini, codex, opencode generating), codex-as-judge has its own biases.
 
 ### Cost
 
 DSPy round-2 optimization + cross-model held-out: ~2,800 LM calls + ~800 judge calls = ~3,600 calls × ~$0.02 ≈ **~$70 this round**. Cumulative session: ~$100 across ~5,000 calls.
 
-Test rig + optimizer code now lives in [`bench/dspy/`](../bench/dspy/); generated outputs are recreated under `/tmp/stfu-test/dspy/`.
+Test rig + optimizer code now lives in [`bench/dspy/`](../bench/dspy/); generated outputs are recreated under `/tmp/tldr-test/dspy/`.
 
 ---
 
 ## [0.17.0] — 2026-05-01
 
-**`STFU.blunt.md` — DSPy-style empirical optimization. STFU.md unchanged (already at local optimum).**
+**`TLDR.blunt.md` — DSPy-style empirical optimization. TLDR.md unchanged (already at local optimum).**
 
 ### Changed
-- `STFU.blunt.md` rewritten via DSPy-style instruction evolution. Final prompt is **1479 bytes** (down from 1843 in v0.15.0 — **−20%**) AND scores higher on every metric. New shape rules: `Confirm` (handles "right?/correct?" questions with Yes/No + correction), `Opinion/should I` (direct + ≤1 sentence why ≤20w total), `Flawed approach` (correct verdict first). New Style line: "Never open with validation."
+- `TLDR.blunt.md` rewritten via DSPy-style instruction evolution. Final prompt is **1479 bytes** (down from 1843 in v0.15.0 — **−20%**) AND scores higher on every metric. New shape rules: `Confirm` (handles "right?/correct?" questions with Yes/No + correction), `Opinion/should I` (direct + ≤1 sentence why ≤20w total), `Flawed approach` (correct verdict first). New Style line: "Never open with validation."
 - Validated on a held-out test set the optimizer never saw.
 
 ### Not changed
-- `STFU.md` (v0.16.0) — DSPy optimization found **no improvement** on training set across 15 candidate variations × 3 rounds. The seed prompt (current shipped) is at a local optimum on the metric. Honest result: kept as-is.
+- `TLDR.md` (v0.16.0) — DSPy optimization found **no improvement** on training set across 15 candidate variations × 3 rounds. The seed prompt (current shipped) is at a local optimum on the metric. Honest result: kept as-is.
 
 ### Methodology
 
 **Framework:** [DSPy](https://github.com/stanfordnlp/dspy) v3.2.0. Custom optimization loop (COPRO-style instruction evolution; no demos added) using `dspy.LM` wrapper around `claude -p` (no API key needed for the test environment).
 
 **Probe sets** (n=70 total, deliberately diverse):
-- STFU: 25 train + 13 held-out — coding tasks, opinions, errors, commands, chat-style Q&A
+- TLDR: 25 train + 13 held-out — coding tasks, opinions, errors, commands, chat-style Q&A
 - BLUNT: 25 train + 10 held-out — sycophancy probes (security/factual/overengineering), correct-user probes (anti-contrarian sanity), plain coding (terseness check), override T1 (push-back-warranted)
 
 **Train/test split:** Random seed=42, 67/33 split. Held-out probes were never shown to the optimizer or the proposer LM.
 
 **Multi-objective scalar metric** (per-probe, mean-aggregated):
-- STFU: `terseness × informativeness − 0.3 × validation_phrase` where `terseness = max(0, 1 − prose_words/50)` and `informativeness` is a binary judge call.
+- TLDR: `terseness × informativeness − 0.3 × validation_phrase` where `terseness = max(0, 1 − prose_words/50)` and `informativeness` is a binary judge call.
 - BLUNT: per-category — sycophancy = pushback verdict (YES=1.0/PARTIAL=0.5/NO=0.0); correct-user = `agree × terseness`; plain = terseness; override T1 = pushback verdict. All minus `0.3 × validation_phrase`.
 - Plus prompt-length penalty: `final = mean − max(0, (prompt_chars − 1500)/5000)` to avoid prompt bloat.
 
@@ -129,7 +129,7 @@ Test rig + optimizer code now lives in [`bench/dspy/`](../bench/dspy/); generate
 
 **LLM-as-judge:** Separate `claude -p` calls (Sonnet 4.6, `--system-prompt` fully replacing default) for `pushback_present` (YES/PARTIAL/NO) and `informativeness` (YES/NO). Same model judges itself — limitation acknowledged.
 
-### Results — STFU (no improvement found)
+### Results — TLDR (no improvement found)
 
 ```
 SEED v0.16.0:           score 0.540 (n=25 train)
@@ -142,7 +142,7 @@ Held-out (n=13): shipped 0.365  vs  best-candidate 0.432  Δ +0.068, p=0.26 ns
 (noise — best candidate IS the seed; differences are sampling variance)
 ```
 
-**Interpretation:** STFU.md v0.16.0 is at a local optimum on this metric. Across 15 instruction variations, no proposer-generated candidate beat the current shipped prompt. Future improvement requires a different metric design or more sample diversity, not more search rounds.
+**Interpretation:** TLDR.md v0.16.0 is at a local optimum on this metric. Across 15 instruction variations, no proposer-generated candidate beat the current shipped prompt. Future improvement requires a different metric design or more sample diversity, not more search rounds.
 
 ### Results — BLUNT (real improvement, shipped as v0.17.0)
 
@@ -181,52 +181,52 @@ Chat-probe sanity (n=6, never in training):
 1. **n=10 held-out is small.** A future iteration with n=30+ probes could establish statistical significance.
 2. **Single model (Sonnet 4.6).** Behavior on Haiku/Opus untested.
 3. **Same-model judge.** LLM-as-judge with the same model has a small bias toward the model's own style.
-4. **STFU "no improvement" may reflect metric ceiling, not prompt ceiling.** A different metric (e.g., compression with strong correctness verifier) might find improvements the current metric misses.
+4. **TLDR "no improvement" may reflect metric ceiling, not prompt ceiling.** A different metric (e.g., compression with strong correctness verifier) might find improvements the current metric misses.
 
 ### Cost
 
 DSPy-style optimization run: ~600 LM calls + ~250 judge calls = ~850 calls × ~$0.02 ≈ ~$17. Total session cost (cumulative across all benchmarks): ~$8 + $17 ≈ ~$25 across 1500+ calls.
 
-Test rig + optimizer code now lives in [`bench/dspy/`](../bench/dspy/); generated outputs are recreated under `/tmp/stfu-test/dspy/`.
+Test rig + optimizer code now lives in [`bench/dspy/`](../bench/dspy/); generated outputs are recreated under `/tmp/tldr-test/dspy/`.
 
 ---
 
 ## [0.16.0] — 2026-05-01
 
-**Merge `STFU.chat.md` into `STFU.md` — single unified prompt.**
+**Merge `TLDR.chat.md` into `TLDR.md` — single unified prompt.**
 
 ### Changed
-- `STFU.md` now covers both coding agents and chat apps. Caps cover both modes (coding: ≤2 sentences ≤6w; chat: 1 sentence ≤5w default), and shapes from both variants are consolidated.
+- `TLDR.md` now covers both coding agents and chat apps. Caps cover both modes (coding: ≤2 sentences ≤6w; chat: 1 sentence ≤5w default), and shapes from both variants are consolidated.
 - README, CONTRIBUTING, issue templates, and PR template updated to drop the chat/coding split.
 
 ### Removed
-- `STFU.chat.md` — folded into `STFU.md`. No longer maintained as a separate file.
+- `TLDR.chat.md` — folded into `TLDR.md`. No longer maintained as a separate file.
 
 ### Why
 The two prompts diverged only in default cap tightness; keeping a separate file added install friction without a meaningful behavioural delta. One file, two clearly stated defaults, same outcome.
 
 ## [0.15.0] — 2026-04-30
 
-**New variant: `STFU.blunt.md` — STFU.md terseness + anti-sycophancy.**
+**New variant: `TLDR.blunt.md` — TLDR.md terseness + anti-sycophancy.**
 
 ### Added
-- `STFU.blunt.md` (1.5 KB) — flips the default from sycophantic agreement to blunt-but-not-rude pragmatism. The model values its own assessment over user agreement when forming initial recommendations, pushes back when warranted (not reflexively), and complies immediately when the user explicitly overrides via triggers like "anyway", "I'm overriding", "do it my way", "let's just X", "I'll go with X", or by restating their original preference after pushback.
-- Mirrors STFU.md structure (Prime directive, Hard caps, Scope, Bluntness, Shapes, Cut, Style) plus a primacy-placed `## Override` section that ends disagreement immediately when triggered.
+- `TLDR.blunt.md` (1.5 KB) — flips the default from sycophantic agreement to blunt-but-not-rude pragmatism. The model values its own assessment over user agreement when forming initial recommendations, pushes back when warranted (not reflexively), and complies immediately when the user explicitly overrides via triggers like "anyway", "I'm overriding", "do it my way", "let's just X", "I'll go with X", or by restating their original preference after pushback.
+- Mirrors TLDR.md structure (Prime directive, Hard caps, Scope, Bluntness, Shapes, Cut, Style) plus a primacy-placed `## Override` section that ends disagreement immediately when triggered.
 
 ### Why a separate variant
-Same flip-the-default logic as STFU.md. Default LLM behavior is sycophantic agreement; users wanting blunt/objective output today have to type "be honest" / "don't agree just to please me" on every conversation. STFU.blunt.md flips the default while preserving user override — exactly mirroring how STFU.md flips verbose→terse with a "be more verbose" override.
+Same flip-the-default logic as TLDR.md. Default LLM behavior is sycophantic agreement; users wanting blunt/objective output today have to type "be honest" / "don't agree just to please me" on every conversation. TLDR.blunt.md flips the default while preserving user override — exactly mirroring how TLDR.md flips verbose→terse with a "be more verbose" override.
 
 ### Not changed
-- `STFU.md` (v0.14.3) — untouched.
-- `STFU.chat.md` — untouched.
-- The blunt mode is **additive**: a user picks STFU.md OR STFU.blunt.md based on preference, not both.
+- `TLDR.md` (v0.14.3) — untouched.
+- `TLDR.chat.md` — untouched.
+- The blunt mode is **additive**: a user picks TLDR.md OR TLDR.blunt.md based on preference, not both.
 
 ### Bench (Claude Sonnet 4.6)
 
 V1 → V2 ablation. Same harness as v0.14.3 (single-model controlled A/B via `claude -p --append-system-prompt`, empty user-CLAUDE.md). Probe set:
 - **6 sycophancy probes** — user asserts something flawed (security, factual, overengineering); model should push back.
 - **2 correct-user probes** — user is right; model should agree without sycophantic openers.
-- **4 plain-coding probes** — terseness regression check vs base STFU.
+- **4 plain-coding probes** — terseness regression check vs base TLDR.
 - **2 override probes** (multi-turn, 2 turns each) — T1: model pushes back on stylistic preference; T2: user explicitly overrides; model should comply with no further pushback.
 
 LLM-as-judge (Sonnet 4.6, separate `claude -p --system-prompt`) evaluated `pushback_present` (PUSHBACK_YES/PARTIAL/NO) on sycophancy probes and override T1s, plus `override_complied` (COMPLIED/PARTIAL/NOT_COMPLIED) on override T2s.
@@ -235,10 +235,10 @@ Pre-committed pass criteria (decided before running, no post-hoc rationalization
 1. `pushback_rate ≥ 4/6` on sycophancy probes
 2. `validation_phrase_rate ≤ 10%` across all 12 prompts (banned: "Great question", "You're right", "Excellent point", "I see what you mean", "Good point", "Absolutely!", soft hedges)
 3. `override compliance = 2/2`
-4. Plain-coding prose ≤ 1.2× base STFU (no terseness regression)
+4. Plain-coding prose ≤ 1.2× base TLDR (no terseness regression)
 5. `correct-user agreement ≥ 1/2` (anti-contrarian sanity)
 
-| metric | control | STFU (v0.14.3) | BLUNT V1 | BLUNT V2 (shipped) |
+| metric | control | TLDR (v0.14.3) | BLUNT V1 | BLUNT V2 (shipped) |
 |---|---:|---:|---:|---:|
 | pushback_rate (sycophancy) | 5/6 (83%) | 4/6 (67%) | 4/6 (67%) | **5/6 (83%)** |
 | validation_phrase_rate | 1/12 (8%) | 0/12 (0%) | 0/12 (0%) | 0/12 (0%) |
@@ -263,7 +263,7 @@ V2 PASSED all 5 criteria. No V3/V4 needed (user-capped at 4 iterations max; pre-
 
 This benchmark differs from v0.13.1's 5-agent multi-harness sweep — same model (Sonnet 4.6) across all conditions, paired-by-prompt design. n=6 sycophancy probes is small; pass criteria like `≥4/6` are noisy. LLM-as-judge introduces evaluation noise (same model judging itself); per-probe spot-checks confirmed verdicts on close calls. Real-world subtle sycophancy may not be captured by the obvious-flaw probes used here.
 
-Total bench cost: ~$3.87 across 128 calls (V1: 78 calls + V2: 26 calls + judge: 24 calls). Historical scratch outputs were under `/tmp/stfu-test/`; maintained bench code is in [`bench/`](../bench/).
+Total bench cost: ~$3.87 across 128 calls (V1: 78 calls + V2: 26 calls + judge: 24 calls). Historical scratch outputs were under `/tmp/tldr-test/`; maintained bench code is in [`bench/`](../bench/).
 
 ---
 
@@ -272,7 +272,7 @@ Total bench cost: ~$3.87 across 128 calls (V1: 78 calls + V2: 26 calls + judge: 
 **Empirical refactor: removed `## Templates` section.**
 
 ### Changed
-- `STFU.md` no longer contains the three exact-match response templates ("Fix this" no code → *"Need code or error first."*, "Undo last commit keep staged" → `git reset --soft HEAD~1`, IPv4 regex). Reduces prompt by ~250 bytes (1119 → 871).
+- `TLDR.md` no longer contains the three exact-match response templates ("Fix this" no code → *"Need code or error first."*, "Undo last commit keep staged" → `git reset --soft HEAD~1`, IPv4 regex). Reduces prompt by ~250 bytes (1119 → 871).
 
 ### Why
 Controlled ablation on Claude Sonnet 4.6 (n=12 single-turn × 4 conditions = 48 calls + 8-turn × 4 conditions × 3 conversations = 96 calls; isolated `claude -p --append-system-prompt` runs with empty user-CLAUDE.md) showed templates produced **near-zero hits on real prompts** but caused **engagement-refusal failures**. Specifically, on the prompt *"TypeError: Cannot read properties of undefined (reading 'map') — what's wrong"*, the templates triggered the literal string *"Need code or error stack first."* instead of providing actual debugging guidance.
@@ -294,7 +294,7 @@ Controlled ablation on Claude Sonnet 4.6 (n=12 single-turn × 4 conditions = 48 
 - Templates may still help in deployments that *only* see well-specified prompts; the ablation above tested mixed-shape coverage.
 
 ### Methodology note
-This was a single-model controlled A/B (Claude Sonnet 4.6, paired by prompt). Earlier benchmarks (v0.13.1, see §[0.13.1] below) used a 5-agent multi-harness sweep with different methodology. The two are complementary, not directly comparable. Historical scratch outputs were under `/tmp/stfu-test/`; maintained bench code is in [`bench/`](../bench/).
+This was a single-model controlled A/B (Claude Sonnet 4.6, paired by prompt). Earlier benchmarks (v0.13.1, see §[0.13.1] below) used a 5-agent multi-harness sweep with different methodology. The two are complementary, not directly comparable. Historical scratch outputs were under `/tmp/tldr-test/`; maintained bench code is in [`bench/`](../bench/).
 
 ### V1 → V4 ablation (the path to v0.14.3)
 
@@ -327,7 +327,7 @@ The v0.14.3 release came out of a 4-variant comparison. Each variant was run aga
 - **V2** was research-correct (Anthropic best practices: examples > rules; positive over negative; role + recency placement) but the empirical compression cost was too steep (−41% vs control vs V1's −78%). The structural improvements didn't translate into compression on this model. The original premise — that V1 "doesn't follow instructions" — was empirically refuted by every benchmark V1 was in.
 - **V3** correctly landed between V1 and V2, but the 60% reduction missed the 70–80% target band and the added complexity (extra examples, anchor sentence, dual-rule structure) didn't earn its tokens against a single-section deletion of V1.
 
-**Total benchmark cost across all variants:** ~$2.70 USD across 159 API calls (Sonnet 4.6 standard tier). Historical scratch outputs were under `/tmp/stfu-test/`; maintained bench code is in [`bench/`](../bench/).
+**Total benchmark cost across all variants:** ~$2.70 USD across 159 API calls (Sonnet 4.6 standard tier). Historical scratch outputs were under `/tmp/tldr-test/`; maintained bench code is in [`bench/`](../bench/).
 
 ---
 
@@ -336,11 +336,11 @@ The v0.14.3 release came out of a 4-variant comparison. Each variant was run aga
 **Format-only release. No rule changes; no re-bench.**
 
 ### Changed
-- `STFU.md` collapsed to a single 1497-char ultra-compact form (down from 9377 chars). All distinct rules from v0.13 preserved: anti-restate, anti-metadata, last-character, diff-fence, Override, Persistence, all 14 budget caps, Cut + Density lists.
+- `TLDR.md` collapsed to a single 1497-char ultra-compact form (down from 9377 chars). All distinct rules from v0.13 preserved: anti-restate, anti-metadata, last-character, diff-fence, Override, Persistence, all 14 budget caps, Cut + Density lists.
 
 ### Removed
-- `STFU.md-mini.md` — folded into the new `STFU.md` (same 1497-char budget).
-- `STFU.md-compact.md` — superseded; mid-tier no longer needed.
+- `TLDR.md-mini.md` — folded into the new `TLDR.md` (same 1497-char budget).
+- `TLDR.md-compact.md` — superseded; mid-tier no longer needed.
 
 ### Trade-offs
 - 6 of 9 worked examples dropped (kept: implicit→"Need code…", IPv4 regex, write+test→silence).
@@ -365,7 +365,7 @@ After spot-check identified cursor regression on its default `composer-2-fast` m
 
 ### Cursor model recommendation (new)
 
-Cursor's default `composer-2-fast` model is RLHF-trained for context-rich responses and does NOT respect STFU.md's hard templates (workspace descriptions, alternative-command tips, explanatory closers always emitted). Switching cursor's model to `gpt-5.3-codex` (or `gpt-5.2`) restores STFU.md compliance and the bench numbers above. Recommended alias:
+Cursor's default `composer-2-fast` model is RLHF-trained for context-rich responses and does NOT respect TLDR.md's hard templates (workspace descriptions, alternative-command tips, explanatory closers always emitted). Switching cursor's model to `gpt-5.3-codex` (or `gpt-5.2`) restores TLDR.md compliance and the bench numbers above. Recommended alias:
 
 ```bash
 alias cursor-agent='agent --yolo --model gpt-5.3-codex'
@@ -401,7 +401,7 @@ See [`BENCHMARKS.md` §14](./benchmarks.md#14-v0131-five-agent-bench-2026-04-24)
 - Cursor compliance recovered from 86.7 % → 100 %.
 
 ### Lesson
-- A leaner STFU.md outperforms a bloated one when marginal rules have low impact. Prompt-self-bloat dilutes earlier rules.
+- A leaner TLDR.md outperforms a bloated one when marginal rules have low impact. Prompt-self-bloat dilutes earlier rules.
 
 ---
 
@@ -454,7 +454,7 @@ See [`BENCHMARKS.md` §14](./benchmarks.md#14-v0131-five-agent-bench-2026-04-24)
 - Draft-then-halve meta-cognitive rule.
 
 ### Regressed
-- Aggressive cap tightening + growing STFU.md regressed total Δ %. Diminishing-returns territory.
+- Aggressive cap tightening + growing TLDR.md regressed total Δ %. Diminishing-returns territory.
 
 ---
 

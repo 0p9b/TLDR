@@ -3,67 +3,67 @@
     {
       "harness": "claude",
       "baseline_tok": 2497,
-      "stfu_tok": 1616,
+      "tldr_tok": 1616,
       "reduction_pct": 35.28233880656788
     },
     {
       "harness": "codex",
       "baseline_tok": 11414,
-      "stfu_tok": 22319,
+      "tldr_tok": 22319,
       "reduction_pct": -95.5405642193797
     },
     {
       "harness": "copilot",
       "baseline_tok": 81,
-      "stfu_tok": 719,
+      "tldr_tok": 719,
       "reduction_pct": -787.6543209876544
     },
     {
       "harness": "droid",
       "baseline_tok": 1182,
-      "stfu_tok": 897,
+      "tldr_tok": 897,
       "reduction_pct": 24.111675126903553
     },
     {
       "harness": "hermes",
       "baseline_tok": 5,
-      "stfu_tok": 314,
+      "tldr_tok": 314,
       "reduction_pct": -6180
     },
     {
       "harness": "opencode",
       "baseline_tok": 50,
-      "stfu_tok": 929,
+      "tldr_tok": 929,
       "reduction_pct": -1757.9999999999998
     },
     {
       "harness": "openclaw",
       "baseline_tok": 102,
-      "stfu_tok": 410,
+      "tldr_tok": 410,
       "reduction_pct": -301.96078431372547
     },
     {
       "harness": "pi",
       "baseline_tok": 10,
-      "stfu_tok": 295,
+      "tldr_tok": 295,
       "reduction_pct": -2850
     },
     {
       "harness": "cline",
       "baseline_tok": 0,
-      "stfu_tok": 1156,
+      "tldr_tok": 1156,
       "reduction_pct": 0
     },
     {
       "harness": "agent",
       "baseline_tok": 0,
-      "stfu_tok": 162,
+      "tldr_tok": 162,
       "reduction_pct": 0
     },
     {
       "harness": "gemini",
       "baseline_tok": 168,
-      "stfu_tok": 611,
+      "tldr_tok": 611,
       "reduction_pct": -263.6904761904762
     }
   ],

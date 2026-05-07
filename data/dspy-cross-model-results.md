@@ -6,10 +6,10 @@ Last run: 2026-05-01. Test rig at `bench/dspy/`.
 
 - **Generator agents (5):** claude (Sonnet via `claude -p`), codex (GPT-5 via `codex exec`), cursor-agent (sonnet via `cursor-agent --print`), gemini (gemini-cli), opencode (kimi-k2.6 via `opencode run`).
 - **Independent judge:** codex. Different model family from claude → eliminates self-bias.
-- **Held-out probes:** n=32 per variant (BLUNT and STFU), never seen by the optimizer.
+- **Held-out probes:** n=32 per variant (BLUNT and TLDR), never seen by the optimizer.
 - **Method:** Generation via prepend-to-user-message (uniform across agents that lack system-prompt injection). Judge via separate `codex exec` calls with verdict format constraints.
 
-## STFU (regular) — no improvement found, both runs
+## TLDR (regular) — no improvement found, both runs
 
 Two independent DSPy optimization runs:
 
@@ -22,9 +22,9 @@ Across 33 distinct candidate prompts proposed by the meta-LM at two different sa
 
 This is interpreted as: the v0.16.0 prompt is at a local optimum on this metric. The remaining ~50% score gap to a hypothetical "perfect" 1.0 represents the floor of necessary informative prose for explanation/opinion/concept questions — which the metric correctly does not penalize as bloat.
 
-### STFU cross-model held-out (n=32 × 5 agents = 160 cells, no improvement to compare)
+### TLDR cross-model held-out (n=32 × 5 agents = 160 cells, no improvement to compare)
 
-Since STFU optimized = STFU shipped (v0.16.0), the cross-model run is a robustness check rather than a comparison. Mean prose words per agent:
+Since TLDR optimized = TLDR shipped (v0.16.0), the cross-model run is a robustness check rather than a comparison. Mean prose words per agent:
 
 | agent | mean prose words | val_rate |
 |---|---:|---:|
@@ -139,14 +139,14 @@ The honest interpretation: v0.18.0 is empirically better on cross-model average;
 - `bench/dspy/cross_model_analyze.py` — runs codex-judge + paired t-tests
 - `bench/dspy/expanded_corpus.py` — generates the probe splits
 
-Outputs land in `/tmp/stfu-test/dspy/` (excluded from this repo to keep size down — re-run the scripts to regenerate).
+Outputs land in `/tmp/tldr-test/dspy/` (excluded from this repo to keep size down — re-run the scripts to regenerate).
 
 ## Honest limitations
 
 1. **n=32 per cell** is enough for medium-large effects (Cohen's d ≥ 0.5) but not small ones. Many pairwise comparisons land in p=0.10–0.50.
 2. **Cross-model uses prepend-to-user**, not memory-file injection. Differences vs deployment unknown.
 3. **Codex-as-judge** has its own bias. For non-codex generations the bias is one-way (judge consistent across all generators).
-4. **STFU "no improvement"** may reflect metric ceiling, not prompt ceiling. A different metric design might reveal improvements this metric misses.
+4. **TLDR "no improvement"** may reflect metric ceiling, not prompt ceiling. A different metric design might reveal improvements this metric misses.
 5. **Synthetic probes** — real-world subtle tonal sycophancy not captured. The prompts catch obvious flaws (security, factual, overengineering); they don't catch "the model is being subtly too agreeable in nuanced disagreements."
 
 Real-world observation week is the next-best validation step beyond synthetic. Use the prompts in actual sessions for ~1 week and check if the behavior holds.

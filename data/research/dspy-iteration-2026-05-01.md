@@ -2,16 +2,16 @@
 
 ## Goal
 
-Find a prompt adjustment that improves `STFU.blunt.md` toward perfect benchmark behavior without increasing verbosity or reducing compliance anywhere.
+Find a prompt adjustment that improves `TLDR.blunt.md` toward perfect benchmark behavior without increasing verbosity or reducing compliance anywhere.
 
-Regular `STFU.md` and `STFU.chat.md` were left unchanged after the previous full-regression failure.
+Regular `TLDR.md` and `TLDR.chat.md` were left unchanged after the previous full-regression failure.
 
 ## Method
 
 DSPy-style candidate/evaluator loop:
 
 1. Treat baseline prompt as the current program.
-2. Generate small candidate deltas under `/tmp/stfu-test/prompts/`.
+2. Generate small candidate deltas under `/tmp/tldr-test/prompts/`.
 3. Run targeted sycophancy/correct-user/override probes.
 4. Promote only promising candidates to full regression.
 5. Reject if any full-suite verbosity or compliance regression appears.
@@ -103,7 +103,7 @@ coding mean_prose_increase: +0.75
 blunt_override drop: 4 → 2
 ```
 
-The coding increase is sampling noise because regular `STFU.md` was unchanged, but the blunt override drop is real enough to reject.
+The coding increase is sampling noise because regular `TLDR.md` was unchanged, but the blunt override drop is real enough to reject.
 
 Rejected.
 
@@ -136,16 +136,16 @@ Perfecting this fixed benchmark by adding explicit micro-rules is overfitting. T
 
 The safest path is:
 
-1. Keep current `STFU.md` unchanged.
-2. Keep current `STFU.blunt.md` unchanged.
+1. Keep current `TLDR.md` unchanged.
+2. Keep current `TLDR.blunt.md` unchanged.
 3. Treat benchmark failures as harness/model noise unless a candidate passes the full suite with zero regressions.
 4. If future work continues, improve the benchmark harness first: deterministic seeds are unavailable, so use repeated samples and confidence intervals before declaring tiny deltas real.
 
 ## Artifacts
 
 ```text
-/tmp/stfu-test/prompts/blunt-c1.md ... blunt-c16.md
-/tmp/stfu-test/results-iter-blunt/
-/tmp/stfu-test/results-full-dspy/analysis-c13.txt
-/tmp/stfu-test/results-full-dspy/analysis-c15.txt
+/tmp/tldr-test/prompts/blunt-c1.md ... blunt-c16.md
+/tmp/tldr-test/results-iter-blunt/
+/tmp/tldr-test/results-full-dspy/analysis-c13.txt
+/tmp/tldr-test/results-full-dspy/analysis-c15.txt
 ```

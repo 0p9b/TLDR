@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// analyze.js — read fullbench/{baseline,stfu}/*.log, compute per-cell + per-harness metrics.
+// analyze.js — read fullbench/{baseline,tldr}/*.log, compute per-cell + per-harness metrics.
 const fs = require('fs');
 const path = require('path');
 const { clean, tok } = require('./tokenize');
@@ -25,7 +25,7 @@ const cells = []; // {cond, h, q, trial, tokens, bytes}
 for (const h of HARNESSES) {
   for (const q of QS) {
     for (let t = 1; t <= N_TRIALS; t++) {
-      for (const cond of ['baseline', 'stfu']) {
+      for (const cond of ['baseline', 'tldr']) {
         const r = readCell(cond, h, q, t);
         if (r) cells.push({ cond, h, q, trial: t, ...r });
       }
@@ -37,14 +37,14 @@ for (const h of HARNESSES) {
 const summary = {};
 for (const h of HARNESSES) {
   const baseCells = cells.filter(c => c.h === h && c.cond === 'baseline' && c.tokens > 0);
-  const stfuCells = cells.filter(c => c.h === h && c.cond === 'stfu' && c.tokens > 0);
+  const tldrCells = cells.filter(c => c.h === h && c.cond === 'tldr' && c.tokens > 0);
   const baseSum = baseCells.reduce((s,c) => s + c.tokens, 0);
-  const stfuSum = stfuCells.reduce((s,c) => s + c.tokens, 0);
-  const reduction = baseSum > 0 ? (baseSum - stfuSum) / baseSum * 100 : 0;
+  const tldrSum = tldrCells.reduce((s,c) => s + c.tokens, 0);
+  const reduction = baseSum > 0 ? (baseSum - tldrSum) / baseSum * 100 : 0;
   // compliance: cells under cap
   let pass = 0, totalT = 0;
   for (const q of QS) {
-    const trials = cells.filter(c => c.h === h && c.q === q && c.cond === 'stfu' && c.tokens > 0);
+    const trials = cells.filter(c => c.h === h && c.q === q && c.cond === 'tldr' && c.tokens > 0);
     if (!trials.length) continue;
     const meanTok = trials.reduce((s,c) => s + c.tokens, 0) / trials.length;
     totalT++;
@@ -52,13 +52,13 @@ for (const h of HARNESSES) {
   }
   summary[h] = {
     baseline_tok: baseSum,
-    stfu_tok: stfuSum,
+    tldr_tok: tldrSum,
     reduction_pct: reduction,
     compliance_n: pass,
     compliance_total: totalT,
     compliance_pct: totalT > 0 ? pass / totalT * 100 : 0,
     base_cells: baseCells.length,
-    stfu_cells: stfuCells.length,
+    tldr_cells: tldrCells.length,
   };
 }
 
@@ -67,7 +67,7 @@ const matrix = {};
 for (const h of HARNESSES) {
   matrix[h] = {};
   for (const q of QS) {
-    const trials = cells.filter(c => c.h === h && c.q === q && c.cond === 'stfu' && c.tokens > 0);
+    const trials = cells.filter(c => c.h === h && c.q === q && c.cond === 'tldr' && c.tokens > 0);
     if (!trials.length) { matrix[h][q] = null; continue; }
     const meanTok = trials.reduce((s,c) => s + c.tokens, 0) / trials.length;
     matrix[h][q] = { mean_tok: meanTok, cap: CAPS[q], pass: meanTok <= CAPS[q] };
@@ -76,11 +76,11 @@ for (const h of HARNESSES) {
 
 // Print table
 console.log('# Phase 2 results — per-harness reduction + compliance\n');
-console.log('| harness | base tok | stfu tok | reduction | compliance | base/stfu cells |');
+console.log('| harness | base tok | tldr tok | reduction | compliance | base/tldr cells |');
 console.log('|---|---:|---:|---:|---:|---:|');
 for (const h of HARNESSES) {
   const s = summary[h];
-  console.log(`| ${h.padEnd(8)} | ${s.baseline_tok} | ${s.stfu_tok} | ${s.reduction_pct.toFixed(1)}% | ${s.compliance_n}/${s.compliance_total} (${s.compliance_pct.toFixed(0)}%) | ${s.base_cells}/${s.stfu_cells} |`);
+  console.log(`| ${h.padEnd(8)} | ${s.baseline_tok} | ${s.tldr_tok} | ${s.reduction_pct.toFixed(1)}% | ${s.compliance_n}/${s.compliance_total} (${s.compliance_pct.toFixed(0)}%) | ${s.base_cells}/${s.tldr_cells} |`);
 }
 
 // Find failing cells for A/B targeting
@@ -101,7 +101,7 @@ fs.writeFileSync(path.join('/home/personal/bench-v14/results', 'failing.json'), 
 
 // charts.json (for make-charts.js)
 const reduction_per_harness = HARNESSES.map(h => ({
-  harness: h, baseline_tok: summary[h].baseline_tok, stfu_tok: summary[h].stfu_tok, reduction_pct: summary[h].reduction_pct
+  harness: h, baseline_tok: summary[h].baseline_tok, tldr_tok: summary[h].tldr_tok, reduction_pct: summary[h].reduction_pct
 }));
 const compliance_matrix = {
   qs: QS,

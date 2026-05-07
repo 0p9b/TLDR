@@ -3,7 +3,7 @@
 .title{font-size:18px;font-weight:600}
 .gridline{stroke:#e5e7eb;stroke-width:1}
 .bar-base{fill:#ef4444}
-.bar-stfu{fill:#22c55e}
+.bar-tldr{fill:#22c55e}
 .label{fill:#1f2937}
 .label-sm{fill:#6b7280;font-size:11px}
 .pass{fill:#22c55e}
@@ -11,7 +11,7 @@
 .warn{fill:#f59e0b}
 .gone{fill:#9ca3af}
 </style>
-<text x="450" y="24" text-anchor="middle" class="title">STFU.md char-count per version</text>
+<text x="450" y="24" text-anchor="middle" class="title">TLDR.md char-count per version</text>
 <line x1="80" x2="860" y1="300" y2="300" class="gridline"/>
 <text x="72" y="304" text-anchor="end" class="label-sm">0</text>
 <line x1="80" x2="860" y1="253.4644730336316" y2="253.4644730336316" class="gridline"/>

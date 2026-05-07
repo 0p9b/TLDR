@@ -1,13 +1,13 @@
 cff-version: 1.2.0
-message: "If you use STFU.md in research, benchmarks, or production deployments, please cite it as below."
-title: "STFU.md — Shut The Flip Up"
+message: "If you use TLDR.md in research, benchmarks, or production deployments, please cite it as below."
+title: "TLDR.md — Too Long Didn't Read"
 abstract: "A 1.5 KB single-file system prompt that compresses AI coding-agent prose output by 77–87% across 5 production agent CLIs (Claude Code, Google Gemini, Factory Droid, Pi Coding Agent, Cursor Agent) at 100% compliance with hard prompt-shape caps (v0.13.1 5-agent × 5-prompt re-bench). Inspired by caveman (Brussee, 2026); diverges by replacing the caveman persona with a senior-engineer register."
 type: software
 authors:
   - alias: jqbit
     affiliation: Independent
-url: "https://github.com/jqbit/STFU.md"
-repository-code: "https://github.com/jqbit/STFU.md"
+url: "https://github.com/jqbit/TLDR.md"
+repository-code: "https://github.com/jqbit/TLDR.md"
 license: MIT
 version: "0.13.1"
 date-released: "2026-04-24"

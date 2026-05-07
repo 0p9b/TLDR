@@ -16,7 +16,7 @@ function head(w, h, title) {
 .title{font-size:18px;font-weight:600}
 .gridline{stroke:#e5e7eb;stroke-width:1}
 .bar-base{fill:#ef4444}
-.bar-stfu{fill:#22c55e}
+.bar-tldr{fill:#22c55e}
 .label{fill:#1f2937}
 .label-sm{fill:#6b7280;font-size:11px}
 .pass{fill:#22c55e}
@@ -33,22 +33,22 @@ function reductionPerHarness() {
   const rows = data.reduction_per_harness;
   const W = 980, H = 80 + rows.length * 44 + 60;
   const LEFT = 130, RIGHT = W - 60;
-  const maxTok = Math.max(1, ...rows.flatMap(r => [r.baseline_tok, r.stfu_tok]));
+  const maxTok = Math.max(1, ...rows.flatMap(r => [r.baseline_tok, r.tldr_tok]));
   const scale = (RIGHT - LEFT) / (maxTok * 1.05);
-  let s = head(W, H, 'STFU.md v0.14 — prose tokens per harness (baseline vs STFU.md)');
+  let s = head(W, H, 'TLDR.md v0.14 — prose tokens per harness (baseline vs TLDR.md)');
   rows.forEach((r, i) => {
     const y = 60 + i * 44;
     const bw = r.baseline_tok * scale;
-    const tw = r.stfu_tok * scale;
+    const tw = r.tldr_tok * scale;
     s += `<text x="${LEFT - 8}" y="${y + 14}" text-anchor="end" class="label">${esc(r.harness)}</text>\n`;
     s += `<rect x="${LEFT}" y="${y}" width="${bw}" height="14" class="bar-base"/>\n`;
-    s += `<rect x="${LEFT}" y="${y + 18}" width="${tw}" height="14" class="bar-stfu"/>\n`;
+    s += `<rect x="${LEFT}" y="${y + 18}" width="${tw}" height="14" class="bar-tldr"/>\n`;
     s += `<text x="${LEFT + bw + 4}" y="${y + 12}" class="label-sm">${r.baseline_tok}</text>\n`;
-    s += `<text x="${LEFT + tw + 4}" y="${y + 30}" class="label-sm">${r.stfu_tok} (-${r.reduction_pct.toFixed(0)}%)</text>\n`;
+    s += `<text x="${LEFT + tw + 4}" y="${y + 30}" class="label-sm">${r.tldr_tok} (-${r.reduction_pct.toFixed(0)}%)</text>\n`;
   });
   s += `<g transform="translate(${LEFT}, ${H - 36})">
   <rect x="0" y="0" width="14" height="14" class="bar-base"/><text x="20" y="12" class="label-sm">baseline</text>
-  <rect x="100" y="0" width="14" height="14" class="bar-stfu"/><text x="120" y="12" class="label-sm">STFU.md</text>
+  <rect x="100" y="0" width="14" height="14" class="bar-tldr"/><text x="120" y="12" class="label-sm">TLDR.md</text>
   </g>`;
   fs.writeFileSync(path.join(OUT, 'reduction-per-harness.svg'), s + tail);
 }
@@ -59,7 +59,7 @@ function complianceHeatmap() {
   const CELL = 44, LEFT = 130, TOP = 80;
   const W = LEFT + CELL * qs.length + 30;
   const H = TOP + CELL * rows.length + 40;
-  let s = head(W, H, 'STFU.md v0.14 — compliance heatmap (cell-level)');
+  let s = head(W, H, 'TLDR.md v0.14 — compliance heatmap (cell-level)');
   qs.forEach((q, j) => {
     s += `<text x="${LEFT + CELL * j + CELL/2}" y="${TOP - 12}" text-anchor="middle" class="label-sm">${esc(q)}</text>\n`;
   });
@@ -83,7 +83,7 @@ function progression() {
   const LEFT = 70, RIGHT = W - 40, TOP = 60, BOTTOM = H - 60;
   const xs = i => LEFT + (RIGHT - LEFT) * i / Math.max(1, pts.length - 1);
   const yRed = v => BOTTOM - (BOTTOM - TOP) * v / 100;
-  let s = head(W, H, 'STFU.md progression — mean reduction % per version');
+  let s = head(W, H, 'TLDR.md progression — mean reduction % per version');
   for (let v = 0; v <= 100; v += 20) {
     s += `<line x1="${LEFT}" x2="${RIGHT}" y1="${yRed(v)}" y2="${yRed(v)}" class="gridline"/>\n`;
     s += `<text x="${LEFT - 8}" y="${yRed(v) + 4}" text-anchor="end" class="label-sm">${v}%</text>\n`;
@@ -108,7 +108,7 @@ function charCount() {
   const step = (RIGHT - LEFT) / pts.length;
   const BW = step * 0.7;
   const y = v => BOTTOM - (BOTTOM - TOP) * v / maxC;
-  let s = head(W, H, 'STFU.md char-count per version');
+  let s = head(W, H, 'TLDR.md char-count per version');
   for (let v = 0; v <= maxC; v += 2000) {
     s += `<line x1="${LEFT}" x2="${RIGHT}" y1="${y(v)}" y2="${y(v)}" class="gridline"/>\n`;
     s += `<text x="${LEFT - 8}" y="${y(v) + 4}" text-anchor="end" class="label-sm">${v}</text>\n`;
