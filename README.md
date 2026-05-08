@@ -68,10 +68,12 @@ Current prompt sizes:
 
 | File | Bytes |
 |---|---:|
-| [`TLDR.md`](TLDR.md) | 1,345 |
-| [`TLDR.blunt.md`](TLDR.blunt.md) | 1,640 |
+| [`TLDR.md`](TLDR.md) | 1,607 |
+| [`TLDR.blunt.md`](TLDR.blunt.md) | 1,868 |
 
 Headline results:
+
+Note: results below were measured on the previous shipped prompts. Re-run benchmarks after adopting the current drafts.
 
 - **TLDR.md v0.13.1:** −82.1% total prose reduction, 100% average compliance (5 agents × 5 prompts).
 - **TLDR.md v0.14.3:** −80.0% single-turn prose reduction; −75.1% across 8-turn coding conversations; no significant decay.
