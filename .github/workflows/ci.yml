@@ -39,6 +39,13 @@ jobs:
       - name: Check Python syntax
         run: python3 -m py_compile bench/dspy/*.py bench/check-md-links.py bench/check-doc-sync.py
 
+      - name: Check install script
+        run: |
+          bash -n install.sh
+          bash install.sh regular --dry-run
+          bash install.sh blunt --dry-run
+          bash install.sh blunt --dry-run --with-hermes
+
       - name: Check Markdown links
         run: python3 bench/check-md-links.py
 

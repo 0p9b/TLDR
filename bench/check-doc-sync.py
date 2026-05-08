@@ -8,6 +8,7 @@ README = ROOT / "README.md"
 AGENT_LOCATIONS = ROOT / "data" / "agent-locations.md"
 TLDR = ROOT / "TLDR.md"
 BLUNT = ROOT / "TLDR.blunt.md"
+INSTALL = ROOT / "install.sh"
 
 
 def fail(msg: str) -> None:
@@ -47,6 +48,17 @@ for needle in [
     "- greet: 1 word",
 ]:
     expect_contains(readme, needle, "README current defaults")
+
+# One-line install docs must point at the shipped installer.
+if not INSTALL.exists():
+    fail("install.sh missing from repo root")
+for text, label in [
+    (readme, "README one-line install"),
+    (agent_locations, "agent-locations one-line install"),
+]:
+    expect_contains(text, "install.sh | bash -s -- regular", label)
+    expect_contains(text, "install.sh | bash -s -- blunt", label)
+    expect_contains(text, "--with-hermes", label)
 
 # Hermes docs must point to SOUL.md and use a merge-safe verification marker.
 hermes_row = next(

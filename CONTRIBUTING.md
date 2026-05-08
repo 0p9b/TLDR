@@ -70,6 +70,10 @@ python3 -m json.tool data/benchmarks-summary.json >/dev/null
 python3 -m json.tool data/benchmarks-matrix.json >/dev/null
 python3 -m json.tool data/visualizations/charts.json >/dev/null
 python3 -m py_compile bench/dspy/*.py bench/check-md-links.py bench/check-doc-sync.py
+bash -n install.sh
+bash install.sh regular --dry-run
+bash install.sh blunt --dry-run
+bash install.sh blunt --dry-run --with-hermes
 python3 bench/check-md-links.py
 python3 bench/check-doc-sync.py
 ```

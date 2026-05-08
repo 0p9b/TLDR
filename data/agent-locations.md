@@ -21,9 +21,27 @@ Where to drop `TLDR.md` (or `TLDR.blunt.md`) for each supported coding-agent CLI
 
 The file is just the prompt by itself — no merge, no append, except Hermes where you usually merge it into the existing `SOUL.md` persona.
 
-## ⚡ Fastest install — pick your agent, run one line
+## ⚡ Fastest install — one line
 
-Each command below downloads `TLDR.md` straight from GitHub and writes it to the right path. No clone. No script. Just curl.
+No clone. No editing. Installs to the 7 standard coding-agent locations.
+
+```bash
+# Regular
+curl -fsSL https://raw.githubusercontent.com/jqbit/TLDR.md/main/install.sh | bash -s -- regular
+
+# Blunt
+curl -fsSL https://raw.githubusercontent.com/jqbit/TLDR.md/main/install.sh | bash -s -- blunt
+```
+
+Optional: include Hermes too.
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/jqbit/TLDR.md/main/install.sh | bash -s -- blunt --with-hermes
+```
+
+`--with-hermes` preserves an existing `~/.hermes/SOUL.md`, makes a backup, and appends or updates a managed TLDR block. Use `--overwrite-hermes` only if you want prompt-only `SOUL.md`.
+
+## Manual install
 
 ### Pick your variant
 

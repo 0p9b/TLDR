@@ -14,46 +14,33 @@ TLDR.md makes AI assistants answer directly: less filler, less fake enthusiasm, 
 | [`TLDR.md`](TLDR.md) | You want terse output. Start here. |
 | [`TLDR.blunt.md`](TLDR.blunt.md) | You want terse output plus less sycophancy / more pushback when warranted. |
 
-## Fastest setup
+## One-line install
 
-### 1) Pick a variant
+No clone. No editing. The install script writes the chosen prompt to the 7 standard coding-agent locations.
 
 ```bash
 # Regular
-TLDR_URL=https://raw.githubusercontent.com/jqbit/TLDR.md/main/TLDR.md
+curl -fsSL https://raw.githubusercontent.com/jqbit/TLDR.md/main/install.sh | bash -s -- regular
 
 # Blunt
-TLDR_URL=https://raw.githubusercontent.com/jqbit/TLDR.md/main/TLDR.blunt.md
+curl -fsSL https://raw.githubusercontent.com/jqbit/TLDR.md/main/install.sh | bash -s -- blunt
 ```
 
-### 2) Install to the 7 standard coding-agent locations
+Optional: include Hermes too.
 
 ```bash
-: ${TLDR_URL:=https://raw.githubusercontent.com/jqbit/TLDR.md/main/TLDR.md}
-
-for d in ~/.claude/CLAUDE.md ~/.gemini/GEMINI.md ~/.codex/AGENTS.md \
-         ~/AGENTS.md ~/.config/opencode/AGENTS.md \
-         ~/.factory/AGENTS.md ~/.pi/agent/AGENTS.md; do
-  mkdir -p "$(dirname "$d")" && curl -fsSL "$TLDR_URL" -o "$d"
-done
+curl -fsSL https://raw.githubusercontent.com/jqbit/TLDR.md/main/install.sh | bash -s -- blunt --with-hermes
 ```
 
-### 3) Hermes uses `~/.hermes/SOUL.md`
+`--with-hermes` preserves an existing `~/.hermes/SOUL.md`, makes a backup, and appends or updates a managed TLDR block. Use `--overwrite-hermes` only if you want prompt-only `SOUL.md`.
 
-```bash
-mkdir -p ~/.hermes
-curl -fsSL "$TLDR_URL" -o ~/.hermes/SOUL.md
-```
+Prefer to inspect the commands instead of piping to bash? Use the manual copy/paste setup in [`data/agent-locations.md`](data/agent-locations.md).
 
-If you already have a Hermes persona, merge TLDR into `SOUL.md` instead of blindly replacing it.
-
-### 4) Chat apps
-
-Paste the file into custom instructions, project instructions, system prompt, or saved prompt.
-
-Need exact paths, per-agent notes, or Cursor/Hermes caveats? See [`data/agent-locations.md`](data/agent-locations.md).
+For chat apps or web UIs, paste the file into custom instructions, project instructions, system prompt, or a saved prompt.
 
 ## Verify
+
+The install script prints this automatically, but here is the manual check:
 
 ```bash
 for p in ~/.claude/CLAUDE.md ~/.gemini/GEMINI.md ~/.codex/AGENTS.md \

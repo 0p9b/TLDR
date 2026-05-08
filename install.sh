@@ -1,0 +1,233 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+  cat <<'EOF'
+Usage:
+  install.sh [regular|blunt] [--with-hermes] [--overwrite-hermes] [--dry-run]
+
+Examples:
+  install.sh regular
+  install.sh blunt
+  install.sh blunt --with-hermes
+  curl -fsSL https://raw.githubusercontent.com/jqbit/TLDR.md/main/install.sh | bash -s -- blunt
+
+Behavior:
+  - Installs the chosen prompt to the 7 standard coding-agent locations.
+  - --with-hermes updates ~/.hermes/SOUL.md too.
+  - If SOUL.md already exists, --with-hermes preserves it and appends or updates
+    a managed TLDR block instead of blindly overwriting the whole file.
+  - --overwrite-hermes replaces ~/.hermes/SOUL.md with the prompt only.
+EOF
+}
+
+VARIANT="regular"
+WITH_HERMES=0
+OVERWRITE_HERMES=0
+DRY_RUN=0
+
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    regular|tldr)
+      VARIANT="regular"
+      ;;
+    blunt|tldr.blunt|blunt.md)
+      VARIANT="blunt"
+      ;;
+    --with-hermes)
+      WITH_HERMES=1
+      ;;
+    --overwrite-hermes)
+      WITH_HERMES=1
+      OVERWRITE_HERMES=1
+      ;;
+    --dry-run)
+      DRY_RUN=1
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    *)
+      printf 'Unknown argument: %s\n\n' "$1" >&2
+      usage >&2
+      exit 1
+      ;;
+  esac
+  shift
+done
+
+PROMPT_NAME="TLDR.md"
+if [ "$VARIANT" = "blunt" ]; then
+  PROMPT_NAME="TLDR.blunt.md"
+fi
+
+RAW_BASE="https://raw.githubusercontent.com/jqbit/TLDR.md/main"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd || true)"
+LOCAL_PROMPT="${SCRIPT_DIR}/${PROMPT_NAME}"
+TMP_PROMPT=""
+PROMPT_PATH=""
+
+cleanup() {
+  if [ -n "$TMP_PROMPT" ] && [ -f "$TMP_PROMPT" ]; then
+    rm -f "$TMP_PROMPT"
+  fi
+}
+trap cleanup EXIT
+
+download_file() {
+  local url="$1"
+  local out="$2"
+  if command -v curl >/dev/null 2>&1; then
+    curl -fsSL "$url" -o "$out"
+  elif command -v wget >/dev/null 2>&1; then
+    wget -qO "$out" "$url"
+  else
+    printf 'Need curl or wget.\n' >&2
+    exit 1
+  fi
+}
+
+resolve_prompt() {
+  if [ -f "$LOCAL_PROMPT" ]; then
+    PROMPT_PATH="$LOCAL_PROMPT"
+    return
+  fi
+  TMP_PROMPT="$(mktemp)"
+  PROMPT_PATH="$TMP_PROMPT"
+  download_file "${RAW_BASE}/${PROMPT_NAME}" "$PROMPT_PATH"
+}
+
+write_standard_path() {
+  local target="$1"
+  if [ "$DRY_RUN" -eq 1 ]; then
+    printf 'DRY RUN  would write %s -> %s\n' "$PROMPT_NAME" "$target"
+    return
+  fi
+  mkdir -p "$(dirname "$target")"
+  cp "$PROMPT_PATH" "$target"
+  printf 'INSTALLED %s\n' "$target"
+}
+
+install_standard_locations() {
+  write_standard_path "$HOME/.claude/CLAUDE.md"
+  write_standard_path "$HOME/.gemini/GEMINI.md"
+  write_standard_path "$HOME/.codex/AGENTS.md"
+  write_standard_path "$HOME/AGENTS.md"
+  write_standard_path "$HOME/.config/opencode/AGENTS.md"
+  write_standard_path "$HOME/.factory/AGENTS.md"
+  write_standard_path "$HOME/.pi/agent/AGENTS.md"
+}
+
+install_hermes() {
+  local soul="$HOME/.hermes/SOUL.md"
+
+  if [ "$DRY_RUN" -eq 1 ]; then
+    if [ "$OVERWRITE_HERMES" -eq 1 ]; then
+      printf 'DRY RUN  would overwrite %s with %s\n' "$soul" "$PROMPT_NAME"
+    else
+      printf 'DRY RUN  would merge %s into %s\n' "$PROMPT_NAME" "$soul"
+    fi
+    return
+  fi
+
+  mkdir -p "$HOME/.hermes"
+
+  if [ "$OVERWRITE_HERMES" -eq 1 ]; then
+    cp "$PROMPT_PATH" "$soul"
+    printf 'INSTALLED %s\n' "$soul"
+    return
+  fi
+
+  if ! command -v python3 >/dev/null 2>&1; then
+    printf 'python3 required for --with-hermes merge mode.\n' >&2
+    exit 1
+  fi
+
+  python3 - "$soul" "$PROMPT_PATH" <<'PY'
+from pathlib import Path
+import shutil
+import sys
+from datetime import datetime
+
+soul = Path(sys.argv[1]).expanduser()
+prompt_path = Path(sys.argv[2])
+prompt = prompt_path.read_text(encoding="utf-8")
+start = "<!-- TLDR.MD START -->"
+end = "<!-- TLDR.MD END -->"
+prompt_body = prompt.rstrip("\n")
+
+if not soul.exists() or soul.read_text(encoding="utf-8").strip() == "":
+    soul.write_text(prompt, encoding="utf-8")
+    print(f"INSTALLED {soul}")
+    raise SystemExit(0)
+
+text = soul.read_text(encoding="utf-8")
+if prompt_body in text:
+    print(f"UNCHANGED {soul} already contains the current prompt block")
+    raise SystemExit(0)
+
+backup = soul.with_name(soul.name + ".bak." + datetime.now().strftime("%Y%m%d-%H%M%S-%f"))
+shutil.copy2(soul, backup)
+
+managed = f"{start}\n{prompt_body}\n{end}"
+
+if start in text and end in text and text.index(start) < text.index(end):
+    before, rest = text.split(start, 1)
+    _, after = rest.split(end, 1)
+    new_text = before.rstrip() + "\n\n" + managed
+    if after.strip():
+        new_text += "\n\n" + after.lstrip("\n")
+    else:
+        new_text += "\n"
+    soul.write_text(new_text, encoding="utf-8")
+    print(f"UPDATED {soul} (backup: {backup})")
+else:
+    new_text = text.rstrip() + "\n\n" + managed + "\n"
+    soul.write_text(new_text, encoding="utf-8")
+    print(f"MERGED {soul} (backup: {backup})")
+PY
+}
+
+verify_path() {
+  local target="$1"
+  if [ -f "$target" ] && grep -q '^# TLDR' "$target"; then
+    printf '✓ %s\n' "$target"
+  else
+    printf '✗ %s\n' "$target"
+  fi
+}
+
+verify_hermes() {
+  local soul="$HOME/.hermes/SOUL.md"
+  if grep -q 'target 3 words' "$soul" 2>/dev/null; then
+    printf '✓ %s\n' "$soul"
+  else
+    printf '✗ %s\n' "$soul"
+  fi
+}
+
+resolve_prompt
+install_standard_locations
+
+if [ "$WITH_HERMES" -eq 1 ]; then
+  install_hermes
+fi
+
+if [ "$DRY_RUN" -eq 1 ]; then
+  printf '\nDry run only; verification skipped.\n'
+  exit 0
+fi
+
+printf '\nVerification:\n'
+verify_path "$HOME/.claude/CLAUDE.md"
+verify_path "$HOME/.gemini/GEMINI.md"
+verify_path "$HOME/.codex/AGENTS.md"
+verify_path "$HOME/AGENTS.md"
+verify_path "$HOME/.config/opencode/AGENTS.md"
+verify_path "$HOME/.factory/AGENTS.md"
+verify_path "$HOME/.pi/agent/AGENTS.md"
+
+if [ "$WITH_HERMES" -eq 1 ]; then
+  verify_hermes
+fi
