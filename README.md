@@ -10,9 +10,10 @@ TLDR.md makes AI assistants answer directly: less filler, less fake enthusiasm, 
 ## Pick one
 
 | File | Use this if... |
-|---|---|
+|---|---
 | [`TLDR.md`](TLDR.md) | You want terse output. Start here. |
 | [`TLDR.blunt.md`](TLDR.blunt.md) | You want terse output plus less sycophancy / more pushback when warranted. |
+| [`TLDR.accurate.md`](TLDR.accurate.md) | You want accurate, complete answers without extreme brevity sacrificing precision. |
 
 ## One-line install
 
@@ -24,6 +25,9 @@ curl -fsSL https://raw.githubusercontent.com/jqbit/TLDR.md/main/install.sh | bas
 
 # Blunt
 curl -fsSL https://raw.githubusercontent.com/jqbit/TLDR.md/main/install.sh | bash -s -- blunt
+
+# Accurate
+curl -fsSL https://raw.githubusercontent.com/jqbit/TLDR.md/main/install.sh | bash -s -- accurate
 ```
 
 Optional: include Hermes too.
@@ -88,15 +92,17 @@ git reset --soft HEAD~1
 Current prompt sizes:
 
 | File | Bytes |
-|---|---:|
+|---|:---|
 | [`TLDR.md`](TLDR.md) | 1,165 |
 | [`TLDR.blunt.md`](TLDR.blunt.md) | 1,487 |
+| [`TLDR.accurate.md`](TLDR.accurate.md) | 1,627 |
 
 These benchmark results were measured on earlier shipped prompts. The current prompt files were later tightened to a 1-sentence / 3-word-default / 6-word-max profile and have not yet been rerun through the full bench.
 
 - **TLDR.md v0.13.1:** −82.1% total prose reduction, 100% average compliance (5 agents × 5 prompts).
 - **TLDR.md v0.14.3:** −80.0% single-turn prose reduction; −75.1% across 8-turn coding conversations; no significant decay.
 - **TLDR.blunt.md v0.18.0:** DSPy round-2 + 5-agent cross-model validation; avg pushback 0.848, correct-user agreement 0.912, mean prose 11.0 words, validation phrases 0%.
+- **TLDR.accurate.md v0.1.0:** Accuracy-first variant; prioritizes correctness and detail where brevity would harm precision.
 
 Full historical details:
 - [`data/agent-locations.md`](data/agent-locations.md)
