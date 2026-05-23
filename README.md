@@ -47,7 +47,7 @@ For chat apps or web UIs, paste the file into custom instructions, project instr
 The install script prints this automatically, but here is the manual check:
 
 ```bash
-for p in ~/.claude/CLAUDE.md ~/.gemini/GEMINI.md ~/.codex/AGENTS.md \
+for p in ~/.claude/CLAUDE.md ~/.gemini/AGENTS.md ~/.codex/AGENTS.md \
          ~/AGENTS.md ~/.config/opencode/AGENTS.md \
          ~/.factory/AGENTS.md ~/.pi/agent/AGENTS.md; do
   [ -f "$p" ] && grep -q "^# TLDR" "$p" && echo "✓ $p" || echo "✗ $p"

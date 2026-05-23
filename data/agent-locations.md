@@ -9,7 +9,7 @@ Where to drop `TLDR.md` (or `TLDR.blunt.md`) for each supported coding-agent CLI
 | # | Agent | File path | Mode |
 |---|---|---|---|
 | 1 | claude (Claude Code) | `~/.claude/CLAUDE.md` | full overwrite |
-| 2 | gemini (Google Gemini CLI) | `~/.gemini/GEMINI.md` | full overwrite |
+| 2 | antigravity (Google Antigravity IDE/CLI) | `~/.gemini/AGENTS.md` | full overwrite |
 | 3 | codex (OpenAI Codex CLI) | `~/.codex/AGENTS.md` | full overwrite |
 | 4 | agent (Cursor Agent CLI) | `~/AGENTS.md` | full overwrite |
 | 5 | opencode (SST opencode) | `~/.config/opencode/AGENTS.md` | full overwrite |
@@ -59,7 +59,7 @@ TLDR_URL=https://raw.githubusercontent.com/jqbit/TLDR.md/main/TLDR.blunt.md
 # (uses $TLDR_URL from above; default to TLDR.md if unset)
 : ${TLDR_URL:=https://raw.githubusercontent.com/jqbit/TLDR.md/main/TLDR.md}
 
-for d in ~/.claude/CLAUDE.md ~/.gemini/GEMINI.md ~/.codex/AGENTS.md \
+for d in ~/.claude/CLAUDE.md ~/.gemini/AGENTS.md ~/.codex/AGENTS.md \
          ~/AGENTS.md ~/.config/opencode/AGENTS.md \
          ~/.factory/AGENTS.md ~/.pi/agent/AGENTS.md; do
   mkdir -p "$(dirname "$d")" && curl -fsSL "$TLDR_URL" -o "$d"
@@ -77,10 +77,11 @@ curl -fsSL "$TLDR_URL" -o ~/.hermes/SOUL.md
 
 ## Per-agent notes
 
-### claude / gemini / droid / pi
+### claude / antigravity / droid / pi
 
 The TLDR.md marker appears at column 1 of the file. These agents read their global instruction file at session start and apply it to every turn. No flags needed.
 
+- **antigravity** (Google's agent-first IDE/CLI) reads `~/.gemini/AGENTS.md` since v1.20.3 (Mar 2026) as the cross-tool rules file. It replaces the soon-to-be-deprecated Gemini CLI, which used `~/.gemini/GEMINI.md`. If both files exist, Antigravity-specific `GEMINI.md` overrides `AGENTS.md`; we install only `AGENTS.md` for clean cross-tool behaviour.
 - **droid** runs as `droid exec --auto medium "<prompt>"` for non-interactive mode. The `--auto` flag bypasses droid's permission prompts (which would otherwise hang in headless mode).
 
 ### Cursor Agent
@@ -109,7 +110,7 @@ Then `cursor-agent -p "your prompt"` will produce TLDR.md-compliant output.
 After deploying, sanity-check that every file carries the TLDR prompt:
 
 ```bash
-for p in ~/.claude/CLAUDE.md ~/.gemini/GEMINI.md ~/.codex/AGENTS.md \
+for p in ~/.claude/CLAUDE.md ~/.gemini/AGENTS.md ~/.codex/AGENTS.md \
          ~/AGENTS.md ~/.config/opencode/AGENTS.md \
          ~/.factory/AGENTS.md ~/.pi/agent/AGENTS.md; do
   [ -f "$p" ] && grep -q "^# TLDR" "$p" && echo "✓ $p" || echo "✗ $p"

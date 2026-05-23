@@ -111,7 +111,7 @@ write_standard_path() {
 
 install_standard_locations() {
   write_standard_path "$HOME/.claude/CLAUDE.md"
-  write_standard_path "$HOME/.gemini/GEMINI.md"
+  write_standard_path "$HOME/.gemini/AGENTS.md"
   write_standard_path "$HOME/.codex/AGENTS.md"
   write_standard_path "$HOME/AGENTS.md"
   write_standard_path "$HOME/.config/opencode/AGENTS.md"
@@ -221,7 +221,7 @@ fi
 
 printf '\nVerification:\n'
 verify_path "$HOME/.claude/CLAUDE.md"
-verify_path "$HOME/.gemini/GEMINI.md"
+verify_path "$HOME/.gemini/AGENTS.md"
 verify_path "$HOME/.codex/AGENTS.md"
 verify_path "$HOME/AGENTS.md"
 verify_path "$HOME/.config/opencode/AGENTS.md"
