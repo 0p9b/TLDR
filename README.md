@@ -14,6 +14,7 @@ TLDR.md makes AI assistants answer directly: less filler, less fake enthusiasm, 
 | [`TLDR.md`](TLDR.md) | You want terse output. Start here. |
 | [`TLDR.blunt.md`](TLDR.blunt.md) | You want terse output plus less sycophancy / more pushback when warranted. |
 | [`TLDR.accurate.md`](TLDR.accurate.md) | You want accurate, complete answers without extreme brevity sacrificing precision. |
+| [`TLDR.merged.md`](TLDR.merged.md) | You want accurate + blunt + terse combined in one file. |
 
 ## One-line install
 
@@ -28,6 +29,9 @@ curl -fsSL https://raw.githubusercontent.com/jqbit/TLDR.md/main/install.sh | bas
 
 # Accurate
 curl -fsSL https://raw.githubusercontent.com/jqbit/TLDR.md/main/install.sh | bash -s -- accurate
+
+# Merged (accurate + blunt + terse)
+curl -fsSL https://raw.githubusercontent.com/jqbit/TLDR.md/main/install.sh | bash -s -- merged
 ```
 
 Optional: include Hermes too.

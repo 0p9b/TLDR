@@ -4,11 +4,13 @@ set -euo pipefail
 usage() {
   cat <<'EOF'
 Usage:
-  install.sh [regular|blunt] [--with-hermes] [--overwrite-hermes] [--dry-run]
+  install.sh [regular|blunt|accurate|merged] [--with-hermes] [--overwrite-hermes] [--dry-run]
 
 Examples:
   install.sh regular
   install.sh blunt
+  install.sh accurate
+  install.sh merged
   install.sh blunt --with-hermes
   curl -fsSL https://raw.githubusercontent.com/jqbit/TLDR.md/main/install.sh | bash -s -- blunt
 
@@ -34,6 +36,12 @@ while [ "$#" -gt 0 ]; do
     blunt|tldr.blunt|blunt.md)
       VARIANT="blunt"
       ;;
+    accurate|tldr.accurate|accurate.md)
+      VARIANT="accurate"
+      ;;
+    merged|tldr.merged|merged.md)
+      VARIANT="merged"
+      ;;
     --with-hermes)
       WITH_HERMES=1
       ;;
@@ -57,10 +65,12 @@ while [ "$#" -gt 0 ]; do
   shift
 done
 
-PROMPT_NAME="TLDR.md"
-if [ "$VARIANT" = "blunt" ]; then
-  PROMPT_NAME="TLDR.blunt.md"
-fi
+case "$VARIANT" in
+  blunt)    PROMPT_NAME="TLDR.blunt.md" ;;
+  accurate) PROMPT_NAME="TLDR.accurate.md" ;;
+  merged)   PROMPT_NAME="TLDR.merged.md" ;;
+  *)        PROMPT_NAME="TLDR.md" ;;
+esac
 
 RAW_BASE="https://raw.githubusercontent.com/jqbit/TLDR.md/main"
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd || true)"
