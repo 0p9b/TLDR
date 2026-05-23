@@ -12,7 +12,7 @@ Examples:
   install.sh accurate
   install.sh merged
   install.sh blunt --with-hermes
-  curl -fsSL https://raw.githubusercontent.com/jqbit/TLDR.md/main/install.sh | bash -s -- blunt
+  curl -fsSL https://raw.githubusercontent.com/jqbit/TLDR/main/install.sh | bash -s -- blunt
 
 Behavior:
   - Installs the chosen prompt to the 7 standard coding-agent locations.
@@ -72,9 +72,14 @@ case "$VARIANT" in
   *)        PROMPT_NAME="TLDR.md" ;;
 esac
 
-RAW_BASE="https://raw.githubusercontent.com/jqbit/TLDR.md/main"
-SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd || true)"
-LOCAL_PROMPT="${SCRIPT_DIR}/${PROMPT_NAME}"
+RAW_BASE="https://raw.githubusercontent.com/jqbit/TLDR/main"
+if [ -f "${BASH_SOURCE[0]:-}" ]; then
+  SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd || true)"
+  LOCAL_PROMPT="${SCRIPT_DIR}/${PROMPT_NAME}"
+else
+  SCRIPT_DIR=""
+  LOCAL_PROMPT=""
+fi
 TMP_PROMPT=""
 PROMPT_PATH=""
 
@@ -89,9 +94,11 @@ download_file() {
   local url="$1"
   local out="$2"
   if command -v curl >/dev/null 2>&1; then
-    curl -fsSL "$url" -o "$out"
+    curl -fsSL --retry 3 --proto =https "$url" -o "$out.tmp"
+    mv -f "$out.tmp" "$out"
   elif command -v wget >/dev/null 2>&1; then
-    wget -qO "$out" "$url"
+    wget -qO "$out.tmp" "$url"
+    mv -f "$out.tmp" "$out"
   else
     printf 'Need curl or wget.\n' >&2
     exit 1
@@ -99,7 +106,7 @@ download_file() {
 }
 
 resolve_prompt() {
-  if [ -f "$LOCAL_PROMPT" ]; then
+  if [ -n "$LOCAL_PROMPT" ] && [ -f "$LOCAL_PROMPT" ]; then
     PROMPT_PATH="$LOCAL_PROMPT"
     return
   fi
@@ -115,6 +122,13 @@ write_standard_path() {
     return
   fi
   mkdir -p "$(dirname "$target")"
+  if [ -f "$target" ]; then
+    if cmp -s "$PROMPT_PATH" "$target"; then
+      printf 'UNCHANGED %s\n' "$target"
+      return
+    fi
+    cp "$target" "${target}.bak.$(date +%Y%m%d-%H%M%S)"
+  fi
   cp "$PROMPT_PATH" "$target"
   printf 'INSTALLED %s\n' "$target"
 }
@@ -210,7 +224,7 @@ verify_path() {
 
 verify_hermes() {
   local soul="$HOME/.hermes/SOUL.md"
-  if grep -q 'target 3 words' "$soul" 2>/dev/null; then
+  if grep -q '^# TLDR' "$soul" 2>/dev/null; then
     printf '✓ %s\n' "$soul"
   else
     printf '✗ %s\n' "$soul"

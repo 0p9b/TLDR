@@ -2,7 +2,9 @@
 
 Where to drop `TLDR.md` (or `TLDR.blunt.md`) for each supported coding-agent CLI.
 
-> **Both variants use the same file paths.** Pick the variant you want — drop it at the path. TLDR.md = terse only. TLDR.blunt.md = terse + anti-sycophancy.
+> **Both variants use the same file paths.** Pick the variant you want — drop it at the path. TLDR.md = terse only. TLDR.blunt.md = terse + anti-sycophancy. TLDR.accurate.md = terse + accuracy. TLDR.merged.md = all combined.
+>
+> **Most people: merged.** Pick `TLDR.merged.md` unless you have a reason not to.
 
 ## The eight files
 
@@ -27,16 +29,16 @@ No clone. No editing. Installs to the 7 standard coding-agent locations.
 
 ```bash
 # Regular
-curl -fsSL https://raw.githubusercontent.com/jqbit/TLDR.md/main/install.sh | bash -s -- regular
+curl -fsSL https://raw.githubusercontent.com/jqbit/TLDR/main/install.sh | bash -s -- regular
 
 # Blunt
-curl -fsSL https://raw.githubusercontent.com/jqbit/TLDR.md/main/install.sh | bash -s -- blunt
+curl -fsSL https://raw.githubusercontent.com/jqbit/TLDR/main/install.sh | bash -s -- blunt
 ```
 
 Optional: include Hermes too.
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/jqbit/TLDR.md/main/install.sh | bash -s -- blunt --with-hermes
+curl -fsSL https://raw.githubusercontent.com/jqbit/TLDR/main/install.sh | bash -s -- blunt --with-hermes
 ```
 
 `--with-hermes` preserves an existing `~/.hermes/SOUL.md`, makes a backup, and appends or updates a managed TLDR block. Use `--overwrite-hermes` only if you want prompt-only `SOUL.md`.
@@ -47,17 +49,17 @@ curl -fsSL https://raw.githubusercontent.com/jqbit/TLDR.md/main/install.sh | bas
 
 ```bash
 # Regular (terse only)
-TLDR_URL=https://raw.githubusercontent.com/jqbit/TLDR.md/main/TLDR.md
+TLDR_URL=https://raw.githubusercontent.com/jqbit/TLDR/main/TLDR.md
 
 # Blunt (terse + anti-sycophancy, DSPy-optimized + 5-agent cross-validated)
-TLDR_URL=https://raw.githubusercontent.com/jqbit/TLDR.md/main/TLDR.blunt.md
+TLDR_URL=https://raw.githubusercontent.com/jqbit/TLDR/main/TLDR.blunt.md
 ```
 
 ### Install all 7 standard locations at once
 
 ```bash
 # (uses $TLDR_URL from above; default to TLDR.md if unset)
-: ${TLDR_URL:=https://raw.githubusercontent.com/jqbit/TLDR.md/main/TLDR.md}
+: ${TLDR_URL:=https://raw.githubusercontent.com/jqbit/TLDR/main/TLDR.md}
 
 for d in ~/.claude/CLAUDE.md ~/.gemini/AGENTS.md ~/.codex/AGENTS.md \
          ~/AGENTS.md ~/.config/opencode/AGENTS.md \
@@ -116,7 +118,7 @@ for p in ~/.claude/CLAUDE.md ~/.gemini/AGENTS.md ~/.codex/AGENTS.md \
   [ -f "$p" ] && grep -q "^# TLDR" "$p" && echo "✓ $p" || echo "✗ $p"
 done
 # Hermes (variant-neutral marker; works even if TLDR is merged below an existing persona header)
-grep -q "target 3 words" ~/.hermes/SOUL.md 2>/dev/null && echo "✓ ~/.hermes/SOUL.md" || echo "✗ ~/.hermes/SOUL.md"
+grep -q "^# TLDR" ~/.hermes/SOUL.md 2>/dev/null && echo "✓ ~/.hermes/SOUL.md" || echo "✗ ~/.hermes/SOUL.md"
 ```
 
 You should see ✓ for each of the locations you actually installed to.

@@ -10,7 +10,7 @@ The best contributions are small and specific:
 
 - bug reports where TLDR.md made an agent worse
 - examples of agents/apps where the prompt works or fails
-- tighter wording for [`TLDR.md`](TLDR.md) or [`TLDR.blunt.md`](TLDR.blunt.md)
+- tighter wording for [`TLDR.md`](TLDR.md), [`TLDR.blunt.md`](TLDR.blunt.md), [`TLDR.accurate.md`](TLDR.accurate.md), or [`TLDR.merged.md`](TLDR.merged.md)
 - docs fixes, install notes, or agent-specific path updates
 - benchmark results from your own setup
 
@@ -56,7 +56,7 @@ Please include:
 - agent/app name
 - version if known
 - where instructions should be installed
-- whether it uses [`TLDR.md`](TLDR.md) or [`TLDR.blunt.md`](TLDR.blunt.md)
+- whether it uses [`TLDR.md`](TLDR.md), [`TLDR.blunt.md`](TLDR.blunt.md), [`TLDR.accurate.md`](TLDR.accurate.md), or [`TLDR.merged.md`](TLDR.merged.md)
 - any quirks users should know
 
 ## Running checks
@@ -73,6 +73,8 @@ python3 -m py_compile bench/dspy/*.py bench/check-md-links.py bench/check-doc-sy
 bash -n install.sh
 bash install.sh regular --dry-run
 bash install.sh blunt --dry-run
+bash install.sh accurate --dry-run
+bash install.sh merged --dry-run
 bash install.sh blunt --dry-run --with-hermes
 python3 bench/check-md-links.py
 python3 bench/check-doc-sync.py
