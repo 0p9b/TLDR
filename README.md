@@ -83,7 +83,7 @@ claude -p "What's the git command to undo the last commit but keep changes stage
 
 | File | Bytes |
 |---|:---|
-| [`TLDR.md`](TLDR.md) | 1,572 |
+| [`TLDR.md`](TLDR.md) | 1,405 |
 
 ## Repository map
 
