@@ -14,6 +14,14 @@ Tools, reasoning, code quality, and safety remain unchanged.
 
 > For historical context on earlier merged/legacy variants, see `data/changelog.md` and `data/progression.md`.
 
+## TLDR file
+
+[`TLDR.md`](TLDR.md) is the active prompt (1,405 bytes).
+
+| File | Bytes |
+|---|:---|
+| [`TLDR.md`](TLDR.md) | 1,405 |
+
 ## Install
 
 ```bash
@@ -78,12 +86,6 @@ Smoke test:
 claude -p "What's the git command to undo the last commit but keep changes staged?"
 # expected: git reset --soft HEAD~1 (single line)
 ```
-
-## Prompt size
-
-| File | Bytes |
-|---|:---|
-| [`TLDR.md`](TLDR.md) | 1,405 |
 
 ## Repository map
 
