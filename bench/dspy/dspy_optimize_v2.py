@@ -33,7 +33,8 @@ def main(variant: str) -> None:
         seed = (ROOT / "TLDR.md").read_text()
         scorer = score_tldr_probe
     else:
-        seed = (ROOT / "TLDR.blunt.md").read_text()
+        # Backward-compatible alias: use the merged TLDR prompt for legacy blunt flow.
+        seed = (ROOT / "TLDR.md").read_text()
         scorer = score_blunt_probe
 
     optimize(seed, train, scorer, variant, breadth=6, depth=4, out_dir=str(DSPY_DIR / "v2"))

@@ -4,63 +4,63 @@
 ![Stars](https://img.shields.io/github/stars/jqbit/TLDR)
 ![Last commit](https://img.shields.io/github/last-commit/jqbit/TLDR)
 
-**Tiny prompt. Shorter answers. Same brain.**
+Single-system prompt for terse, high-signal AI responses.
 
-**−82% prose reduction**, 100% compliance across 5 agents × 5 prompts.[^bench]
+**TLDR.md is the only prompt in this repo.**
 
-[^bench]: See [`data/benchmarks.md`](data/benchmarks.md) for methodology and caveats.
+TLDR.md changes style only: less filler, less fake enthusiasm, less post-hoc guidance.
 
-TLDR.md makes AI assistants answer directly: less filler, less fake enthusiasm, less "let me know if..." sludge.
+Tools, reasoning, code quality, and safety remain unchanged.
 
-> It changes communication style only.
-> Tools, reasoning, code quality, and safety stay the same.
+> For historical context on earlier merged/legacy variants, see `data/changelog.md` and `data/progression.md`.
 
-## Pick one
-
-| File | Install arg | Use this if... |
-|---|---|---|
-| [`TLDR.md`](TLDR.md) | `regular` | You want terse output. |
-| [`TLDR.blunt.md`](TLDR.blunt.md) | `blunt` | You want terse output plus less sycophancy / more pushback when warranted. |
-| [`TLDR.accurate.md`](TLDR.accurate.md) | `accurate` | You want accurate, complete answers without extreme brevity sacrificing precision. |
-| **[`TLDR.merged.md`](TLDR.merged.md)** | `merged` | **Most people, start here.** Accurate + blunt + terse combined. |
-
-## One-line install
-
-No clone. No editing. The install script writes the chosen prompt to the 7 standard coding-agent locations.
+## Install
 
 ```bash
-# Regular
-curl -fsSL https://raw.githubusercontent.com/jqbit/TLDR/main/install.sh | bash -s -- regular
-
-# Blunt
-curl -fsSL https://raw.githubusercontent.com/jqbit/TLDR/main/install.sh | bash -s -- blunt
-
-# Accurate
-curl -fsSL https://raw.githubusercontent.com/jqbit/TLDR/main/install.sh | bash -s -- accurate
-
-# Merged (accurate + blunt + terse) — recommended
-curl -fsSL https://raw.githubusercontent.com/jqbit/TLDR/main/install.sh | bash -s -- merged
+curl -fsSL https://raw.githubusercontent.com/jqbit/TLDR/main/install.sh | bash -s --
 ```
 
-Inspect first: `curl -fsSL https://raw.githubusercontent.com/jqbit/TLDR/main/install.sh | less`
-
-If this makes your agent less annoying, drop a ⭐ — helps others find it.
-
-Optional: include Hermes too.
+Optional Hermes install (merge into `~/.hermes/SOUL.md`):
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/jqbit/TLDR/main/install.sh | bash -s -- merged --with-hermes
+curl -fsSL https://raw.githubusercontent.com/jqbit/TLDR/main/install.sh | bash -s -- --with-hermes
 ```
 
-`--with-hermes` preserves an existing `~/.hermes/SOUL.md`, makes a backup, and appends or updates a managed TLDR block. Use `--overwrite-hermes` only if you want prompt-only `SOUL.md`.
+Inspect first:
 
-Prefer to inspect the commands instead of piping to bash? Use the manual copy/paste setup in [`data/agent-locations.md`](data/agent-locations.md).
+```bash
+curl -fsSL https://raw.githubusercontent.com/jqbit/TLDR/main/install.sh
+```
 
-For chat apps or web UIs, paste the file into custom instructions, project instructions, system prompt, or a saved prompt.
+Prefer manual copy/paste:
 
-## Verify
+- [`data/agent-locations.md`](data/agent-locations.md) (paths)
+- direct install command below
 
-The install script prints this automatically, but here is the manual check:
+```bash
+mkdir -p ~/.claude ~/.gemini ~/.codex ~/.config/opencode ~/.factory ~/.pi/agent
+cp TLDR.md ~/.claude/CLAUDE.md
+cp TLDR.md ~/.gemini/AGENTS.md
+cp TLDR.md ~/.codex/AGENTS.md
+cp TLDR.md ~/AGENTS.md
+cp TLDR.md ~/.config/opencode/AGENTS.md
+cp TLDR.md ~/.factory/AGENTS.md
+cp TLDR.md ~/.pi/agent/AGENTS.md
+```
+
+## Current behavior
+
+- default: 1 sentence
+- target: 3 words
+- default max: 6 words
+- 1 word if enough
+- longer only if user asks or needed for correctness/safety
+- one-word greeting for plain greetings
+- if multi-sentence response is required, end with:
+  - `## TLDR`
+  - one short sentence line below
+
+## Verification
 
 ```bash
 for p in ~/.claude/CLAUDE.md ~/.gemini/AGENTS.md ~/.codex/AGENTS.md \
@@ -72,63 +72,33 @@ done
 grep -q "^# TLDR" ~/.hermes/SOUL.md 2>/dev/null && echo "✓ ~/.hermes/SOUL.md" || echo "✗ ~/.hermes/SOUL.md"
 ```
 
-## Current defaults
+Smoke test:
 
-- regular:
-  - default: 1 sentence
-  - target: 3 words
-  - 1 word when sufficient
-  - default max: 6 words
-  - longer only if asked
-  - greet: 1 word
-- accurate / merged: allow context-driven expansion from in-file rules; same brevity safety constraints still apply.
-
-## Example outputs
-
-```text
-Port busy; free it.
+```bash
+claude -p "What's the git command to undo the last commit but keep changes staged?"
+# expected: git reset --soft HEAD~1 (single line)
 ```
 
-```text
-Yes. Start SQLite.
-```
-
-```text
-git reset --soft HEAD~1
-```
-
-## What it fixes
-
-- question restatement
-- fake enthusiasm / validation
-- command wrappers when you asked for only the command
-- extra caveats and summary paragraphs
-- "let me know if you want more" endings
-
-## Benchmarks
-
-- **TLDR.md v0.13.1:** −82.1% total prose reduction, 100% average compliance (5 agents × 5 prompts).
-- **TLDR.md v0.14.3:** −80.0% single-turn prose reduction; −75.1% across 8-turn coding conversations; no significant decay.
-- **TLDR.blunt.md v0.18.0:** DSPy round-2 + 5-agent cross-model validation; avg pushback 0.848, correct-user agreement 0.912, mean prose 11.0 words, validation phrases 0%.
-- **TLDR.accurate.md v0.1.0:** Accuracy-first variant; prioritizes correctness and detail where brevity would harm precision.
-
-Current prompt sizes:
+## Prompt size
 
 | File | Bytes |
 |---|:---|
-| [`TLDR.md`](TLDR.md) | 1,362 |
-| [`TLDR.blunt.md`](TLDR.blunt.md) | 1,684 |
-| [`TLDR.accurate.md`](TLDR.accurate.md) | 1,824 |
-| [`TLDR.merged.md`](TLDR.merged.md) | 1,359 |
+| [`TLDR.md`](TLDR.md) | 1,572 |
 
-> Note: v0.14.3 numbers measured on a prior prompt revision; current prompts are tighter (1-sentence / 3-word default / 6-word max) and have not been re-benched.
+## Repository map
 
-Full historical details:
-- [`data/agent-locations.md`](data/agent-locations.md)
-- [`data/benchmarks.md`](data/benchmarks.md)
-- [`data/dspy-cross-model-results.md`](data/dspy-cross-model-results.md)
-- [`data/changelog.md`](data/changelog.md)
-- [`CONTRIBUTING.md`](CONTRIBUTING.md)
+- `TLDR.md` — active system prompt.
+- `install.sh` — installer + optional Hermes merge.
+- `data/agent-locations.md` — where prompt is installed per agent.
+- `CONTRIBUTING.md` — PR workflow.
+
+## Full historical context
+
+- [data/agent-locations.md](data/agent-locations.md)
+- [data/benchmarks.md](data/benchmarks.md)
+- [data/dspy-cross-model-results.md](data/dspy-cross-model-results.md)
+- [data/changelog.md](data/changelog.md)
+- [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ## License
 

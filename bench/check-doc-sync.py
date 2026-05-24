@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+from __future__ import annotations
+
 from pathlib import Path
 import re
 import sys
@@ -7,9 +9,6 @@ ROOT = Path(__file__).resolve().parents[1]
 README = ROOT / "README.md"
 AGENT_LOCATIONS = ROOT / "data" / "agent-locations.md"
 TLDR = ROOT / "TLDR.md"
-BLUNT = ROOT / "TLDR.blunt.md"
-ACCURATE = ROOT / "TLDR.accurate.md"
-MERGED = ROOT / "TLDR.merged.md"
 INSTALL = ROOT / "install.sh"
 
 
@@ -25,59 +24,40 @@ def expect_contains(text: str, needle: str, label: str) -> None:
 
 readme = README.read_text(encoding="utf-8")
 agent_locations = AGENT_LOCATIONS.read_text(encoding="utf-8")
-tldr = TLDR.read_text(encoding="utf-8")
-blunt = BLUNT.read_text(encoding="utf-8")
-accurate = ACCURATE.read_text(encoding="utf-8")
-merged = MERGED.read_text(encoding="utf-8")
+prompt = TLDR.read_text(encoding="utf-8")
 
-# Prompt invariants reflected in shipped prompt files.
-for name, text in [("TLDR.md", tldr), ("TLDR.blunt.md", blunt)]:
-    expect_contains(text, "target 3 words", f"{name}")
-    expect_contains(text, "maximum: 6 words", f"{name}")
-    expect_contains(text, "Greet → 1 word", f"{name}")
+# Prompt invariants reflected in shipped prompt file.
+for needle in [
+    "## Hard caps",
+    "Default: 1 sentence.",
+    "Default target: 3 words.",
+    "Default maximum: 6 words.",
+    "If response needs >1 sentence, always finish with a parser-friendly section",
+    "Prose only. Tools, code, logic, reasoning, safety unchanged.",
+]:
+    expect_contains(prompt, needle, "TLDR.md")
 
-# README byte-count table must match current prompt files.
-expected = {
-    "TLDR.md": TLDR,
-    "TLDR.blunt.md": BLUNT,
-    "TLDR.accurate.md": ACCURATE,
-    "TLDR.merged.md": MERGED,
-}
-for filename, path in expected.items():
-    expected_row = f"| [`{filename}`]({filename}) | {path.stat().st_size:,} |"
-    expect_contains(readme, expected_row, f"README byte table ({filename})")
+expected_row = f"| [`TLDR.md`](TLDR.md) | {TLDR.stat().st_size:,} |"
+expect_contains(readme, expected_row, "README byte table")
 
-# README must document the current default behavior.
+# README must document install and defaults.
+expect_contains(readme, "install.sh | bash -s --", "README one-line install")
+expect_contains(readme, "--with-hermes", "README one-line install")
 for needle in [
     "- default: 1 sentence",
     "- target: 3 words",
-    "- 1 word when sufficient",
     "- default max: 6 words",
-    "- longer only if asked",
-    "- greet: 1 word",
+    "- one-word greeting for plain greetings",
 ]:
     expect_contains(readme, needle, "README current defaults")
 
-# One-line install docs must point at the shipped installer.
-if not INSTALL.exists():
-    fail("install.sh missing from repo root")
-for text, label in [
-    (readme, "README one-line install"),
-    (agent_locations, "agent-locations one-line install"),
-]:
-    expect_contains(text, "install.sh | bash -s -- regular", label)
-    expect_contains(text, "install.sh | bash -s -- blunt", label)
-    expect_contains(text, "install.sh | bash -s -- accurate", label)
-    expect_contains(text, "install.sh | bash -s -- merged", label)
-    expect_contains(text, "--with-hermes", label)
+# One-line install docs in agent-locations.
+expect_contains(agent_locations, "install.sh | bash -s --", "agent-locations one-line install")
+expect_contains(agent_locations, "--with-hermes", "agent-locations one-line install")
 
-# Hermes docs must point to SOUL.md and use a merge-safe verification marker.
+# Hermes row must point to SOUL.md and verification command must be marker-based.
 hermes_row = next(
-    (
-        line
-        for line in agent_locations.splitlines()
-        if re.search(r"^\|\s*\d+\s*\|\s*hermes\b", line)
-    ),
+    (line for line in agent_locations.splitlines() if re.search(r"\|\s*8\s*\|\s*hermes\b", line)),
     None,
 )
 if hermes_row is None:
@@ -92,5 +72,8 @@ expect_contains(
     'grep -q "^# TLDR" ~/.hermes/SOUL.md',
     "Hermes verification command",
 )
+
+if not INSTALL.exists():
+    fail("install.sh missing from repo root")
 
 print("OK: docs and prompt metadata are in sync")

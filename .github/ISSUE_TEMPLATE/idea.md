@@ -1,6 +1,6 @@
 ---
 name: Idea / improvement
-about: Propose a new rule, response template, prompt variant, or compression tactic
+about: Propose a new rule, response template, or compression tactic
 title: "[idea] <one-line summary>"
 labels: enhancement
 assignees: ''
@@ -8,7 +8,7 @@ assignees: ''
 
 ## The idea
 
-What rule, template, tactic, or prompt variant would you add?
+What rule, template, tactic, or wording change would you add?
 
 ## What it would solve
 

@@ -42,9 +42,8 @@ jobs:
       - name: Check install script
         run: |
           bash -n install.sh
-          bash install.sh regular --dry-run
-          bash install.sh blunt --dry-run
-          bash install.sh blunt --dry-run --with-hermes
+          bash install.sh --dry-run
+          bash install.sh --dry-run --with-hermes
 
       - name: Check Markdown links
         run: python3 bench/check-md-links.py

@@ -4,44 +4,29 @@ set -euo pipefail
 usage() {
   cat <<'EOF'
 Usage:
-  install.sh [regular|blunt|accurate|merged] [--with-hermes] [--overwrite-hermes] [--dry-run]
+  install.sh [--with-hermes] [--overwrite-hermes] [--dry-run]
 
 Examples:
-  install.sh regular
-  install.sh blunt
-  install.sh accurate
-  install.sh merged
-  install.sh blunt --with-hermes
-  curl -fsSL https://raw.githubusercontent.com/jqbit/TLDR/main/install.sh | bash -s -- blunt
+  install.sh
+  install.sh --with-hermes
+  curl -fsSL https://raw.githubusercontent.com/jqbit/TLDR/main/install.sh | bash -s -- --with-hermes
 
 Behavior:
-  - Installs the chosen prompt to the 7 standard coding-agent locations.
+  - Installs TLDR.md to the 7 standard coding-agent locations.
   - --with-hermes updates ~/.hermes/SOUL.md too.
   - If SOUL.md already exists, --with-hermes preserves it and appends or updates
     a managed TLDR block instead of blindly overwriting the whole file.
-  - --overwrite-hermes replaces ~/.hermes/SOUL.md with the prompt only.
+  - --overwrite-hermes replaces ~/.hermes/SOUL.md with TLDR.md only.
 EOF
 }
 
-VARIANT="regular"
+PROMPT_NAME="TLDR.md"
 WITH_HERMES=0
 OVERWRITE_HERMES=0
 DRY_RUN=0
 
 while [ "$#" -gt 0 ]; do
   case "$1" in
-    regular|tldr)
-      VARIANT="regular"
-      ;;
-    blunt|tldr.blunt|blunt.md)
-      VARIANT="blunt"
-      ;;
-    accurate|tldr.accurate|accurate.md)
-      VARIANT="accurate"
-      ;;
-    merged|tldr.merged|merged.md)
-      VARIANT="merged"
-      ;;
     --with-hermes)
       WITH_HERMES=1
       ;;
@@ -63,14 +48,7 @@ while [ "$#" -gt 0 ]; do
       ;;
   esac
   shift
-done
-
-case "$VARIANT" in
-  blunt)    PROMPT_NAME="TLDR.blunt.md" ;;
-  accurate) PROMPT_NAME="TLDR.accurate.md" ;;
-  merged)   PROMPT_NAME="TLDR.merged.md" ;;
-  *)        PROMPT_NAME="TLDR.md" ;;
-esac
+ done
 
 RAW_BASE="https://raw.githubusercontent.com/jqbit/TLDR/main"
 if [ -f "${BASH_SOURCE[0]:-}" ]; then
@@ -89,6 +67,7 @@ cleanup() {
   fi
 }
 trap cleanup EXIT
+
 
 download_file() {
   local url="$1"
@@ -110,6 +89,7 @@ resolve_prompt() {
     PROMPT_PATH="$LOCAL_PROMPT"
     return
   fi
+
   TMP_PROMPT="$(mktemp)"
   PROMPT_PATH="$TMP_PROMPT"
   download_file "${RAW_BASE}/${PROMPT_NAME}" "$PROMPT_PATH"

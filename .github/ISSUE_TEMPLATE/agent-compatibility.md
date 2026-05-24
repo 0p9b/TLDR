@@ -1,6 +1,6 @@
 ---
 name: Agent compatibility report
-about: Report whether TLDR.md or TLDR.blunt.md works on a specific AI app/agent
+about: Report whether TLDR.md works on a specific AI app/agent
 title: "[agent] <agent-name> — <works|partial|broken>"
 labels: agent-compatibility
 assignees: ''
@@ -11,7 +11,7 @@ assignees: ''
 - **Name + version**: e.g. `claude` 2.1.110 / `cursor-agent` 2026.04.15
 - **Provider/model**: e.g. Anthropic Opus 4.6 / OpenAI gpt-5.4
 - **Global instruction file path**: e.g. `~/.claude/CLAUDE.md`
-- **Prompt deployed**: `TLDR.md` or `TLDR.blunt.md`, version/commit:
+- **Prompt deployed**: `TLDR.md`, version/commit:
 
 ## Result
 

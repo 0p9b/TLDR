@@ -1,22 +1,19 @@
 # Contributing to TLDR.md
 
-Thanks for helping make AI assistants less yappy.
-
-This repo accepts contributions through normal GitHub issues and pull requests.
+Thanks for helping make AI assistants less verbose.
 
 ## Good contributions
 
 The best contributions are small and specific:
 
 - bug reports where TLDR.md made an agent worse
-- examples of agents/apps where the prompt works or fails
-- tighter wording for [`TLDR.md`](TLDR.md), [`TLDR.blunt.md`](TLDR.blunt.md), [`TLDR.accurate.md`](TLDR.accurate.md), or [`TLDR.merged.md`](TLDR.merged.md)
-- docs fixes, install notes, or agent-specific path updates
-- benchmark results from your own setup
+- examples of agents/apps where the prompt fails or succeeds
+- tighter wording for [`TLDR.md`](TLDR.md)
+- install notes, agent-specific path updates, or benchmark results
 
 ## Before opening a PR
 
-For prompt changes, please keep the goal in mind:
+For prompt changes, keep the goal in mind:
 
 > Shorter output, same intelligence.
 
@@ -32,8 +29,8 @@ TLDR.md should reduce filler without hurting correctness, tool use, code quality
 Use a clear PR title, for example:
 
 ```text
+fix: remove unsolicited preamble
 fix: improve regex-only response rule
-docs: add Windsurf install path
 bench: add results for <agent-name>
 ```
 
@@ -44,8 +41,7 @@ Please include:
 - what problem the change fixes
 - before/after examples if possible
 - which agent/app you tested with
-- whether the prompt still stays concise
-- whether the default still holds: 1 sentence, target 3 words, default max 6 words, greet = 1 word
+- whether the default still holds: 1 sentence, target 3 words, max 6 words, greet = 1 word
 
 You do **not** need to run the full benchmark for every small PR. Manual examples are fine.
 
@@ -55,8 +51,7 @@ Please include:
 
 - agent/app name
 - version if known
-- where instructions should be installed
-- whether it uses [`TLDR.md`](TLDR.md), [`TLDR.blunt.md`](TLDR.blunt.md), [`TLDR.accurate.md`](TLDR.accurate.md), or [`TLDR.merged.md`](TLDR.merged.md)
+- where instructions are installed
 - any quirks users should know
 
 ## Running checks
@@ -71,11 +66,8 @@ python3 -m json.tool data/benchmarks-matrix.json >/dev/null
 python3 -m json.tool data/visualizations/charts.json >/dev/null
 python3 -m py_compile bench/dspy/*.py bench/check-md-links.py bench/check-doc-sync.py
 bash -n install.sh
-bash install.sh regular --dry-run
-bash install.sh blunt --dry-run
-bash install.sh accurate --dry-run
-bash install.sh merged --dry-run
-bash install.sh blunt --dry-run --with-hermes
+bash install.sh --dry-run
+bash install.sh --dry-run --with-hermes
 python3 bench/check-md-links.py
 python3 bench/check-doc-sync.py
 ```

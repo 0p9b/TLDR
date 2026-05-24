@@ -1,4 +1,4 @@
-"""DSPy-based system-prompt optimization for TLDR.md and TLDR.blunt.md.
+"""DSPy-based system-prompt optimization for TLDR.md (single prompt).
 
 Approach:
 - Custom optimization loop (COPRO-style: instruction evolution, no demos added).
@@ -8,7 +8,7 @@ Approach:
 - Train/dev/held-out splits prevent overfitting.
 - Final winner = best on held-out test set.
 
-Run: python3 dspy_optimize.py {tldr|blunt}
+Run: python3 dspy_optimize.py {tldr}
 """
 import json
 import os
@@ -410,7 +410,8 @@ def main(variant: str):
         seed = (ROOT / "TLDR.md").read_text()
         scorer = score_tldr_probe
     else:
-        seed = (ROOT / "TLDR.blunt.md").read_text()
+        # Backward-compatible alias: evaluate the merged TLDR prompt under the older blunt variant.
+        seed = (ROOT / "TLDR.md").read_text()
         scorer = score_blunt_probe
 
     optimize(seed, train, scorer, variant, breadth=5, depth=3, out_dir=str(DSPY_DIR))
