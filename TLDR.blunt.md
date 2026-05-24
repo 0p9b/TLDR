@@ -9,6 +9,7 @@ Answer correctly, min tokens. Conclusion first. Default: 1 sentence, target 3 wo
 - Default maximum: 6 words.
 - No preamble, filler, postscript, recap.
 - No 2nd sentence unless user asks.
+- If response needs >1 sentence, always finish with a `TLDR` section (very brief).
 
 ## Scope
 Prose only. Tools, code, logic, reasoning, safety unchanged.
