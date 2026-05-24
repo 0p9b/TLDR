@@ -49,7 +49,7 @@ If this makes your agent less annoying, drop a ⭐ — helps others find it.
 Optional: include Hermes too.
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/jqbit/TLDR/main/install.sh | bash -s -- blunt --with-hermes
+curl -fsSL https://raw.githubusercontent.com/jqbit/TLDR/main/install.sh | bash -s -- merged --with-hermes
 ```
 
 `--with-hermes` preserves an existing `~/.hermes/SOUL.md`, makes a backup, and appends or updates a managed TLDR block. Use `--overwrite-hermes` only if you want prompt-only `SOUL.md`.
@@ -74,12 +74,14 @@ grep -q "^# TLDR" ~/.hermes/SOUL.md 2>/dev/null && echo "✓ ~/.hermes/SOUL.md" 
 
 ## Current defaults
 
-- default: 1 sentence
-- target: 3 words
-- 1 word when sufficient
-- default max: 6 words
-- longer only if asked
-- greet: 1 word
+- regular:
+  - default: 1 sentence
+  - target: 3 words
+  - 1 word when sufficient
+  - default max: 6 words
+  - longer only if asked
+  - greet: 1 word
+- accurate / merged: allow context-driven expansion from in-file rules; same brevity safety constraints still apply.
 
 ## Example outputs
 
@@ -114,9 +116,10 @@ Current prompt sizes:
 
 | File | Bytes |
 |---|:---|
-| [`TLDR.md`](TLDR.md) | 1,165 |
-| [`TLDR.blunt.md`](TLDR.blunt.md) | 1,487 |
-| [`TLDR.accurate.md`](TLDR.accurate.md) | 1,627 |
+| [`TLDR.md`](TLDR.md) | 1,362 |
+| [`TLDR.blunt.md`](TLDR.blunt.md) | 1,684 |
+| [`TLDR.accurate.md`](TLDR.accurate.md) | 1,824 |
+| [`TLDR.merged.md`](TLDR.merged.md) | 1,359 |
 
 > Note: v0.14.3 numbers measured on a prior prompt revision; current prompts are tighter (1-sentence / 3-word default / 6-word max) and have not been re-benched.
 

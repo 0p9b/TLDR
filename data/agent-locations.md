@@ -1,8 +1,9 @@
 # TLDR.md — Agent Deployment Locations
 
-Where to drop `TLDR.md` (or `TLDR.blunt.md`) for each supported coding-agent CLI.
+Where to drop `TLDR.md` (or any TLDR variant) for each supported coding-agent CLI.
 
-> **Both variants use the same file paths.** Pick the variant you want — drop it at the path. TLDR.md = terse only. TLDR.blunt.md = terse + anti-sycophancy. TLDR.accurate.md = terse + accuracy. TLDR.merged.md = all combined.
+> **All variants use the same file paths.** Pick the file you want — drop it at the path.
+> TLDR.md = terse only. TLDR.blunt.md = terse + anti-sycophancy. TLDR.accurate.md = terse + accuracy. TLDR.merged.md = all combined.
 >
 > **Most people: merged.** Pick `TLDR.merged.md` unless you have a reason not to.
 
@@ -33,12 +34,18 @@ curl -fsSL https://raw.githubusercontent.com/jqbit/TLDR/main/install.sh | bash -
 
 # Blunt
 curl -fsSL https://raw.githubusercontent.com/jqbit/TLDR/main/install.sh | bash -s -- blunt
+
+# Accurate
+curl -fsSL https://raw.githubusercontent.com/jqbit/TLDR/main/install.sh | bash -s -- accurate
+
+# Merged
+curl -fsSL https://raw.githubusercontent.com/jqbit/TLDR/main/install.sh | bash -s -- merged
 ```
 
 Optional: include Hermes too.
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/jqbit/TLDR/main/install.sh | bash -s -- blunt --with-hermes
+curl -fsSL https://raw.githubusercontent.com/jqbit/TLDR/main/install.sh | bash -s -- merged --with-hermes
 ```
 
 `--with-hermes` preserves an existing `~/.hermes/SOUL.md`, makes a backup, and appends or updates a managed TLDR block. Use `--overwrite-hermes` only if you want prompt-only `SOUL.md`.
@@ -53,6 +60,12 @@ TLDR_URL=https://raw.githubusercontent.com/jqbit/TLDR/main/TLDR.md
 
 # Blunt (terse + anti-sycophancy, DSPy-optimized + 5-agent cross-validated)
 TLDR_URL=https://raw.githubusercontent.com/jqbit/TLDR/main/TLDR.blunt.md
+
+# Accurate (precision-first)
+TLDR_URL=https://raw.githubusercontent.com/jqbit/TLDR/main/TLDR.accurate.md
+
+# Merged (accurate + blunt + terse)
+TLDR_URL=https://raw.githubusercontent.com/jqbit/TLDR/main/TLDR.merged.md
 ```
 
 ### Install all 7 standard locations at once

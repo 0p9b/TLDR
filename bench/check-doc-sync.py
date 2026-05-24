@@ -8,6 +8,8 @@ README = ROOT / "README.md"
 AGENT_LOCATIONS = ROOT / "data" / "agent-locations.md"
 TLDR = ROOT / "TLDR.md"
 BLUNT = ROOT / "TLDR.blunt.md"
+ACCURATE = ROOT / "TLDR.accurate.md"
+MERGED = ROOT / "TLDR.merged.md"
 INSTALL = ROOT / "install.sh"
 
 
@@ -25,6 +27,8 @@ readme = README.read_text(encoding="utf-8")
 agent_locations = AGENT_LOCATIONS.read_text(encoding="utf-8")
 tldr = TLDR.read_text(encoding="utf-8")
 blunt = BLUNT.read_text(encoding="utf-8")
+accurate = ACCURATE.read_text(encoding="utf-8")
+merged = MERGED.read_text(encoding="utf-8")
 
 # Prompt invariants reflected in shipped prompt files.
 for name, text in [("TLDR.md", tldr), ("TLDR.blunt.md", blunt)]:
@@ -33,10 +37,15 @@ for name, text in [("TLDR.md", tldr), ("TLDR.blunt.md", blunt)]:
     expect_contains(text, "Greet → 1 word", f"{name}")
 
 # README byte-count table must match current prompt files.
-expected_tldr = f"| [`TLDR.md`](TLDR.md) | {TLDR.stat().st_size:,} |"
-expected_blunt = f"| [`TLDR.blunt.md`](TLDR.blunt.md) | {BLUNT.stat().st_size:,} |"
-expect_contains(readme, expected_tldr, "README byte table")
-expect_contains(readme, expected_blunt, "README byte table")
+expected = {
+    "TLDR.md": TLDR,
+    "TLDR.blunt.md": BLUNT,
+    "TLDR.accurate.md": ACCURATE,
+    "TLDR.merged.md": MERGED,
+}
+for filename, path in expected.items():
+    expected_row = f"| [`{filename}`]({filename}) | {path.stat().st_size:,} |"
+    expect_contains(readme, expected_row, f"README byte table ({filename})")
 
 # README must document the current default behavior.
 for needle in [
@@ -58,6 +67,8 @@ for text, label in [
 ]:
     expect_contains(text, "install.sh | bash -s -- regular", label)
     expect_contains(text, "install.sh | bash -s -- blunt", label)
+    expect_contains(text, "install.sh | bash -s -- accurate", label)
+    expect_contains(text, "install.sh | bash -s -- merged", label)
     expect_contains(text, "--with-hermes", label)
 
 # Hermes docs must point to SOUL.md and use a merge-safe verification marker.
@@ -78,7 +89,7 @@ if "MEMORY.md" in hermes_row:
 
 expect_contains(
     agent_locations,
-    'grep -q "target 3 words" ~/.hermes/SOUL.md',
+    'grep -q "^# TLDR" ~/.hermes/SOUL.md',
     "Hermes verification command",
 )
 
