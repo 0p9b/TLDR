@@ -16,11 +16,11 @@ Tools, reasoning, code quality, and safety remain unchanged.
 
 ## TLDR file
 
-[`TLDR.md`](TLDR.md) is the active prompt (1,405 bytes).
+[`TLDR.md`](TLDR.md) is the active prompt (1,235 bytes).
 
 | File | Bytes |
 |---|:---|
-| [`TLDR.md`](TLDR.md) | 1,405 |
+| [`TLDR.md`](TLDR.md) | 1,235 |
 
 ## Install
 
@@ -64,9 +64,6 @@ cp TLDR.md ~/.pi/agent/AGENTS.md
 - 1 word if enough
 - longer only if user asks or needed for correctness/safety
 - one-word greeting for plain greetings
-- if multi-sentence response is required, end with:
-  - `## TLDR`
-  - one short sentence line below
 
 ## Verification
 
@@ -74,10 +71,10 @@ cp TLDR.md ~/.pi/agent/AGENTS.md
 for p in ~/.claude/CLAUDE.md ~/.gemini/AGENTS.md ~/.codex/AGENTS.md \
          ~/AGENTS.md ~/.config/opencode/AGENTS.md \
          ~/.factory/AGENTS.md ~/.pi/agent/AGENTS.md; do
-  [ -f "$p" ] && grep -q "^# TLDR" "$p" && echo "✓ $p" || echo "✗ $p"
+  [ -f "$p" ] && grep -q "^## Prime directive" "$p" && echo "✓ $p" || echo "✗ $p"
 done
 
-grep -q "^# TLDR" ~/.hermes/SOUL.md 2>/dev/null && echo "✓ ~/.hermes/SOUL.md" || echo "✗ ~/.hermes/SOUL.md"
+grep -q "^## Prime directive" ~/.hermes/SOUL.md 2>/dev/null && echo "✓ ~/.hermes/SOUL.md" || echo "✗ ~/.hermes/SOUL.md"
 ```
 
 Smoke test:

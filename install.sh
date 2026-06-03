@@ -195,7 +195,7 @@ PY
 
 verify_path() {
   local target="$1"
-  if [ -f "$target" ] && grep -q '^# TLDR' "$target"; then
+  if [ -f "$target" ] && grep -q '^## Prime directive' "$target"; then
     printf '✓ %s\n' "$target"
   else
     printf '✗ %s\n' "$target"
@@ -204,7 +204,7 @@ verify_path() {
 
 verify_hermes() {
   local soul="$HOME/.hermes/SOUL.md"
-  if grep -q '^# TLDR' "$soul" 2>/dev/null; then
+  if grep -q '^## Prime directive' "$soul" 2>/dev/null; then
     printf '✓ %s\n' "$soul"
   else
     printf '✗ %s\n' "$soul"

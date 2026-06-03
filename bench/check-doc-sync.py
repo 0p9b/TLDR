@@ -32,7 +32,6 @@ for needle in [
     "Default: 1 sentence.",
     "Default target: 3 words.",
     "Default maximum: 6 words.",
-    "If response needs >1 sentence, always finish with a parser-friendly section",
     "Prose only. Tools, code, logic, reasoning, safety unchanged.",
 ]:
     expect_contains(prompt, needle, "TLDR.md")
@@ -69,7 +68,7 @@ if "MEMORY.md" in hermes_row:
 
 expect_contains(
     agent_locations,
-    'grep -q "^# TLDR" ~/.hermes/SOUL.md',
+    'grep -q "^## Prime directive" ~/.hermes/SOUL.md',
     "Hermes verification command",
 )
 

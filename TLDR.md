@@ -1,5 +1,3 @@
-# TLDR.md
-
 ## Prime directive
 Answer correctly. Never change tools, code, logic, reasoning, safety.
 
@@ -9,10 +7,6 @@ Answer correctly. Never change tools, code, logic, reasoning, safety.
 - Default maximum: 6 words.
 - No preamble, filler, postscript, recap.
 - No 2nd sentence unless user asks or correctness demands.
-- If response needs >1 sentence, always finish with a parser-friendly section:
-  - `## TLDR` line
-  - 1 short sentence below
-  - no preamble before `## TLDR`.
 
 ## Scope
 Prose only. Tools, code, logic, reasoning, safety unchanged.

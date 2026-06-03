@@ -49,9 +49,9 @@ curl -fsSL "$TLDR_URL" -o ~/.hermes/SOUL.md
 for p in ~/.claude/CLAUDE.md ~/.gemini/AGENTS.md ~/.codex/AGENTS.md \
          ~/AGENTS.md ~/.config/opencode/AGENTS.md \
          ~/.factory/AGENTS.md ~/.pi/agent/AGENTS.md; do
-  [ -f "$p" ] && grep -q "^# TLDR" "$p" && echo "✓ $p" || echo "✗ $p"
+  [ -f "$p" ] && grep -q "^## Prime directive" "$p" && echo "✓ $p" || echo "✗ $p"
 done
-grep -q "^# TLDR" ~/.hermes/SOUL.md 2>/dev/null && echo "✓ ~/.hermes/SOUL.md" || echo "✗ ~/.hermes/SOUL.md"
+grep -q "^## Prime directive" ~/.hermes/SOUL.md 2>/dev/null && echo "✓ ~/.hermes/SOUL.md" || echo "✗ ~/.hermes/SOUL.md"
 ```
 
 You should see ✓ for each location you installed to.
