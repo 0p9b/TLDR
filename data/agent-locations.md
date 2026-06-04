@@ -55,3 +55,38 @@ grep -q "^## Prime directive" ~/.hermes/SOUL.md 2>/dev/null && echo "✓ ~/.herm
 ```
 
 You should see ✓ for each location you installed to.
+
+## Commands (/tldr support)
+
+The installer also deploys `commands/tldr.md` as a live reminder slash command (re-applies rules in long sessions) to agents that support custom commands via files.
+
+| Agent | Command path | Install mode | Notes |
+|---|---|---|---|
+| claude | `~/.claude/commands/tldr.md` + `~/.claude/skills/tldr/SKILL.md` | copy (+ frontmatter for skills) | /tldr ; skills recommended |
+| opencode | `~/.config/opencode/commands/tldr.md` | copy + frontmatter | /tldr |
+| droid (Factory) | `~/.factory/commands/tldr.md` | copy + frontmatter | /tldr |
+| cursor | `~/.cursor/commands/tldr.md` | copy | /tldr (IDE primary; CLI partial) |
+| gemini | `~/.gemini/commands/tldr.toml` | manual for now | uses TOML, not md |
+| others | (none auto) | manual | use text `/tldr` trigger in main prompt |
+
+Text fallback (all agents): type `/tldr` (or `/tldr your query`) — main TLDR.md recognizes it as re-apply trigger.
+
+## Manual command install (if not using installer)
+
+```bash
+mkdir -p ~/.claude/commands ~/.claude/skills/tldr ~/.config/opencode/commands ~/.factory/commands ~/.cursor/commands
+cp commands/tldr.md ~/.claude/commands/tldr.md
+cat > ~/.claude/skills/tldr/SKILL.md <<'EOF'
+---
+description: Live TLDR reminder. Re-applies 1-sentence/3-word-target/6-word-max rules in long sessions.
+argument-hint: [query]
+---
+EOF
+cat commands/tldr.md >> ~/.claude/skills/tldr/SKILL.md
+cp commands/tldr.md ~/.config/opencode/commands/tldr.md
+# (add frontmatter to opencode/factory copies if their parser requires; installer does this)
+cp commands/tldr.md ~/.factory/commands/tldr.md
+cp commands/tldr.md ~/.cursor/commands/tldr.md
+```
+
+Verification for commands: files exist and contain "Re-apply TLDR rules" or "Default: 1 sentence."

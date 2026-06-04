@@ -13,6 +13,7 @@ Examples:
 
 Behavior:
   - Installs TLDR.md to the 7 standard coding-agent locations.
+  - Also installs /tldr command to supported agents' command dirs (claude, opencode, factory, cursor).
   - --with-hermes updates ~/.hermes/SOUL.md too.
   - If SOUL.md already exists, --with-hermes preserves it and appends or updates
     a managed TLDR block instead of blindly overwriting the whole file.
@@ -21,6 +22,7 @@ EOF
 }
 
 PROMPT_NAME="TLDR.md"
+COMMAND_SRC="commands/tldr.md"
 WITH_HERMES=0
 OVERWRITE_HERMES=0
 DRY_RUN=0
@@ -54,16 +56,23 @@ RAW_BASE="https://raw.githubusercontent.com/jqbit/TLDR/main"
 if [ -f "${BASH_SOURCE[0]:-}" ]; then
   SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd || true)"
   LOCAL_PROMPT="${SCRIPT_DIR}/${PROMPT_NAME}"
+  LOCAL_COMMAND="${SCRIPT_DIR}/commands/tldr.md"
 else
   SCRIPT_DIR=""
   LOCAL_PROMPT=""
+  LOCAL_COMMAND=""
 fi
 TMP_PROMPT=""
+TMP_COMMAND=""
 PROMPT_PATH=""
+COMMAND_PATH=""
 
 cleanup() {
   if [ -n "$TMP_PROMPT" ] && [ -f "$TMP_PROMPT" ]; then
     rm -f "$TMP_PROMPT"
+  fi
+  if [ -n "$TMP_COMMAND" ] && [ -f "$TMP_COMMAND" ]; then
+    rm -f "$TMP_COMMAND"
   fi
 }
 trap cleanup EXIT
@@ -93,6 +102,25 @@ resolve_prompt() {
   TMP_PROMPT="$(mktemp)"
   PROMPT_PATH="$TMP_PROMPT"
   download_file "${RAW_BASE}/${PROMPT_NAME}" "$PROMPT_PATH"
+}
+
+resolve_command() {
+  if [ -n "$LOCAL_COMMAND" ] && [ -f "$LOCAL_COMMAND" ]; then
+    COMMAND_PATH="$LOCAL_COMMAND"
+    return
+  fi
+
+  TMP_COMMAND="$(mktemp)"
+  COMMAND_PATH="$TMP_COMMAND"
+  set +e
+  download_file "${RAW_BASE}/commands/tldr.md" "$COMMAND_PATH" > /dev/null 2>&1
+  ret=$?
+  set -e
+  if [ $ret -ne 0 ]; then
+    rm -f "$TMP_COMMAND"
+    COMMAND_PATH=""
+    return
+  fi
 }
 
 write_standard_path() {
@@ -211,8 +239,66 @@ verify_hermes() {
   fi
 }
 
+install_commands() {
+  if [ ! -f "$COMMAND_PATH" ]; then
+    printf 'SKIP commands (no %s)\n' "$COMMAND_SRC"
+    return
+  fi
+
+  # claude legacy commands (body only)
+  write_command "$HOME/.claude/commands/tldr.md" "claude"
+
+  # claude skills (with frontmatter)
+  write_command "$HOME/.claude/skills/tldr/SKILL.md" "skill"
+
+  # opencode global commands (with frontmatter)
+  write_command "$HOME/.config/opencode/commands/tldr.md" "opencode"
+
+  # factory/droid commands (with frontmatter)
+  write_command "$HOME/.factory/commands/tldr.md" "factory"
+
+  # cursor commands (body, for IDE + partial CLI)
+  write_command "$HOME/.cursor/commands/tldr.md" "cursor"
+}
+
+write_command() {
+  local target="$1"
+  local kind="$2"
+  local body
+  body="$(cat "$COMMAND_PATH")"
+
+  if [ "$DRY_RUN" -eq 1 ]; then
+    printf 'DRY RUN  would write %s -> %s\n' "$COMMAND_SRC" "$target"
+    return
+  fi
+
+  mkdir -p "$(dirname "$target")"
+
+  local content="$body"
+  if [ "$kind" = "skill" ] || [ "$kind" = "opencode" ] || [ "$kind" = "factory" ]; then
+    content="---
+description: Live TLDR reminder. Re-applies 1-sentence/3-word-target/6-word-max rules in long sessions.
+argument-hint: [query]
+---
+$body"
+  fi
+
+  if [ -f "$target" ]; then
+    if printf '%s\n' "$content" | cmp -s - "$target" 2>/dev/null; then
+      printf 'UNCHANGED %s\n' "$target"
+      return
+    fi
+    cp "$target" "${target}.bak.$(date +%Y%m%d-%H%M%S)"
+  fi
+
+  printf '%s\n' "$content" > "$target"
+  printf 'INSTALLED %s\n' "$target"
+}
+
 resolve_prompt
+resolve_command
 install_standard_locations
+install_commands
 
 if [ "$WITH_HERMES" -eq 1 ]; then
   install_hermes
@@ -231,6 +317,17 @@ verify_path "$HOME/AGENTS.md"
 verify_path "$HOME/.config/opencode/AGENTS.md"
 verify_path "$HOME/.factory/AGENTS.md"
 verify_path "$HOME/.pi/agent/AGENTS.md"
+
+# command files (light check)
+for c in "$HOME/.claude/commands/tldr.md" "$HOME/.claude/skills/tldr/SKILL.md" \
+         "$HOME/.config/opencode/commands/tldr.md" "$HOME/.factory/commands/tldr.md" \
+         "$HOME/.cursor/commands/tldr.md"; do
+  if [ -f "$c" ] && grep -q 'Re-apply TLDR rules' "$c" 2>/dev/null; then
+    printf '✓ %s\n' "$c"
+  else
+    printf '✗ %s\n' "$c"
+  fi
+done
 
 if [ "$WITH_HERMES" -eq 1 ]; then
   verify_hermes

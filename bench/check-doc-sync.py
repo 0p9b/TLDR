@@ -9,6 +9,7 @@ ROOT = Path(__file__).resolve().parents[1]
 README = ROOT / "README.md"
 AGENT_LOCATIONS = ROOT / "data" / "agent-locations.md"
 TLDR = ROOT / "TLDR.md"
+COMMAND = ROOT / "commands" / "tldr.md"
 INSTALL = ROOT / "install.sh"
 
 
@@ -25,6 +26,7 @@ def expect_contains(text: str, needle: str, label: str) -> None:
 readme = README.read_text(encoding="utf-8")
 agent_locations = AGENT_LOCATIONS.read_text(encoding="utf-8")
 prompt = TLDR.read_text(encoding="utf-8")
+command = COMMAND.read_text(encoding="utf-8")
 
 # Prompt invariants reflected in shipped prompt file.
 for needle in [
@@ -36,8 +38,18 @@ for needle in [
 ]:
     expect_contains(prompt, needle, "TLDR.md")
 
+# Command file must carry core defaults for nudge independence.
+for needle in [
+    "Default: 1 sentence.",
+    "Default target: 3 words.",
+    "Default maximum: 6 words.",
+]:
+    expect_contains(command, needle, "commands/tldr.md")
+
 expected_row = f"| [`TLDR.md`](TLDR.md) | {TLDR.stat().st_size:,} |"
 expect_contains(readme, expected_row, "README byte table")
+expected_cmd_row = f"| [`commands/tldr.md`](commands/tldr.md) | {COMMAND.stat().st_size:,} |"
+expect_contains(readme, expected_cmd_row, "README byte table")
 
 # README must document install and defaults.
 expect_contains(readme, "install.sh | bash -s --", "README one-line install")
@@ -47,6 +59,7 @@ for needle in [
     "- target: 3 words",
     "- default max: 6 words",
     "- one-word greeting for plain greetings",
+    "- `/tldr` (supported agents) re-applies rules live in long sessions",
 ]:
     expect_contains(readme, needle, "README current defaults")
 
@@ -74,5 +87,8 @@ expect_contains(
 
 if not INSTALL.exists():
     fail("install.sh missing from repo root")
+
+if not COMMAND.exists():
+    fail("commands/tldr.md missing from repo root")
 
 print("OK: docs and prompt metadata are in sync")
