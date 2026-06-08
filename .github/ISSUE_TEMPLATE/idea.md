@@ -12,7 +12,7 @@ What rule, template, tactic, or wording change would you add?
 
 ## What it would solve
 
-Which prompt-shape currently produces verbose / non-compliant output that this would fix? Reference a `BENCHMARKS.md` row if applicable.
+Which prompt-shape currently produces verbose / non-compliant output that this would fix? Reference a `data/benchmarks.md` row if applicable.
 
 ## Predicted impact
 

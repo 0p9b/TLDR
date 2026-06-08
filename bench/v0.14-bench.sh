@@ -2,7 +2,7 @@
 # Phase 2: 11 harnesses (parallel) x 15 prompts x N=2 trials x {baseline, tldr}.
 # Within harness: trials parallel, prompts sequential.
 set -u
-ROOT=/home/personal/bench-v14
+ROOT=${TLDR_BENCH_DIR:-"$HOME/bench-v14"}
 OUT=$ROOT/fullbench
 mkdir -p "$OUT"/{baseline,tldr}
 
@@ -32,11 +32,11 @@ declare -A SLOTS=(
   [copilot]="$HOME/.copilot/copilot-instructions.md"
   [droid]="$HOME/.factory/AGENTS.md"
   [hermes]="$HOME/.hermes/SOUL.md"
-  [opencode]="$HOME/.opencode/AGENTS.md"
+  [opencode]="$HOME/.config/opencode/AGENTS.md"
   [openclaw]="$HOME/.openclaw/AGENTS.md"
   [pi]="$HOME/.pi/agent/AGENTS.md"
   [agent]="$HOME/AGENTS.md"
-  [gemini]="$HOME/.gemini/GEMINI.md"
+  [gemini]="$HOME/.gemini/AGENTS.md"
 )
 
 invoke() {

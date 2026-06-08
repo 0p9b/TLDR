@@ -163,8 +163,8 @@ v0.14 carries forward the v0.13.1 shape-rule set and adds the explicit communica
 ```bash
 cd bench
 N_TRIALS=3 bash v0.14-bench.sh         # produces ~/bench-v14/fullbench/{baseline,tldr}/*.log
-node analyze.js                         # writes results/*.json + per-harness table
-node make-charts.js                     # writes results/viz/*.svg
+node analyze.js                         # writes ~/bench-v14/results/*.json + per-harness table
+node make-charts.js ../data/visualizations ~/bench-v14/results/charts.json
 ```
 
 Per-harness invocation cheat-sheet is in `data/methodology.md`.

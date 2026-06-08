@@ -375,9 +375,9 @@ alias cursor-agent='agent --yolo --model gpt-5.3-codex'
 
 ### Supported agents narrowed to 5
 
-The repo now supports 5 agents (down from 9). Dropped: codex, copilot, hermes, openclaw — none re-bench-tested at v0.13.1 on this host. The v0.13 numbers for those 4 are preserved in [`BENCHMARKS.md` §1–§11](./benchmarks.md) for historical reference and are reproducible by anyone running them with the v0.13 9 377-char form.
+The repo now supports 5 agents (down from 9). Dropped: codex, copilot, hermes, openclaw — none re-bench-tested at v0.13.1 on this host. The v0.13 numbers for those 4 are preserved in [`data/benchmarks.md` §1–§11](./benchmarks.md) for historical reference and are reproducible by anyone running them with the v0.13 9 377-char form.
 
-See [`BENCHMARKS.md` §14](./benchmarks.md#14-v0131-five-agent-bench-2026-04-24) for raw per-cell numbers, methodology, caveats, and reproducibility steps.
+See [`data/benchmarks.md` §14](./benchmarks.md#14-v0131-five-agent-bench-2026-04-24) for raw per-cell numbers, methodology, caveats, and reproducibility steps.
 
 ---
 
@@ -552,4 +552,4 @@ See [`BENCHMARKS.md` §14](./benchmarks.md#14-v0131-five-agent-bench-2026-04-24)
 
 - Every version was bench-tested across **8 agents × 15 prompts × 3 trials** (gemini and openclaw at N=1 due to harness constraints). ~300 measured responses per version, ~3 900 total across the v0.1 → v0.13 journey.
 - The single most important macro-finding was **cross-agent variance shrinkage**: baseline compliance spread of 66 percentage points (cursor 27 % ↔ openclaw 93 %) collapsed to 13 pp by v0.13 (hermes 87 % ↔ five agents at 100 %). 5× reduction.
-- Full per-version per-agent matrices in [`BENCHMARKS.md`](./benchmarks.md). Narrative in [`EVOLUTION.md`](./progression.md).
+- Full per-version per-agent matrices in [`data/benchmarks.md`](./benchmarks.md). Narrative in [`data/progression.md`](./progression.md).

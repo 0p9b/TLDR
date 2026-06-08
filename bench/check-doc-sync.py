@@ -11,6 +11,10 @@ AGENT_LOCATIONS = ROOT / "data" / "agent-locations.md"
 TLDR = ROOT / "TLDR.md"
 COMMAND = ROOT / "commands" / "tldr.md"
 INSTALL = ROOT / "install.sh"
+BENCH = ROOT / "bench" / "v0.14-bench.sh"
+CITATION = ROOT / "CITATION.cff"
+OLD_CITATION = ROOT / "data" / "citations.cff"
+IDEA_TEMPLATE = ROOT / ".github" / "ISSUE_TEMPLATE" / "idea.md"
 
 
 def fail(msg: str) -> None:
@@ -27,6 +31,9 @@ readme = README.read_text(encoding="utf-8")
 agent_locations = AGENT_LOCATIONS.read_text(encoding="utf-8")
 prompt = TLDR.read_text(encoding="utf-8")
 command = COMMAND.read_text(encoding="utf-8")
+bench = BENCH.read_text(encoding="utf-8")
+citation = CITATION.read_text(encoding="utf-8")
+idea_template = IDEA_TEMPLATE.read_text(encoding="utf-8")
 
 # Prompt invariants reflected in shipped prompt file.
 for needle in [
@@ -34,6 +41,7 @@ for needle in [
     "Default: 1 sentence.",
     "Default target: 3 words.",
     "Default maximum: 6 words.",
+    "Greeting → 1 word.",
     "Prose only. Tools, code, logic, reasoning, safety unchanged.",
 ]:
     expect_contains(prompt, needle, "TLDR.md")
@@ -43,6 +51,7 @@ for needle in [
     "Default: 1 sentence.",
     "Default target: 3 words.",
     "Default maximum: 6 words.",
+    "Greeting → 1 word.",
 ]:
     expect_contains(command, needle, "commands/tldr.md")
 
@@ -54,6 +63,8 @@ expect_contains(readme, expected_cmd_row, "README byte table")
 # README must document install and defaults.
 expect_contains(readme, "install.sh | bash -s --", "README one-line install")
 expect_contains(readme, "--with-hermes", "README one-line install")
+expected_size_text = f"[`TLDR.md`](TLDR.md) is the active prompt ({TLDR.stat().st_size:,} bytes)."
+expect_contains(readme, expected_size_text, "README active prompt size")
 for needle in [
     "- default: 1 sentence",
     "- target: 3 words",
@@ -90,5 +101,23 @@ if not INSTALL.exists():
 
 if not COMMAND.exists():
     fail("commands/tldr.md missing from repo root")
+
+for needle in [
+    'ROOT=${TLDR_BENCH_DIR:-"$HOME/bench-v14"}',
+    '[opencode]="$HOME/.config/opencode/AGENTS.md"',
+    '[gemini]="$HOME/.gemini/AGENTS.md"',
+]:
+    expect_contains(bench, needle, "bench/v0.14-bench.sh")
+
+if OLD_CITATION.exists():
+    fail("data/citations.cff should be root CITATION.cff for citation tooling")
+
+expect_contains(citation, 'url: "https://github.com/jqbit/TLDR"', "CITATION.cff repository URL")
+expect_contains(citation, 'repository-code: "https://github.com/jqbit/TLDR"', "CITATION.cff repository URL")
+if "https://github.com/jqbit/TLDR.md" in citation:
+    fail("CITATION.cff still references non-existent jqbit/TLDR.md repository")
+
+if "BENCHMARKS.md" in idea_template:
+    fail(".github/ISSUE_TEMPLATE/idea.md references non-existent BENCHMARKS.md")
 
 print("OK: docs and prompt metadata are in sync")

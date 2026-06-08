@@ -1,14 +1,16 @@
 #!/usr/bin/env node
-// make-charts.js — emit SVG bar/heatmap charts from results/charts.json
+// make-charts.js — emit SVG bar/heatmap charts from charts.json
 const fs = require('fs');
 const path = require('path');
 
-const OUT = process.argv[2] || '/home/personal/bench-v14/results/viz';
-const SRC = process.argv[3] || '/home/personal/bench-v14/results/charts.json';
+const REPO_ROOT = path.resolve(__dirname, '..');
+const OUT = path.resolve(process.argv[2] || process.env.TLDR_CHART_OUT || path.join(REPO_ROOT, 'data/visualizations'));
+const SRC = path.resolve(process.argv[3] || process.env.TLDR_CHART_SRC || path.join(OUT, 'charts.json'));
 fs.mkdirSync(OUT, { recursive: true });
 const data = JSON.parse(fs.readFileSync(SRC, 'utf8'));
 
 const esc = s => String(s).replace(/[<>&"']/g, c => ({ '<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&apos;' }[c]));
+const pct = v => `${v.toFixed(0)}%`;
 
 function head(w, h, title) {
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" font-family="ui-sans-serif,system-ui,sans-serif" font-size="13">
@@ -44,7 +46,7 @@ function reductionPerHarness() {
     s += `<rect x="${LEFT}" y="${y}" width="${bw}" height="14" class="bar-base"/>\n`;
     s += `<rect x="${LEFT}" y="${y + 18}" width="${tw}" height="14" class="bar-tldr"/>\n`;
     s += `<text x="${LEFT + bw + 4}" y="${y + 12}" class="label-sm">${r.baseline_tok}</text>\n`;
-    s += `<text x="${LEFT + tw + 4}" y="${y + 30}" class="label-sm">${r.tldr_tok} (-${r.reduction_pct.toFixed(0)}%)</text>\n`;
+    s += `<text x="${LEFT + tw + 4}" y="${y + 30}" class="label-sm">${r.tldr_tok} (${pct(r.reduction_pct)})</text>\n`;
   });
   s += `<g transform="translate(${LEFT}, ${H - 36})">
   <rect x="0" y="0" width="14" height="14" class="bar-base"/><text x="20" y="12" class="label-sm">baseline</text>

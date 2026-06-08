@@ -58,7 +58,7 @@ Total measurements across the v0.1 → v0.13 journey: roughly **3 900 agent resp
 
 ## 2. Version-by-version table
 
-> Headline summary. Full per-agent matrices (prose tokens, Δ %, compliance per agent per version) are in [`BENCHMARKS.md`](./benchmarks.md) §2-§4.
+> Headline summary. Full per-agent matrices (prose tokens, Δ %, compliance per agent per version) are in [`data/benchmarks.md`](./benchmarks.md) §2-§4.
 
 | Ver | Total Δ % | Lowest comply | TLDR.md size | Key change | Key finding |
 |---|---:|---:|---:|---|---|
@@ -179,7 +179,7 @@ Equally important: the things we tried that produced no improvement or active re
 
 ## 6. Per-version per-agent matrices (for plotting)
 
-These are the three time-series you want for visualisation. Each row is one agent; each column is one TLDR.md version. The full numerical tables are also in [`BENCHMARKS.md`](./benchmarks.md) §2-§4 — duplicated here so the narrative is self-contained.
+These are the three time-series you want for visualisation. Each row is one agent; each column is one TLDR.md version. The full numerical tables are also in [`data/benchmarks.md`](./benchmarks.md) §2-§4 — duplicated here so the narrative is self-contained.
 
 ### 6.0 Δ % vs baseline (the headline reduction over time)
 

@@ -143,7 +143,7 @@ It cannot reliably answer:
 Documented core agent paths are now coherent:
 
 - `~/.claude/CLAUDE.md`
-- `~/.gemini/GEMINI.md`
+- `~/.gemini/AGENTS.md`
 - `~/.codex/AGENTS.md`
 - `~/AGENTS.md`
 - `~/.config/opencode/AGENTS.md`

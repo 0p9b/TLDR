@@ -16,57 +16,57 @@
 <rect x="130" y="60" width="84.17470487455701" height="14" class="bar-base"/>
 <rect x="130" y="78" width="54.4759003112872" height="14" class="bar-tldr"/>
 <text x="218.174704874557" y="72" class="label-sm">2497</text>
-<text x="188.4759003112872" y="90" class="label-sm">1616 (-35%)</text>
+<text x="188.4759003112872" y="90" class="label-sm">1616 (35%)</text>
 <text x="122" y="118" text-anchor="end" class="label">codex</text>
 <rect x="130" y="104" width="384.76975628281684" height="14" class="bar-base"/>
 <rect x="130" y="122" width="752.3809523809523" height="14" class="bar-tldr"/>
 <text x="518.7697562828168" y="116" class="label-sm">11414</text>
-<text x="886.3809523809523" y="134" class="label-sm">22319 (--96%)</text>
+<text x="886.3809523809523" y="134" class="label-sm">22319 (-96%)</text>
 <text x="122" y="162" text-anchor="end" class="label">copilot</text>
 <rect x="130" y="148" width="2.7305370824345685" height="14" class="bar-base"/>
 <rect x="130" y="166" width="24.237730398400675" height="14" class="bar-tldr"/>
 <text x="136.73053708243458" y="160" class="label-sm">81</text>
-<text x="158.23773039840069" y="178" class="label-sm">719 (--788%)</text>
+<text x="158.23773039840069" y="178" class="label-sm">719 (-788%)</text>
 <text x="122" y="206" text-anchor="end" class="label">droid</text>
 <rect x="130" y="192" width="39.84561520293408" height="14" class="bar-base"/>
 <rect x="130" y="210" width="30.23816991288652" height="14" class="bar-tldr"/>
 <text x="173.84561520293408" y="204" class="label-sm">1182</text>
-<text x="164.23816991288652" y="222" class="label-sm">897 (-24%)</text>
+<text x="164.23816991288652" y="222" class="label-sm">897 (24%)</text>
 <text x="122" y="250" text-anchor="end" class="label">hermes</text>
 <rect x="130" y="236" width="0.1685516717552203" height="14" class="bar-base"/>
 <rect x="130" y="254" width="10.585044986227834" height="14" class="bar-tldr"/>
 <text x="134.1685516717552" y="248" class="label-sm">5</text>
-<text x="144.58504498622784" y="266" class="label-sm">314 (--6180%)</text>
+<text x="144.58504498622784" y="266" class="label-sm">314 (-6180%)</text>
 <text x="122" y="294" text-anchor="end" class="label">opencode</text>
 <rect x="130" y="280" width="1.6855167175522028" height="14" class="bar-base"/>
 <rect x="130" y="298" width="31.316900612119927" height="14" class="bar-tldr"/>
 <text x="135.6855167175522" y="292" class="label-sm">50</text>
-<text x="165.31690061211992" y="310" class="label-sm">929 (--1758%)</text>
+<text x="165.31690061211992" y="310" class="label-sm">929 (-1758%)</text>
 <text x="122" y="338" text-anchor="end" class="label">openclaw</text>
 <rect x="130" y="324" width="3.4384541038064937" height="14" class="bar-base"/>
 <rect x="130" y="342" width="13.821237083928063" height="14" class="bar-tldr"/>
 <text x="137.4384541038065" y="336" class="label-sm">102</text>
-<text x="147.82123708392805" y="354" class="label-sm">410 (--302%)</text>
+<text x="147.82123708392805" y="354" class="label-sm">410 (-302%)</text>
 <text x="122" y="382" text-anchor="end" class="label">pi</text>
 <rect x="130" y="368" width="0.3371033435104406" height="14" class="bar-base"/>
 <rect x="130" y="386" width="9.944548633557996" height="14" class="bar-tldr"/>
 <text x="134.33710334351045" y="380" class="label-sm">10</text>
-<text x="143.944548633558" y="398" class="label-sm">295 (--2850%)</text>
+<text x="143.944548633558" y="398" class="label-sm">295 (-2850%)</text>
 <text x="122" y="426" text-anchor="end" class="label">cline</text>
 <rect x="130" y="412" width="0" height="14" class="bar-base"/>
 <rect x="130" y="430" width="38.969146509806926" height="14" class="bar-tldr"/>
 <text x="134" y="424" class="label-sm">0</text>
-<text x="172.96914650980693" y="442" class="label-sm">1156 (-0%)</text>
+<text x="172.96914650980693" y="442" class="label-sm">1156 (0%)</text>
 <text x="122" y="470" text-anchor="end" class="label">agent</text>
 <rect x="130" y="456" width="0" height="14" class="bar-base"/>
 <rect x="130" y="474" width="5.461074164869137" height="14" class="bar-tldr"/>
 <text x="134" y="468" class="label-sm">0</text>
-<text x="139.46107416486913" y="486" class="label-sm">162 (-0%)</text>
+<text x="139.46107416486913" y="486" class="label-sm">162 (0%)</text>
 <text x="122" y="514" text-anchor="end" class="label">gemini</text>
 <rect x="130" y="500" width="5.663336170975401" height="14" class="bar-base"/>
 <rect x="130" y="518" width="20.59701428848792" height="14" class="bar-tldr"/>
 <text x="139.6633361709754" y="512" class="label-sm">168</text>
-<text x="154.5970142884879" y="530" class="label-sm">611 (--264%)</text>
+<text x="154.5970142884879" y="530" class="label-sm">611 (-264%)</text>
 <g transform="translate(130, 588)">
   <rect x="0" y="0" width="14" height="14" class="bar-base"/><text x="20" y="12" class="label-sm">baseline</text>
   <rect x="100" y="0" width="14" height="14" class="bar-tldr"/><text x="120" y="12" class="label-sm">TLDR.md</text>

@@ -151,7 +151,7 @@ Eight production coding-agent CLIs:
 7. **hermes** — Hermes Agent (Nous Research)
 8. **openclaw** — OpenClaw TUI (with default model swapped from broken `ollama/qwen3.5:397b-cloud` to `openai-codex/gpt-5.4`)
 
-Each agent reads its own global instruction file at session start: `~/.claude/CLAUDE.md`, `~/.codex/AGENTS.md`, `~/.gemini/GEMINI.md`, etc. TLDR.md is deployed identically to all eight.
+Each agent reads its own global instruction file at session start: `~/.claude/CLAUDE.md`, `~/.codex/AGENTS.md`, `~/.gemini/AGENTS.md`, etc. TLDR.md is deployed identically to all eight.
 
 ### 5.3 Trial structure
 
@@ -350,4 +350,4 @@ The TLDR.md methodology — hard caps, response templates, self-trim rules, regi
 
 ---
 
-*This document accompanies TLDR.md v0.13. The accompanying `EVOLUTION.md` documents the per-version journey from v0.1 through v0.13 — what changed, what worked, what regressed, and the practical lessons learned.*
+*This document accompanies TLDR.md v0.13. The accompanying `data/progression.md` documents the per-version journey from v0.1 through v0.13 — what changed, what worked, what regressed, and the practical lessons learned.*

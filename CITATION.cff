@@ -6,8 +6,8 @@ type: software
 authors:
   - alias: jqbit
     affiliation: Independent
-url: "https://github.com/jqbit/TLDR.md"
-repository-code: "https://github.com/jqbit/TLDR.md"
+url: "https://github.com/jqbit/TLDR"
+repository-code: "https://github.com/jqbit/TLDR"
 license: MIT
 version: "0.13.1"
 date-released: "2026-04-24"

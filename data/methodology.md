@@ -176,4 +176,4 @@ The variant that wins on 1, then 2, then 3, ... is promoted.
 - `bench/analyze.js` — per-harness reduction + compliance + cell matrix.
 - `bench/make-charts.js` — emit SVG bar/heatmap/line charts.
 
-Sample run: `cd bench && N_TRIALS=3 bash v0.14-bench.sh && node analyze.js && node make-charts.js`.
+Sample run: `cd bench && N_TRIALS=3 bash v0.14-bench.sh && node analyze.js && node make-charts.js ../data/visualizations ~/bench-v14/results/charts.json`.

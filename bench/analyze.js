@@ -2,9 +2,13 @@
 // analyze.js — read fullbench/{baseline,tldr}/*.log, compute per-cell + per-harness metrics.
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 const { clean, tok } = require('./tokenize');
 
-const ROOT = '/home/personal/bench-v14/fullbench';
+const REPO_ROOT = path.resolve(__dirname, '..');
+const ROOT = path.resolve(process.argv[2] || process.env.TLDR_BENCH_ROOT || path.join(os.homedir(), 'bench-v14/fullbench'));
+const OUT = path.resolve(process.argv[3] || process.env.TLDR_BENCH_RESULTS || path.join(os.homedir(), 'bench-v14/results'));
+const N_TRIALS = Number(process.env.N_TRIALS || 2);
 const HARNESSES = ['claude','codex','copilot','droid','hermes','opencode','openclaw','pi','cline','agent','gemini'];
 const QS = ['Q01','Q02','Q03','Q04','Q05','Q06','Q07','Q08','Q09','Q10','Q11','Q12','Q13','Q14','Q15'];
 const CAPS = { Q01:40, Q02:250, Q03:150, Q04:200, Q05:70, Q06:50, Q07:350, Q08:100, Q09:600, Q10:80, Q11:50, Q12:300, Q13:40, Q14:50, Q15:400 };
@@ -20,7 +24,6 @@ function readCell(cond, h, q, trial) {
   }
 }
 
-const N_TRIALS = 2;
 const cells = []; // {cond, h, q, trial, tokens, bytes}
 for (const h of HARNESSES) {
   for (const q of QS) {
@@ -95,9 +98,10 @@ console.log(`\n# Failing cells: ${failing.length}\n`);
 failing.forEach(f => console.log(`  ${f.h}/${f.q}: ${f.mean.toFixed(0)} > ${f.cap}`));
 
 // Write JSON outputs
-fs.writeFileSync(path.join('/home/personal/bench-v14/results', 'summary.json'), JSON.stringify(summary, null, 2));
-fs.writeFileSync(path.join('/home/personal/bench-v14/results', 'matrix.json'), JSON.stringify(matrix, null, 2));
-fs.writeFileSync(path.join('/home/personal/bench-v14/results', 'failing.json'), JSON.stringify(failing, null, 2));
+fs.mkdirSync(OUT, { recursive: true });
+fs.writeFileSync(path.join(OUT, 'summary.json'), JSON.stringify(summary, null, 2));
+fs.writeFileSync(path.join(OUT, 'matrix.json'), JSON.stringify(matrix, null, 2));
+fs.writeFileSync(path.join(OUT, 'failing.json'), JSON.stringify(failing, null, 2));
 
 // charts.json (for make-charts.js)
 const reduction_per_harness = HARNESSES.map(h => ({
@@ -115,10 +119,10 @@ const progression = [
   { version: 'v0.11', mean_reduction_pct: 70, char_count: 7800 },
   { version: 'v0.12', mean_reduction_pct: 76, char_count: 4200 },
   { version: 'v0.13.1', mean_reduction_pct: 82.1, char_count: 1521 },
-  { version: 'v0.14',   mean_reduction_pct: HARNESSES.reduce((s,h)=>s+summary[h].reduction_pct,0)/HARNESSES.length, char_count: 1521 }
+  { version: 'v0.14',   mean_reduction_pct: HARNESSES.reduce((s,h)=>s+summary[h].reduction_pct,0)/HARNESSES.length, char_count: Array.from(fs.readFileSync(path.join(REPO_ROOT, 'TLDR.md'), 'utf8')).length }
 ];
-fs.writeFileSync('/home/personal/bench-v14/results/charts.json', JSON.stringify({
+fs.writeFileSync(path.join(OUT, 'charts.json'), JSON.stringify({
   reduction_per_harness, compliance_matrix, progression
 }, null, 2));
 
-console.error('wrote results/summary.json, matrix.json, failing.json, charts.json');
+console.error(`wrote ${OUT}/summary.json, matrix.json, failing.json, charts.json`);

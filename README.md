@@ -16,12 +16,12 @@ Tools, reasoning, code quality, and safety remain unchanged.
 
 ## TLDR file
 
-[`TLDR.md`](TLDR.md) is the active prompt (1,313 bytes). `commands/tldr.md` provides the `/tldr` live reminder.
+[`TLDR.md`](TLDR.md) is the active prompt (1,336 bytes). `commands/tldr.md` provides the `/tldr` live reminder.
 
 | File | Bytes |
 |---|:---|
-| [`TLDR.md`](TLDR.md) | 1,313 |
-| [`commands/tldr.md`](commands/tldr.md) | 1,122 |
+| [`TLDR.md`](TLDR.md) | 1,336 |
+| [`commands/tldr.md`](commands/tldr.md) | 1,145 |
 
 ## Install
 
@@ -98,6 +98,7 @@ claude -p "What's the git command to undo the last commit but keep changes stage
 - `TLDR.md` — active system prompt.
 - `commands/tldr.md` — `/tldr` slash command definition.
 - `install.sh` — installer + optional Hermes merge + commands.
+- `CITATION.cff` — citation metadata.
 - `data/agent-locations.md` — where prompt and commands are installed per agent.
 - `CONTRIBUTING.md` — PR workflow.
 
