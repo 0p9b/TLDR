@@ -1,8 +1,30 @@
-# TLDR — Too Long Didn't Read
+<p align="center">
+  <img src="docs/assets/tldr-mark.svg" width="120" alt="TLDR — folded summary mark" />
+</p>
 
-![License](https://img.shields.io/github/license/jqbit/TLDR)
-![Stars](https://img.shields.io/github/stars/jqbit/TLDR)
-![Last commit](https://img.shields.io/github/last-commit/jqbit/TLDR)
+<h1 align="center">TLDR</h1>
+
+<p align="center">
+  <strong>Verdict first. Filler never.</strong>
+</p>
+
+<p align="center">
+  <a href="https://github.com/jqbit/TLDR/stargazers"><img src="https://img.shields.io/github/stars/jqbit/TLDR?style=flat&color=yellow" alt="Stars"></a>
+  <a href="https://github.com/jqbit/TLDR/commits/main"><img src="https://img.shields.io/github/last-commit/jqbit/TLDR?style=flat" alt="Last Commit"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/jqbit/TLDR?style=flat" alt="License"></a>
+  <img src="https://img.shields.io/badge/works%20with-30%2B%20agents-2c2a26?style=flat" alt="30+ agents" />
+</p>
+
+<p align="center">
+  <a href="#before--after">Before/After</a> •
+  <a href="#the-prompt--tldrmd">Prompt</a> •
+  <a href="#install--prompt-only-installsh">Prompt install</a> •
+  <a href="#install--full-stack-bininstalljs">Full install</a> •
+  <a href="./INSTALL.md">INSTALL.md</a> •
+  <a href="data/benchmarks.md">Benchmarks</a>
+</p>
+
+---
 
 Terse, high-signal responses for AI coding agents — less filler, same accuracy on tools, code, and safety.
 
@@ -14,6 +36,29 @@ Terse, high-signal responses for AI coding agents — less filler, same accuracy
 | **[`bin/install.js`](bin/install.js)** (via `npx`) | Detects installed agents; plugins, hooks, skills, optional MCP shrink | Claude Code, Cursor, Codex, Gemini, 30+ agents — see **[INSTALL.md](INSTALL.md)** |
 
 > Historical prompt variants and benchmarks: [`data/changelog.md`](data/changelog.md), [`data/progression.md`](data/progression.md).
+
+## Before / After
+
+<table>
+<tr>
+<td width="50%">
+
+### 🗣️ Normal agent (verbose)
+
+> "Sure! I'd be happy to help. The reason your React component is re-rendering is likely because you're creating a new object reference on each render. I'd recommend wrapping it in `useMemo`."
+
+</td>
+<td width="50%">
+
+### <img src="docs/assets/tldr-mark.svg" width="18" height="18" alt="TLDR"/> TLDR mode
+
+> New object ref each render. Inline prop = new ref = re-render. `useMemo`.
+
+</td>
+</tr>
+</table>
+
+**Same fix. ~60–75% fewer prose tokens in benchmarks** — tools, code, and safety unchanged. Reproduce: [`bench/v0.14-bench.sh`](bench/v0.14-bench.sh) · writeup: [`data/benchmarks.md`](data/benchmarks.md).
 
 ## The prompt — `TLDR.md`
 
@@ -66,7 +111,7 @@ node bin/install.js --all    # hooks + per-repo init + optional extras
 node bin/install.js --list   # agent matrix
 ```
 
-Windows: [`install.ps1`](install.ps1) forwards to the same Node installer.
+Windows: [`install.ps1`](install.ps1) runs the Node installer.
 
 **Full flags, per-agent table, verify, uninstall, troubleshooting:** **[INSTALL.md](INSTALL.md)**.
 
@@ -88,7 +133,7 @@ grep -q "^## Prime directive" ~/.hermes/SOUL.md 2>/dev/null && echo "✓ ~/.herm
 | `TLDR.md` | Canonical terse system prompt |
 | `commands/tldr.md` | `/tldr` slash command |
 | `install.sh` | Prompt-only installer (+ optional Hermes) |
-| `install.ps1` | Windows shim → `bin/install.js` |
+| `install.ps1` | Windows entry → `bin/install.js` |
 | `bin/install.js` | Unified multi-agent installer |
 | `skills/` | TLDR skill suite (source of truth for behavior) |
 | `plugins/tldr/` | Claude Code / distribution mirrors (CI-synced) |

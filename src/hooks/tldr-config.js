@@ -6,7 +6,7 @@
 //   2. Config file defaultMode field:
 //      - $XDG_CONFIG_HOME/tldr/config.json (any platform, if set)
 //      - ~/.config/tldr/config.json (macOS / Linux fallback)
-//      - %APPDATA%\blunt\config.json (Windows fallback)
+//      - %APPDATA%\\tldr\\config.json (Windows fallback)
 //   3. 'full'
 
 const fs = require('fs');
@@ -131,12 +131,12 @@ function safeWriteFlag(flagPath, content) {
         realFlagDir = fs.realpathSync(flagDir);
         const realStat = fs.statSync(realFlagDir);
         if (!realStat.isDirectory()) {
-          if (debug) process.stderr.write(`[blunt] safeWriteFlag: symlink target ${realFlagDir} is not a directory\n`);
+          if (debug) process.stderr.write(`[tldr] safeWriteFlag: symlink target ${realFlagDir} is not a directory\n`);
           return;
         }
         if (typeof process.getuid === 'function') {
           if (realStat.uid !== process.getuid()) {
-            if (debug) process.stderr.write(`[blunt] safeWriteFlag: symlink target ${realFlagDir} owned by uid ${realStat.uid}, not current user ${process.getuid()}\n`);
+            if (debug) process.stderr.write(`[tldr] safeWriteFlag: symlink target ${realFlagDir} owned by uid ${realStat.uid}, not current user ${process.getuid()}\n`);
             return;
           }
         } else {
@@ -145,7 +145,7 @@ function safeWriteFlag(flagPath, content) {
           const normalizedHome = path.resolve(home);
           if (!normalizedReal.toLowerCase().startsWith(normalizedHome.toLowerCase() + path.sep) &&
               normalizedReal.toLowerCase() !== normalizedHome.toLowerCase()) {
-            if (debug) process.stderr.write(`[blunt] safeWriteFlag: symlink target ${normalizedReal} is outside home directory ${normalizedHome}\n`);
+            if (debug) process.stderr.write(`[tldr] safeWriteFlag: symlink target ${normalizedReal} is outside home directory ${normalizedHome}\n`);
             return;
           }
         }
@@ -249,7 +249,7 @@ function appendFlag(filePath, line) {
         if (!realStat.isDirectory()) return;
         if (typeof process.getuid === 'function') {
           if (realStat.uid !== process.getuid()) {
-            if (debug) process.stderr.write(`[blunt] appendFlag: symlink target ${realDir} owned by uid ${realStat.uid}\n`);
+            if (debug) process.stderr.write(`[tldr] appendFlag: symlink target ${realDir} owned by uid ${realStat.uid}\n`);
             return;
           }
         } else {

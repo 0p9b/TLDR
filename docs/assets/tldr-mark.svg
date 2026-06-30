@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120" role="img" aria-label="TLDR folded summary">
+  <title>TLDR mark — folded summary</title>
+  <!-- Folded page: "too long → short" -->
+  <rect x="22" y="18" width="68" height="84" rx="4" fill="#f4f1ea" stroke="#2c2a26" stroke-width="2.5"/>
+  <path d="M78 18 L90 30 L78 30 Z" fill="#d8d4ca" stroke="#2c2a26" stroke-width="2" stroke-linejoin="round"/>
+  <line x1="32" y1="42" x2="72" y2="42" stroke="#8a877f" stroke-width="3" stroke-linecap="round"/>
+  <line x1="32" y1="54" x2="66" y2="54" stroke="#8a877f" stroke-width="3" stroke-linecap="round"/>
+  <line x1="32" y1="66" x2="58" y2="66" stroke="#2c2a26" stroke-width="4" stroke-linecap="round"/>
+  <text x="60" y="92" text-anchor="middle" font-family="ui-sans-serif,system-ui,sans-serif" font-size="11" font-weight="700" fill="#2c2a26">TLDR</text>
+</svg>

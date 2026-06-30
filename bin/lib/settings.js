@@ -71,14 +71,14 @@ function readSettings(p) {
   let raw;
   try { raw = fs.readFileSync(p, 'utf8'); }
   catch (e) {
-    process.stderr.write(`blunt: cannot read ${p}: ${e.message}\n`);
+    process.stderr.write(`tldr: cannot read ${p}: ${e.message}\n`);
     return null;
   }
   if (!raw.trim()) return {};
   try { return JSON.parse(raw); } catch (_) { /* fall through to JSONC */ }
   try { return JSON.parse(stripJsonComments(raw)); }
   catch (e) {
-    process.stderr.write(`blunt: warning — ${p} is not valid JSON or JSONC: ${e.message}\n`);
+    process.stderr.write(`tldr: warning — ${p} is not valid JSON or JSONC: ${e.message}\n`);
     return null;
   }
 }

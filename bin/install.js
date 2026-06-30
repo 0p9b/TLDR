@@ -126,14 +126,14 @@ function checkWslWindowsNode() {
   // Windows-Node executing inside WSL has homedir like /mnt/c/Users/... which
   // breaks every config-dir resolution. Detect and abort with a clear hint.
   if (process.env.WSL_DISTRO_NAME) {
-    die('blunt: detected Windows Node.js running inside WSL.\n' +
+    die('tldr: detected Windows Node.js running inside WSL.\n' +
         '         Install Linux-native Node inside your WSL distro and re-run there.\n' +
         '         (WSL_DISTRO_NAME=' + process.env.WSL_DISTRO_NAME + ')');
   }
   try {
     const v = fs.readFileSync('/proc/version', 'utf8').toLowerCase();
     if (v.includes('microsoft') || v.includes('wsl')) {
-      die('blunt: detected Windows Node.js running inside WSL (/proc/version).\n' +
+      die('tldr: detected Windows Node.js running inside WSL (/proc/version).\n' +
           '         Install Linux-native Node inside your WSL distro and re-run there.');
     }
   } catch (_) { /* /proc/version absent on real Windows — fine */ }
@@ -141,7 +141,7 @@ function checkWslWindowsNode() {
 
 function checkNodeVersion() {
   const major = parseInt(process.versions.node.split('.')[0], 10);
-  if (major < 18) die(`blunt: Node ${process.versions.node} too old. Need Node ≥18. https://nodejs.org`);
+  if (major < 18) die(`tldr: Node ${process.versions.node} too old. Need Node ≥18. https://nodejs.org`);
 }
 
 // ── Provider matrix ────────────────────────────────────────────────────────
@@ -910,7 +910,10 @@ function uninstall(ctx) {
   if (fs.existsSync(settingsPath)) {
     const settings = SETTINGS.readSettings(settingsPath);
     if (settings) {
-      const removed = SETTINGS.removeBluntHooks(settings, 'blunt');
+      let removed = 0;
+      for (const marker of ['tldr-activate', 'tldr-mode-tracker', 'tldr-stats']) {
+        removed += SETTINGS.removeBluntHooks(settings, marker);
+      }
       // Drop our statusline if it points at our script
       if (settings.statusLine) {
         const cmd = typeof settings.statusLine === 'string' ? settings.statusLine : (settings.statusLine.command || '');
@@ -1103,7 +1106,7 @@ function pad(s, n) { s = String(s); return s + ' '.repeat(Math.max(0, n - s.leng
 
 // ── Help ───────────────────────────────────────────────────────────────────
 function printHelp() {
-  process.stdout.write(`blunt installer — detects your agents and installs TLDR for each one.
+  process.stdout.write(`tldr installer — detects your agents and installs TLDR for each one.
 
 USAGE
   npx -y github:jqbit/TLDR -- [flags]

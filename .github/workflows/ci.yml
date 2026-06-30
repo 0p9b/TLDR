@@ -1,52 +1,36 @@
 name: CI
 
 on:
-  pull_request:
   push:
     branches: [main]
-
-permissions:
-  contents: read
+  pull_request:
+    branches: [main]
 
 jobs:
-  checks:
+  verify:
     runs-on: ubuntu-latest
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: 22
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
+          node-version: "20"
+      - uses: actions/setup-python@v5
         with:
-          python-version: '3.x'
-
-      - name: Check JavaScript syntax
+          python-version: "3.11"
+      - name: Python gates
         run: |
-          node --check bench/analyze.js
-          node --check bench/make-charts.js
-
-      - name: Validate JSON data
+          python3 tests/verify_repo.py
+          python3 bench/check-doc-sync.py
+          python3 bench/check-md-links.py
+          python3 tests/test_compress_safety.py
+          python3 tests/test_hooks.py
+          python3 tests/test_validate_inline.py
+      - name: Installer tests
+        run: node --test tests/installer/*.test.mjs
+      - name: Standalone JS tests
         run: |
-          python3 -m json.tool data/benchmarks-summary.json >/dev/null
-          python3 -m json.tool data/benchmarks-matrix.json >/dev/null
-          python3 -m json.tool data/visualizations/charts.json >/dev/null
-
-      - name: Check Python syntax
-        run: python3 -m py_compile bench/dspy/*.py bench/check-md-links.py bench/check-doc-sync.py
-
-      - name: Check install script
-        run: |
-          bash -n install.sh
-          bash install.sh --dry-run
-          bash install.sh --dry-run --with-hermes
-
-      - name: Check Markdown links
-        run: python3 bench/check-md-links.py
-
-      - name: Check doc/prompt sync
-        run: python3 bench/check-doc-sync.py
+          node tests/test_mcp_shrink.js
+          node tests/test_symlink_flag.js
+          node tests/test_repo_local_config.js
+          node tests/test_tldr_init.js
+          node tests/test_tldr_stats.js

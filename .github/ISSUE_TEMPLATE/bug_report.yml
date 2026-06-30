@@ -1,0 +1,29 @@
+name: Bug report
+description: Something broke in install, hooks, or prompt sync
+title: "[bug] "
+labels:
+  - bug
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+  - type: dropdown
+    id: install_path
+    attributes:
+      label: Install path
+      options:
+        - install.sh (prompt only)
+        - npx / bin/install.js
+        - Manual TLDR.md copy
+  - type: textarea
+    id: repro
+    attributes:
+      label: Reproduce steps
+      render: shell

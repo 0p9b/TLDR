@@ -27,7 +27,7 @@ $Repo = "jqbit/TLDR"
 $node = Get-Command node -ErrorAction SilentlyContinue
 if (-not $node) {
   Write-Error @"
-blunt: Node.js (>=18) required. Install:
+tldr: Node.js (>=18) required. Install:
   - winget install OpenJS.NodeJS.LTS
   - or download from https://nodejs.org
 "@
@@ -36,7 +36,7 @@ blunt: Node.js (>=18) required. Install:
 
 $nodeMajor = [int](& node -p "process.versions.node.split('.')[0]")
 if ($nodeMajor -lt 18) {
-  Write-Error "blunt: Node $nodeMajor too old. Need Node >=18. Upgrade: https://nodejs.org"
+  Write-Error "tldr: Node $nodeMajor too old. Need Node >=18. Upgrade: https://nodejs.org"
   exit 1
 }
 
@@ -51,7 +51,7 @@ if (Test-Path $local) {
 # Curl-pipe path: delegate to npx.
 $npx = Get-Command npx -ErrorAction SilentlyContinue
 if (-not $npx) {
-  Write-Error "blunt: npx required (ships with Node >=18). Reinstall Node.js."
+  Write-Error "tldr: npx required (ships with Node >=18). Reinstall Node.js."
   exit 1
 }
 

@@ -3,7 +3,7 @@ name: tldr-help
 description: >
   Quick-reference card for all tldr modes, skills, and commands.
   One-shot display, not a persistent mode. Trigger: /tldr-help,
-  "blunt help", "what TLDR commands", "how do I use TLDR".
+  "tldr help", "what TLDR commands", "how do I use TLDR".
 ---
 
 # TLDR Help

@@ -173,7 +173,7 @@ function parseArgs(argv) {
 }
 
 function help() {
-  console.log(`blunt init — drop always-on TLDR rule into a target repo
+  console.log(`tldr init — drop always-on TLDR rule into a target repo
 
 Usage: tldr-init.js [target-dir] [--dry-run] [--force] [--only <agent>]
 

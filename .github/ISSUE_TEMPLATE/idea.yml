@@ -1,0 +1,25 @@
+name: Idea / enhancement
+description: Prompt tweak, new agent, docs, benchmarks
+title: "[idea] "
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / pain
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Scope
+      options:
+        - label: TLDR.md prompt only
+        - label: bin/install.js / skills
+        - label: Docs / README
+        - label: Benchmarks / data/
