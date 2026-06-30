@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/assets/tldr-mascot.png" width="120" alt="TLDR owl — scroll, scissors, verdict sticky note" />
+  <img src="https://raw.githubusercontent.com/jqbit/TLDR/main/docs/assets/tldr-mascot.png" width="120" alt="TLDR owl — scroll, scissors, verdict sticky note" />
 </p>
 
 <h1 align="center">TLDR</h1>
