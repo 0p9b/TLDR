@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/assets/tldr-mascot.jpg" width="280" alt="TLDR owl — scroll, scissors, verdict sticky note" />
+  <img src="docs/assets/tldr-mascot.png" width="120" alt="TLDR owl — scroll, scissors, verdict sticky note" />
 </p>
 
 <h1 align="center">TLDR</h1>
@@ -50,7 +50,7 @@ Terse, high-signal responses for AI coding agents — less filler, same accuracy
 </td>
 <td width="50%">
 
-### <img src="docs/assets/tldr-mascot.jpg" width="22" alt="TLDR"/> TLDR mode
+### <img src="docs/assets/tldr-mascot.png" width="20" alt="TLDR"/> TLDR mode
 
 > New object ref each render. Inline prop = new ref = re-render. `useMemo`.
 
