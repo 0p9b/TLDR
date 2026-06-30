@@ -74,7 +74,7 @@ const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
 
 const isBluntEntry = (entry) =>
   entry && entry.hooks && entry.hooks.some(h =>
-    h.command && h.command.includes('blunt')
+    h.command && h.command.includes('tldr-activate')
   );
 
 let removed = 0;

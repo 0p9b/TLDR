@@ -67,7 +67,7 @@ if [ "$FORCE" -eq 0 ]; then
       const hasBluntHook = (event) =>
         Array.isArray(settings.hooks?.[event]) &&
         settings.hooks[event].some(e =>
-          e.hooks && e.hooks.some(h => h.command && h.command.includes('blunt'))
+          e.hooks && e.hooks.some(h => h.command && h.command.includes('tldr-activate'))
         );
       process.exit(
         hasBluntHook('SessionStart') &&
@@ -137,7 +137,7 @@ TLDR_SETTINGS="$SETTINGS" TLDR_HOOKS_DIR="$HOOKS_DIR" node -e "
   // SessionStart — auto-load TLDR rules
   if (!settings.hooks.SessionStart) settings.hooks.SessionStart = [];
   const hasStart = settings.hooks.SessionStart.some(e =>
-    e.hooks && e.hooks.some(h => h.command && h.command.includes('blunt'))
+    e.hooks && e.hooks.some(h => h.command && h.command.includes('tldr-activate'))
   );
   if (!hasStart) {
     settings.hooks.SessionStart.push({
@@ -153,7 +153,7 @@ TLDR_SETTINGS="$SETTINGS" TLDR_HOOKS_DIR="$HOOKS_DIR" node -e "
   // UserPromptSubmit — track mode changes when user types /tldr commands
   if (!settings.hooks.UserPromptSubmit) settings.hooks.UserPromptSubmit = [];
   const hasPrompt = settings.hooks.UserPromptSubmit.some(e =>
-    e.hooks && e.hooks.some(h => h.command && h.command.includes('blunt'))
+    e.hooks && e.hooks.some(h => h.command && h.command.includes('tldr-activate'))
   );
   if (!hasPrompt) {
     settings.hooks.UserPromptSubmit.push({

@@ -128,7 +128,7 @@ if (!settings.hooks) settings.hooks = {};
 // SessionStart
 if (!settings.hooks.SessionStart) settings.hooks.SessionStart = [];
 const hasStart = settings.hooks.SessionStart.some(e =>
-  e.hooks && e.hooks.some(h => h.command && h.command.includes('blunt'))
+  e.hooks && e.hooks.some(h => h.command && h.command.includes('tldr-activate'))
 );
 if (!hasStart) {
   settings.hooks.SessionStart.push({
@@ -144,7 +144,7 @@ if (!hasStart) {
 // UserPromptSubmit
 if (!settings.hooks.UserPromptSubmit) settings.hooks.UserPromptSubmit = [];
 const hasPrompt = settings.hooks.UserPromptSubmit.some(e =>
-  e.hooks && e.hooks.some(h => h.command && h.command.includes('blunt'))
+  e.hooks && e.hooks.some(h => h.command && h.command.includes('tldr-activate'))
 );
 if (!hasPrompt) {
   settings.hooks.UserPromptSubmit.push({
