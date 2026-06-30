@@ -244,7 +244,7 @@ function formatStats({ outputTokens, cacheReadTokens, turns, mode, model, sessio
     } else {
       footer = 'Savings est. from benchmarks/ (mean per-task). Actual varies by task.';
     }
-    savings = `Est. without blunt:  ${estNormal.toLocaleString()}\n` +
+    savings = `Est. without TLDR:  ${estNormal.toLocaleString()}\n` +
               `Est. tokens saved:     ${estSaved.toLocaleString()} (~${Math.round(ratio * 100)}%)\n` +
               usdLine.replace(/\n$/, '');
   } else if (mode && mode !== 'off') {
@@ -280,7 +280,7 @@ function main() {
   const sinceArg = sinceIdx !== -1 ? args[sinceIdx + 1] : null;
 
   const claudeDir = process.env.CLAUDE_CONFIG_DIR || path.join(os.homedir(), '.claude');
-  const historyPath = path.join(claudeDir, '.blunt-history.jsonl');
+  const historyPath = path.join(claudeDir, '.tldr-history.jsonl');
 
   // Lifetime aggregation paths short-circuit before we need a live session.
   if (all || sinceArg) {

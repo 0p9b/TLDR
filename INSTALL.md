@@ -1,15 +1,27 @@
 # Install TLDR
 
-One install. Works for every AI coding agent on your machine.
+One installer for every AI coding agent on your machine — plus a separate **prompt-only** path if you only want [`TLDR.md`](TLDR.md) copied into config files.
 
-If just want it to work, run the one-liner. If want to know what gets touched, scroll down.
+Overview and repo map: **[README.md](README.md)**.
 
-## One-liner
+If you just want it to work, run the one-liner below. To see exactly what gets touched, scroll down.
+
+## One-liner (full stack)
+
+Requires **Node ≥18**. Detects agents, installs plugins/extensions/skills/hooks as appropriate.
 
 **macOS / Linux / WSL / Git Bash**
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/jqbit/TLDR/main/install.sh | bash
+npx -y github:jqbit/TLDR
+```
+
+Equivalent from a clone: `node bin/install.js`
+
+**Prompt only (no Node)** — copies [`TLDR.md`](TLDR.md) to standard agent paths; see [README.md#install--prompt-only-installsh](README.md#install--prompt-only-installsh):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/jqbit/TLDR/main/install.sh | bash -s --
 ```
 
 **Windows (PowerShell 5.1+)**
@@ -28,7 +40,7 @@ What it does:
 Want to preview before installing? Use `--dry-run`:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/jqbit/TLDR/main/install.sh | bash -s -- --dry-run
+npx -y github:jqbit/TLDR -- --dry-run
 ```
 
 ## Per-agent install
@@ -37,7 +49,7 @@ If you want to install for one agent (or want to know exactly what command runs 
 
 | Agent | Install command | Auto-activates? |
 |---|---|:-:|
-| **Claude Code** | `claude plugin marketplace add jqbit/TLDR && claude plugin install blunt@blunt` | Yes |
+| **Claude Code** | `claude plugin marketplace add jqbit/TLDR && claude plugin install tldr@tldr` | Yes |
 | **Gemini CLI** | `gemini extensions install https://github.com/jqbit/TLDR` | Yes |
 | **opencode** | `node bin/install.js --only opencode` *(or `npx -y github:jqbit/TLDR -- --only opencode`)* | Yes (plugin + AGENTS.md) |
 | **OpenClaw** | `npx -y github:jqbit/TLDR -- --only openclaw` | Yes (workspace skill + SOUL.md) |
@@ -167,7 +179,7 @@ npx -y github:jqbit/TLDR -- --uninstall
 
 What it removes:
 
-- TLDR hook entries from `$CLAUDE_CONFIG_DIR/settings.json` (default `~/.claude/`; matched by the substring `blunt`).
+- TLDR hook entries from `$CLAUDE_CONFIG_DIR/settings.json` (default `~/.claude/`; matched by TLDR hook script paths).
 - Hook files in `$CLAUDE_CONFIG_DIR/hooks/` (`tldr-activate.js`, `tldr-mode-tracker.js`, `tldr-stats.js`, `tldr-config.js`, `tldr-statusline.{sh,ps1}`, plus the dir's `package.json` marker).
 - The Claude Code plugin and the Gemini CLI extension (if installed).
 - The opencode native plugin (`~/.config/opencode/plugins/tldr/`, the `plugin` and `mcp.tldr-shrink` entries from `opencode.json`, our skill/agent/command files, the TLDR block from `AGENTS.md`, and the opencode flag file).
@@ -176,7 +188,7 @@ What it removes:
 
 What it does **not** remove:
 
-- Skills installed via `npx skills add` — the `skills` CLI manages those. Run `npx skills remove blunt` (or use your IDE's skill manager).
+- Skills installed via `npx skills add` — the `skills` CLI manages those. Run `npx skills remove jqbit/TLDR` (or use your IDE's skill manager).
 - Per-repo rule files written by `--with-init` (`.cursor/rules/`, `.windsurf/rules/`, `.clinerules/`, `.github/copilot-instructions.md`, `.opencode/AGENTS.md`, `AGENTS.md`). Delete by hand if you want.
 
 ## Troubleshooting

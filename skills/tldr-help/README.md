@@ -12,7 +12,7 @@ Prints a cheat sheet of all tldr modes, sibling skills, deactivation triggers, a
 /tldr-help
 ```
 
-Also triggers on "blunt help", "what TLDR commands", "how do I use TLDR".
+Also triggers on "tldr help", "what TLDR commands", "how do I use TLDR".
 
 ## Example output
 

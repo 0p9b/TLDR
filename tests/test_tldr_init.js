@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Tests for src/tools/tldr-init.js — fixture-based.
-// Run: node tests/test_blunt_init.js
+// Run: node tests/test_tldr_init.js
 
 const fs = require('fs');
 const path = require('path');
@@ -10,6 +10,8 @@ const { execFileSync } = require('child_process');
 
 const ROOT = path.resolve(__dirname, '..');
 const INIT = path.join(ROOT, 'src', 'tools', 'tldr-init.js');
+const SENTINEL = /Respond terse like smart TLDR/;
+const FILE_AGENTS = 6; // cursor, windsurf, cline, copilot, opencode, agents (openclaw is separate)
 
 let passed = 0;
 let failed = 0;
@@ -34,7 +36,7 @@ test('greenfield: creates all rule files with proper frontmatter', (tmp) => {
   execFileSync(process.execPath, [INIT, tmp], { encoding: 'utf8' });
   const cursor = fs.readFileSync(path.join(tmp, '.cursor/rules/tldr.mdc'), 'utf8');
   assert.match(cursor, /alwaysApply: true/);
-  assert.match(cursor, /Respond terse like smart blunt/);
+  assert.match(cursor, SENTINEL);
   const windsurf = fs.readFileSync(path.join(tmp, '.windsurf/rules/tldr.md'), 'utf8');
   assert.match(windsurf, /trigger: always_on/);
   const cline = fs.readFileSync(path.join(tmp, '.clinerules/tldr.md'), 'utf8');
@@ -44,13 +46,13 @@ test('greenfield: creates all rule files with proper frontmatter', (tmp) => {
   const opencode = fs.readFileSync(path.join(tmp, '.opencode/AGENTS.md'), 'utf8');
   assert.match(opencode, /Respond terse/);
   const agents = fs.readFileSync(path.join(tmp, 'AGENTS.md'), 'utf8');
-  assert.match(agents, /Respond terse/);
+  assert.match(agents, SENTINEL);
 });
 
 test('idempotent: re-running on a clean install skips all', (tmp) => {
   execFileSync(process.execPath, [INIT, tmp], { encoding: 'utf8' });
   const out = execFileSync(process.execPath, [INIT, tmp], { encoding: 'utf8' });
-  assert.match(out, /6 skipped/);
+  assert.match(out, new RegExp(`${FILE_AGENTS} skipped`));
   assert.doesNotMatch(out, /[1-9]\d* added/);
 });
 
@@ -59,25 +61,25 @@ test('append mode: existing AGENTS.md gets TLDR appended (not replaced)', (tmp) 
   execFileSync(process.execPath, [INIT, tmp], { encoding: 'utf8' });
   const agents = fs.readFileSync(path.join(tmp, 'AGENTS.md'), 'utf8');
   assert.match(agents, /Do not delete me/);
-  assert.match(agents, /Respond terse like smart blunt/);
+  assert.match(agents, SENTINEL);
 });
 
 test('skip mode: existing .cursor rule is not overwritten without --force', (tmp) => {
   const dir = path.join(tmp, '.cursor/rules');
   fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(path.join(dir, 'blunt.mdc'), '# original\nDo not delete me.\n');
+  fs.writeFileSync(path.join(dir, 'tldr.mdc'), '# original\nDo not delete me.\n');
   const out = execFileSync(process.execPath, [INIT, tmp], { encoding: 'utf8' });
   assert.match(out, /\? .*\.cursor\/rules\/tldr\.mdc/);
-  const after = fs.readFileSync(path.join(dir, 'blunt.mdc'), 'utf8');
+  const after = fs.readFileSync(path.join(dir, 'tldr.mdc'), 'utf8');
   assert.strictEqual(after, '# original\nDo not delete me.\n');
 });
 
 test('--force overwrites existing rule files', (tmp) => {
   const dir = path.join(tmp, '.cursor/rules');
   fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(path.join(dir, 'blunt.mdc'), '# original\n');
+  fs.writeFileSync(path.join(dir, 'tldr.mdc'), '# original\n');
   execFileSync(process.execPath, [INIT, tmp, '--force'], { encoding: 'utf8' });
-  const after = fs.readFileSync(path.join(dir, 'blunt.mdc'), 'utf8');
+  const after = fs.readFileSync(path.join(dir, 'tldr.mdc'), 'utf8');
   assert.match(after, /alwaysApply: true/);
   assert.match(after, /Respond terse/);
 });
@@ -85,7 +87,7 @@ test('--force overwrites existing rule files', (tmp) => {
 test('--dry-run: announces but writes nothing', (tmp) => {
   const out = execFileSync(process.execPath, [INIT, tmp, '--dry-run'], { encoding: 'utf8' });
   assert.match(out, /\(dry run\)/);
-  assert.match(out, /6 added/);
+  assert.match(out, new RegExp(`${FILE_AGENTS} added`));
   assert.ok(!fs.existsSync(path.join(tmp, '.cursor')));
   assert.ok(!fs.existsSync(path.join(tmp, '.windsurf')));
   assert.ok(!fs.existsSync(path.join(tmp, '.clinerules')));
@@ -102,10 +104,9 @@ test('--only filters to one target', (tmp) => {
 });
 
 test('detects sentinel and skips files that already have TLDR content', (tmp) => {
-  // Hand-write a file that already contains the rule (simulating prior install).
   const dir = path.join(tmp, '.clinerules');
   fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(path.join(dir, 'blunt.md'),
+  fs.writeFileSync(path.join(dir, 'tldr.md'),
     '# Existing\n\nRespond terse like smart TLDR. Hello.\n');
   const out = execFileSync(process.execPath, [INIT, tmp, '--only', 'cline'], { encoding: 'utf8' });
   assert.match(out, /skipped-already-installed/);

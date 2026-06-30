@@ -14,7 +14,7 @@ TLDR like simple. Small focused PR > big rewrite.
 
 ## Quick orientation
 
-The repo distributes one skill (blunt) plus a handful of sub-skills
+The repo distributes one skill (`tldr`) plus a handful of sub-skills
 (tldr-commit, tldr-review, tldr-compress, tldrcrew-*) to many
 agents through different distribution mechanisms (Claude Code plugin, Codex
 plugin, Gemini extension, Cursor/Windsurf/Cline rule files, `npx skills` for
@@ -124,7 +124,7 @@ npm test
 python3 -m unittest tests.test_compress_safety
 
 # Per-repo init tests
-node tests/test_blunt_init.js
+node tests/test_tldr_init.js
 
 # Flag-file symlink-safety tests
 node tests/test_symlink_flag.js
@@ -184,7 +184,7 @@ A handful of invariants that have bitten us before. Keep them.
 
 ## Ideas
 
-See [issues labeled `good first issue`](../../issues?q=label%3A%22good+first+issue%22)
+See [issues labeled `good first issue`](https://github.com/jqbit/TLDR/issues?q=label%3A%22good+first+issue%22)
 for starter tasks. Or grep `TODO` / `FIXME` in `src/hooks/`, `bin/`, `src/tools/` —
 each one is a real lead.
 

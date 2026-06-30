@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Tests for repo-local config resolution in getDefaultMode().
 // Covers the resolution-order contract:
-//   env CAVEMAN_DEFAULT_MODE → repo-local (.tldr/config.json or .tldr.json,
+//   env TLDR_DEFAULT_MODE (or legacy CAVEMAN_DEFAULT_MODE) → repo-local (.tldr/config.json or .tldr.json,
 //   walking up to filesystem root) → user config → 'full'.
 //
 // Run: node tests/test_repo_local_config.js
@@ -17,6 +17,7 @@ const assert = require('assert');
 const tmpHome = fs.mkdtempSync(path.join(os.tmpdir(), 'tldr-userhome-'));
 process.env.XDG_CONFIG_HOME = tmpHome;
 delete process.env.CAVEMAN_DEFAULT_MODE;
+delete process.env.TLDR_DEFAULT_MODE;
 
 const { getDefaultMode, findRepoConfigPath } = require('../src/hooks/tldr-config');
 
@@ -26,7 +27,8 @@ let failed = 0;
 function test(name, fn) {
   const tmpBase = fs.mkdtempSync(path.join(os.tmpdir(), 'tldr-repocfg-'));
   const origCwd = process.cwd();
-  const origEnv = process.env.CAVEMAN_DEFAULT_MODE;
+  const origCaveman = process.env.CAVEMAN_DEFAULT_MODE;
+  const origTldr = process.env.TLDR_DEFAULT_MODE;
   try {
     fn(tmpBase);
     passed++;
@@ -37,8 +39,10 @@ function test(name, fn) {
     console.error(`    ${e.message}`);
   } finally {
     process.chdir(origCwd);
-    if (origEnv === undefined) delete process.env.CAVEMAN_DEFAULT_MODE;
-    else process.env.CAVEMAN_DEFAULT_MODE = origEnv;
+    if (origCaveman === undefined) delete process.env.CAVEMAN_DEFAULT_MODE;
+    else process.env.CAVEMAN_DEFAULT_MODE = origCaveman;
+    if (origTldr === undefined) delete process.env.TLDR_DEFAULT_MODE;
+    else process.env.TLDR_DEFAULT_MODE = origTldr;
     fs.rmSync(tmpBase, { recursive: true, force: true });
   }
 }

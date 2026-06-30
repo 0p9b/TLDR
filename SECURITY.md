@@ -13,6 +13,6 @@ Aspirational response time: **within 7 days**. No guarantees — this is a perso
 
 ## Scope
 
-This repo ships prompt files and an install script. The primary attack surface is the install script (`install.sh`), which is intended to be run via `curl | bash`.
+This repo ships prompt files and two installers: **`install.sh`** (prompt-only) and **`bin/install.js`** (full multi-agent stack). Primary attack surface is running installers via `curl | bash` or `npx`.
 
-**Please inspect `install.sh` before running it.**
+**Please inspect [`install.sh`](install.sh) or [`bin/install.js`](bin/install.js) before running.**

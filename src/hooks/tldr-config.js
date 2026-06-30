@@ -22,40 +22,76 @@ const VALID_MODES = [
 
 function getConfigDir() {
   if (process.env.XDG_CONFIG_HOME) {
-    return path.join(process.env.XDG_CONFIG_HOME, 'blunt');
+    return path.join(process.env.XDG_CONFIG_HOME, 'tldr');
   }
   if (process.platform === 'win32') {
     return path.join(
       process.env.APPDATA || path.join(os.homedir(), 'AppData', 'Roaming'),
-      'blunt'
+      'tldr'
     );
   }
-  return path.join(os.homedir(), '.config', 'blunt');
+  return path.join(os.homedir(), '.config', 'tldr');
 }
 
 function getConfigPath() {
   return path.join(getConfigDir(), 'config.json');
 }
 
-function getDefaultMode() {
-  // 1. Environment variable (highest priority)
-  const envMode = process.env.TLDR_DEFAULT_MODE;
-  if (envMode && VALID_MODES.includes(envMode.toLowerCase())) {
-    return envMode.toLowerCase();
-  }
-
-  // 2. Config file
+function findRepoConfigPath(start) {
   try {
-    const configPath = getConfigPath();
-    const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-    if (config.defaultMode && VALID_MODES.includes(config.defaultMode.toLowerCase())) {
-      return config.defaultMode.toLowerCase();
+    let dir = path.resolve(start || process.cwd());
+    const candidates = ['.tldr/config.json', '.tldr.json'];
+    for (let i = 0; i < 64; i++) {
+      for (const rel of candidates) {
+        const p = path.join(dir, rel);
+        try {
+          const st = fs.lstatSync(p);
+          if (st.isSymbolicLink() || !st.isFile()) continue;
+          return p;
+        } catch (e) {
+          // not present
+        }
+      }
+      const parent = path.dirname(dir);
+      if (parent === dir) return null;
+      dir = parent;
     }
   } catch (e) {
-    // Config file doesn't exist or is invalid — fall through
+    // cwd/fs failure → no repo config
+  }
+  return null;
+}
+
+function readModeFromConfigFile(configPath) {
+  try {
+    const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+    if (config && config.defaultMode &&
+        VALID_MODES.includes(String(config.defaultMode).toLowerCase())) {
+      return String(config.defaultMode).toLowerCase();
+    }
+  } catch (e) {
+    // fall through
+  }
+  return null;
+}
+
+function getDefaultMode() {
+  const envCandidates = [process.env.TLDR_DEFAULT_MODE, process.env.CAVEMAN_DEFAULT_MODE];
+  for (const envMode of envCandidates) {
+    if (envMode && VALID_MODES.includes(String(envMode).toLowerCase())) {
+      return String(envMode).toLowerCase();
+    }
   }
 
-  // 3. Default
+  const repoConfigPath = findRepoConfigPath(process.cwd());
+  if (repoConfigPath) {
+    const repoMode = readModeFromConfigFile(repoConfigPath);
+    if (repoMode) return repoMode;
+  }
+
+  const userMode = readModeFromConfigFile(getConfigPath());
+  if (userMode) return userMode;
+
   return 'full';
 }
 
@@ -195,7 +231,7 @@ function readFlag(flagPath) {
 // Symlink-safe append. Same parent-dir + symlink-target rules as safeWriteFlag,
 // but opens with O_APPEND so concurrent writers from different sessions don't
 // clobber each other. Used for the lifetime stats log
-// ($CLAUDE_CONFIG_DIR/.blunt-history.jsonl).
+// ($CLAUDE_CONFIG_DIR/.tldr-history.jsonl).
 //
 // Silent-fails on any filesystem error.
 function appendFlag(filePath, line) {
@@ -274,4 +310,4 @@ function readHistory(filePath) {
   }
 }
 
-module.exports = { getDefaultMode, getConfigDir, getConfigPath, VALID_MODES, safeWriteFlag, readFlag, appendFlag, readHistory };
+module.exports = { getDefaultMode, getConfigDir, getConfigPath, findRepoConfigPath, VALID_MODES, safeWriteFlag, readFlag, appendFlag, readHistory };

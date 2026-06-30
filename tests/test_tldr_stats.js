@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Tests for /tldr-stats — direct script invocation and via mode tracker.
-// Run: node tests/test_blunt_stats.js
+// Run: node tests/test_tldr_stats.js
 
 const fs = require('fs');
 const path = require('path');
@@ -65,7 +65,7 @@ test('shows full-mode savings estimate when flag is full', (tmp) => {
     env: { ...process.env, CLAUDE_CONFIG_DIR: claudeDir },
   });
   // 350 / 0.35 = 1000, saved = 650, ~65%
-  assert.match(out, /Est\. without blunt:\s+1,000/);
+  assert.match(out, /Est\. without TLDR:\s+1,000/);
   assert.match(out, /Est\. tokens saved:\s+650 \(~65%\)/);
 });
 
@@ -186,7 +186,7 @@ test('--share prints single-line tweetable summary', (tmp) => {
     env: { ...process.env, CLAUDE_CONFIG_DIR: claudeDir },
   });
   assert.strictEqual(out.split('\n').filter(Boolean).length, 1);
-  assert.match(out, /^🪨 Saved 650 output tokens \(~\$0\.009[78]\) across 1 turns this session — blunt\.sh$/m);
+  assert.match(out, /^🪨 Saved 650 output tokens \(~\$0\.009[78]\) across 1 turns this session — TLDR\.sh$/m);
 });
 
 test('--share works with no benchmark ratio (lite mode)', (tmp) => {
@@ -199,7 +199,7 @@ test('--share works with no benchmark ratio (lite mode)', (tmp) => {
     encoding: 'utf8',
     env: { ...process.env, CLAUDE_CONFIG_DIR: claudeDir },
   });
-  assert.match(out, /^🪨 1 turns, 200 output tokens this session — blunt\.sh$/m);
+  assert.match(out, /^🪨 1 turns, 200 output tokens this session — TLDR\.sh$/m);
 });
 
 test('appends to lifetime history on each run', (tmp) => {
@@ -212,7 +212,7 @@ test('appends to lifetime history on each run', (tmp) => {
     encoding: 'utf8',
     env: { ...process.env, CLAUDE_CONFIG_DIR: claudeDir },
   });
-  const histPath = path.join(claudeDir, '.blunt-history.jsonl');
+  const histPath = path.join(claudeDir, '.tldr-history.jsonl');
   assert.ok(fs.existsSync(histPath), 'history file should be created');
   const lines = fs.readFileSync(histPath, 'utf8').split('\n').filter(Boolean);
   assert.strictEqual(lines.length, 1);
@@ -227,7 +227,7 @@ test('appends to lifetime history on each run', (tmp) => {
 test('--all aggregates latest entry per session', (tmp) => {
   const claudeDir = path.join(tmp, '.claude');
   fs.mkdirSync(claudeDir, { recursive: true });
-  const histPath = path.join(claudeDir, '.blunt-history.jsonl');
+  const histPath = path.join(claudeDir, '.tldr-history.jsonl');
   // Two sessions, second one has two snapshots — only latest counts.
   fs.writeFileSync(histPath, [
     { ts: 1000, session_id: 'a', mode: 'full', output_tokens: 100, est_saved_tokens: 185, est_saved_usd: 0.0028 },
@@ -248,7 +248,7 @@ test('--all aggregates latest entry per session', (tmp) => {
 test('--since filters by time window', (tmp) => {
   const claudeDir = path.join(tmp, '.claude');
   fs.mkdirSync(claudeDir, { recursive: true });
-  const histPath = path.join(claudeDir, '.blunt-history.jsonl');
+  const histPath = path.join(claudeDir, '.tldr-history.jsonl');
   const now = Date.now();
   const twoDaysAgo = now - 2 * 86_400_000;
   const tenMinAgo = now - 10 * 60_000;

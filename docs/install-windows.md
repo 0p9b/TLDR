@@ -4,13 +4,13 @@ If `irm https://raw.githubusercontent.com/jqbit/TLDR/main/install.ps1 | iex` fai
 
 ```powershell
 $ClaudeDir = if ($env:CLAUDE_CONFIG_DIR) { $env:CLAUDE_CONFIG_DIR } else { Join-Path $HOME ".claude" }
-$PluginSkillDir = Join-Path $ClaudeDir ".agents\plugins\blunt\skills\blunt"
+$PluginSkillDir = Join-Path $ClaudeDir ".agents\plugins\tldr\skills\tldr"
 $MarketplaceDir = Join-Path $ClaudeDir ".agents\plugins"
 $MarketplaceFile = Join-Path $MarketplaceDir "marketplace.json"
 
 # Copy SKILL.md into the plugin path (run from a clone of the repo)
 New-Item -ItemType Directory -Path $PluginSkillDir -Force | Out-Null
-Copy-Item ".\skills\blunt\SKILL.md" "$PluginSkillDir\SKILL.md" -Force
+Copy-Item ".\skills\tldr\SKILL.md" "$PluginSkillDir\SKILL.md" -Force
 
 # Create or update marketplace.json with the TLDR entry
 New-Item -ItemType Directory -Path $MarketplaceDir -Force | Out-Null
@@ -24,7 +24,7 @@ if (-not ($marketplace.PSObject.Properties.Name -contains "plugins")) {
 }
 $plugins = [ordered]@{}
 foreach ($p in $marketplace.plugins.PSObject.Properties) { $plugins[$p.Name] = $p.Value }
-$plugins["blunt"] = [ordered]@{ name = "blunt"; source = "jqbit/TLDR"; version = "main" }
+$plugins["tldr"] = [ordered]@{ name = "tldr"; source = "jqbit/TLDR"; version = "main" }
 $marketplace.plugins = [pscustomobject]$plugins
 $marketplace | ConvertTo-Json -Depth 10 | Set-Content -Path $MarketplaceFile -Encoding UTF8
 ```
@@ -34,8 +34,8 @@ Verify: `Test-Path "$PluginSkillDir\SKILL.md"` should print `True`. Restart Clau
 ## Codex on Windows
 
 1. Enable symlinks first: `git config --global core.symlinks true` (requires Developer Mode or admin).
-2. Clone repo → Open VS Code → Codex Settings → Plugins → find "Blunt" under the local marketplace → Install → Reload Window.
-3. Codex hooks are currently disabled on Windows, so use `$blunt` to start the mode manually each session.
+2. Clone repo → Open VS Code → Codex Settings → Plugins → find "TLDR" under the local marketplace → Install → Reload Window.
+3. Codex hooks are currently disabled on Windows, so use `/tldr` to start the mode manually each session.
 
 ## `npx skills` symlink fallback
 

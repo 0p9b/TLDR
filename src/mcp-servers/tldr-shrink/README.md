@@ -2,7 +2,7 @@
 
 > MCP middleware. Wrap any MCP server. Cut the prose. Keep the substance.
 
-`tldr-shrink` is a stdio proxy for the [Model Context Protocol](https://modelcontextprotocol.io). It sits between Claude (or any MCP client) and an upstream MCP server, and compresses the prose fields (`description`, etc.) using the same boundaries as the [blunt](../..) skill — preserving code, URLs, paths, and identifiers while stripping articles, filler, hedging, and pleasantries.
+`tldr-shrink` is a stdio proxy for the [Model Context Protocol](https://modelcontextprotocol.io). It sits between Claude (or any MCP client) and an upstream MCP server, and compresses the prose fields (`description`, etc.) using the same boundaries as the [TLDR skill](../../../skills/tldr/SKILL.md) — preserving code, URLs, paths, and identifiers while stripping articles, filler, hedging, and pleasantries.
 
 The result: tool catalogs that the model burns fewer tokens to read, with no change to tool semantics.
 
@@ -51,7 +51,7 @@ By design, v1 is conservative:
 
 ## Status
 
-Pre-1.0 — the compression rules and field set may change. The plugin is part of the TLDR ecosystem; see the repo for the full skill suite (`blunt`, `tldrcrew`, `tldr-compress`, `tldr-stats`).
+Pre-1.0 — the compression rules and field set may change. The plugin is part of the TLDR ecosystem; see the repo for the full skill suite (`tldr`, `tldrcrew`, `tldr-compress`, `tldr-stats`).
 
 ## License
 

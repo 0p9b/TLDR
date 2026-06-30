@@ -1,80 +1,76 @@
-# TLDR.md — Too Long Didn't Read
+# TLDR — Too Long Didn't Read
 
 ![License](https://img.shields.io/github/license/jqbit/TLDR)
 ![Stars](https://img.shields.io/github/stars/jqbit/TLDR)
 ![Last commit](https://img.shields.io/github/last-commit/jqbit/TLDR)
 
-Single-system prompt for terse, high-signal AI responses.
+Terse, high-signal responses for AI coding agents — less filler, same accuracy on tools, code, and safety.
 
-**TLDR.md is the only prompt in this repo.**
+**One repo, two install paths:**
 
-TLDR.md changes style only: less filler, less fake enthusiasm, less post-hoc guidance.
+| Path | What you get | Best for |
+|------|----------------|----------|
+| **[`TLDR.md`](TLDR.md) + [`install.sh`](install.sh)** | Copies the system prompt (and `/tldr` command) into standard agent config locations | Quick global rules file, no Node required |
+| **[`bin/install.js`](bin/install.js)** (via `npx`) | Detects installed agents; plugins, hooks, skills, optional MCP shrink | Claude Code, Cursor, Codex, Gemini, 30+ agents — see **[INSTALL.md](INSTALL.md)** |
 
-Tools, reasoning, code quality, and safety remain unchanged.
+> Historical prompt variants and benchmarks: [`data/changelog.md`](data/changelog.md), [`data/progression.md`](data/progression.md).
 
-> For historical context on earlier merged/legacy variants, see `data/changelog.md` and `data/progression.md`.
+## The prompt — `TLDR.md`
 
-## TLDR file
-
-[`TLDR.md`](TLDR.md) is the active prompt (1,336 bytes). `commands/tldr.md` provides the `/tldr` live reminder.
+[`TLDR.md`](TLDR.md) is the active prompt (1,336 bytes). It changes **prose style only** — not tools, reasoning, or safety.
 
 | File | Bytes |
-|---|:---|
+|------|------:|
 | [`TLDR.md`](TLDR.md) | 1,336 |
 | [`commands/tldr.md`](commands/tldr.md) | 1,145 |
 
-## Install
+**Current defaults (prompt):**
+- default: 1 sentence
+- target: 3 words
+- default max: 6 words
+- one-word greeting for plain greetings
+- `/tldr` (supported agents) re-applies rules live in long sessions
+
+## Install — prompt only (`install.sh`)
+
+No Node required. Writes `TLDR.md` to seven standard agent paths and installs `/tldr` where supported.
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/jqbit/TLDR/main/install.sh | bash -s --
 ```
 
-Optional Hermes install (merge into `~/.hermes/SOUL.md`):
+Optional Hermes merge into `~/.hermes/SOUL.md`:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/jqbit/TLDR/main/install.sh | bash -s -- --with-hermes
 ```
 
-Inspect first:
+Preview: `curl -fsSL https://raw.githubusercontent.com/jqbit/TLDR/main/install.sh`
+
+Manual paths and copy/paste commands: [`data/agent-locations.md`](data/agent-locations.md).
+
+## Install — full stack (`bin/install.js`)
+
+Node ≥18. Auto-detects agents, installs the right plugin/extension/skills/hooks per agent.
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/jqbit/TLDR/main/install.sh
+npx -y github:jqbit/TLDR
 ```
 
-Prefer manual copy/paste:
-
-- [`data/agent-locations.md`](data/agent-locations.md) (paths + commands)
-- direct install command below
+From a clone:
 
 ```bash
-mkdir -p ~/.claude ~/.gemini ~/.codex ~/.config/opencode ~/.factory ~/.pi/agent
-cp TLDR.md ~/.claude/CLAUDE.md
-cp TLDR.md ~/.gemini/AGENTS.md
-cp TLDR.md ~/.codex/AGENTS.md
-cp TLDR.md ~/AGENTS.md
-cp TLDR.md ~/.config/opencode/AGENTS.md
-cp TLDR.md ~/.factory/AGENTS.md
-cp TLDR.md ~/.pi/agent/AGENTS.md
-# commands (for /tldr):
-mkdir -p ~/.claude/commands ~/.claude/skills/tldr ~/.config/opencode/commands ~/.factory/commands ~/.cursor/commands
-cp commands/tldr.md ~/.claude/commands/tldr.md
-cp commands/tldr.md ~/.config/opencode/commands/tldr.md
-cp commands/tldr.md ~/.factory/commands/tldr.md
-cp commands/tldr.md ~/.cursor/commands/tldr.md
-# (skills/frontmatter: see data/agent-locations.md)
+git clone https://github.com/jqbit/TLDR.git && cd TLDR
+node bin/install.js          # detected agents
+node bin/install.js --all    # hooks + per-repo init + optional extras
+node bin/install.js --list   # agent matrix
 ```
 
-## Current behavior
+Windows: [`install.ps1`](install.ps1) forwards to the same Node installer.
 
-- default: 1 sentence
-- target: 3 words
-- default max: 6 words
-- 1 word if enough
-- longer only if user asks or needed for correctness/safety
-- one-word greeting for plain greetings
-- `/tldr` (supported agents) re-applies rules live in long sessions
+**Full flags, per-agent table, verify, uninstall, troubleshooting:** **[INSTALL.md](INSTALL.md)**.
 
-## Verification
+## Verify (prompt install)
 
 ```bash
 for p in ~/.claude/CLAUDE.md ~/.gemini/AGENTS.md ~/.codex/AGENTS.md \
@@ -82,34 +78,32 @@ for p in ~/.claude/CLAUDE.md ~/.gemini/AGENTS.md ~/.codex/AGENTS.md \
          ~/.factory/AGENTS.md ~/.pi/agent/AGENTS.md; do
   [ -f "$p" ] && grep -q "^## Prime directive" "$p" && echo "✓ $p" || echo "✗ $p"
 done
-
 grep -q "^## Prime directive" ~/.hermes/SOUL.md 2>/dev/null && echo "✓ ~/.hermes/SOUL.md" || echo "✗ ~/.hermes/SOUL.md"
-```
-
-Smoke test:
-
-```bash
-claude -p "What's the git command to undo the last commit but keep changes staged?"
-# expected: git reset --soft HEAD~1 (single line)
 ```
 
 ## Repository map
 
-- `TLDR.md` — active system prompt.
-- `commands/tldr.md` — `/tldr` slash command definition.
-- `install.sh` — installer + optional Hermes merge + commands.
-- `CITATION.cff` — citation metadata.
-- `data/agent-locations.md` — where prompt and commands are installed per agent.
-- `CONTRIBUTING.md` — PR workflow.
+| Path | Purpose |
+|------|---------|
+| `TLDR.md` | Canonical terse system prompt |
+| `commands/tldr.md` | `/tldr` slash command |
+| `install.sh` | Prompt-only installer (+ optional Hermes) |
+| `install.ps1` | Windows shim → `bin/install.js` |
+| `bin/install.js` | Unified multi-agent installer |
+| `skills/` | TLDR skill suite (source of truth for behavior) |
+| `plugins/tldr/` | Claude Code / distribution mirrors (CI-synced) |
+| `src/hooks/` | Claude Code SessionStart / mode hooks |
+| `INSTALL.md` | Full installer documentation |
+| `CONTRIBUTING.md` | How to change skills or add agents |
+| `data/agent-locations.md` | Per-agent install paths |
 
-## Full historical context
+## Research & benchmarks
 
 - [data/agent-locations.md](data/agent-locations.md)
 - [data/benchmarks.md](data/benchmarks.md)
 - [data/dspy-cross-model-results.md](data/dspy-cross-model-results.md)
 - [data/changelog.md](data/changelog.md)
-- [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ## License
 
-MIT. See [`LICENSE`](LICENSE).
+MIT — see [`LICENSE`](LICENSE). Third-party lineage: [`ATTRIBUTION.md`](ATTRIBUTION.md).
