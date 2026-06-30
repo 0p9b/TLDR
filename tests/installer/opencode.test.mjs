@@ -174,9 +174,9 @@ test('opencode uninstall strips fenced AGENTS.md block, preserving user prefix a
     assert.notEqual(r2.status, 2);
 
     const after = fs.readFileSync(agentsMd, 'utf8');
-    assert.doesNotMatch(after, /<!-- tldr-begin -->/, 'blunt block should be stripped');
-    assert.doesNotMatch(after, /<!-- tldr-end -->/, 'blunt end marker should be stripped');
-    assert.doesNotMatch(after, /Respond in TLDR style/, 'blunt body should be stripped');
+    assert.doesNotMatch(after, /<!-- tldr-begin -->/, 'TLDR block should be stripped');
+    assert.doesNotMatch(after, /<!-- tldr-end -->/, 'TLDR end marker should be stripped');
+    assert.doesNotMatch(after, /Respond in TLDR style/, 'TLDR body should be stripped');
     assert.match(after, /# my project/, 'user prefix should survive');
     assert.match(after, /use 2-space indent/, 'user prefix body should survive');
     assert.match(after, /## extra/, 'user suffix should survive');
@@ -231,9 +231,9 @@ test('opencode uninstall removes plugin dir, command/agent/skill files, prunes o
 
     const ocDir = path.join(xdg, 'opencode');
     assert.equal(fs.existsSync(path.join(ocDir, 'plugins', 'tldr')), false, 'plugin dir survived');
-    assert.equal(fs.existsSync(path.join(ocDir, 'commands', 'tldr.md')), false, 'blunt.md command survived');
+    assert.equal(fs.existsSync(path.join(ocDir, 'commands', 'tldr.md')), false, 'tldr.md command survived');
     assert.equal(fs.existsSync(path.join(ocDir, 'agents', 'tldrcrew-builder.md')), false, 'tldrcrew agent survived');
-    assert.equal(fs.existsSync(path.join(ocDir, 'skills', 'tldr')), false, 'blunt skill dir survived');
+    assert.equal(fs.existsSync(path.join(ocDir, 'skills', 'tldr')), false, 'TLDR skill dir survived');
     assert.equal(fs.existsSync(path.join(ocDir, 'AGENTS.md')), false, 'AGENTS.md (we wrote it) survived');
 
     if (fs.existsSync(path.join(ocDir, 'opencode.json'))) {
@@ -263,7 +263,7 @@ test('opencode plugin handles /tldr ultra and stop tldr via tui.prompt.append', 
     process.env.XDG_CONFIG_HOME = xdg;
 
     const mod = await import(pathToFileURL(pluginPath).href);
-    const factory = mod.default || mod.BluntPlugin;
+    const factory = mod.default || mod.TldrPlugin;
     const handlers = await factory({});
 
     // Slash command activates ultra

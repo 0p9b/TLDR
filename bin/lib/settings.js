@@ -9,9 +9,9 @@
 //   writeSettings(path, obj)       → atomic write with newline
 //   stripJsonComments(src)         → string with // and /* */ stripped (string-aware)
 //   validateHookFields(settings)   → mutates: drops malformed hook entries
-//   hasBluntHook(settings, ev)   → idempotency probe
+//   hasTldrHook(settings, ev)    → idempotency probe
 //   addCommandHook(settings, ev, opts) → no-op if substring marker already present
-//   removeBluntHooks(settings)   → uninstall helper
+//   removeTldrHooks(settings)    → uninstall helper
 //
 // Pure stdlib, CommonJS, Node ≥14.
 
@@ -121,7 +121,7 @@ function validateHookFields(settings) {
 }
 
 // ── Idempotency probe ──────────────────────────────────────────────────────
-function hasBluntHook(settings, event, marker = 'blunt') {
+function hasTldrHook(settings, event, marker = 'tldr') {
   const arr = settings && settings.hooks && settings.hooks[event];
   if (!Array.isArray(arr)) return false;
   return arr.some(e =>
@@ -138,7 +138,7 @@ function addCommandHook(settings, event, opts) {
   if (!settings.hooks) settings.hooks = {};
   if (!Array.isArray(settings.hooks[event])) settings.hooks[event] = [];
   const marker = opts.marker || opts.command;
-  if (hasBluntHook(settings, event, marker)) return false;
+  if (hasTldrHook(settings, event, marker)) return false;
   const hook = { type: 'command', command: opts.command };
   if (typeof opts.timeout === 'number') hook.timeout = opts.timeout;
   if (typeof opts.statusMessage === 'string') hook.statusMessage = opts.statusMessage;
@@ -146,12 +146,12 @@ function addCommandHook(settings, event, opts) {
   return true;
 }
 
-// ── removeBluntHooks ────────────────────────────────────────────────────
+// ── removeTldrHooks ─────────────────────────────────────────────────────
 // Strip every entry whose any hook command mentions `marker`. Empties events.
 // Tolerates malformed pre-existing settings (non-array hook lists, foreign
 // shapes) — those get dropped by validateHookFields first so we never call
 // .length / .filter on a non-array.
-function removeBluntHooks(settings, marker = 'blunt') {
+function removeTldrHooks(settings, marker = 'tldr') {
   if (!settings || !settings.hooks) return 0;
   validateHookFields(settings);
   if (!settings.hooks) return 0; // validate may have deleted the whole tree
@@ -175,7 +175,7 @@ function removeBluntHooks(settings, marker = 'blunt') {
 // absolute node path) and the basename is one of ours, rewrite to use
 // `absoluteNode` so GUI launchers with minimal PATH still find Node. Only
 // touches commands matching the exact bare-node shape — won't false-positive
-// on user-authored hooks that just happen to mention "blunt".
+// on user-authored hooks that just happen to mention TLDR.
 const MANAGED_HOOK_BASENAMES = new Set([
   'tldr-activate.js',
   'tldr-mode-tracker.js',
@@ -215,9 +215,9 @@ module.exports = {
   readSettings,
   writeSettings,
   validateHookFields,
-  hasBluntHook,
+  hasTldrHook,
   addCommandHook,
-  removeBluntHooks,
+  removeTldrHooks,
   rewriteLegacyManagedHookCommands,
   claudeConfigDir,
   MANAGED_HOOK_BASENAMES,

@@ -106,35 +106,35 @@ test('addCommandHook is idempotent on substring marker', () => {
   assert.equal(s.hooks.SessionStart.length, 1);
 });
 
-test('hasBluntHook detects via substring', () => {
+test('hasTldrHook detects via substring', () => {
   const s = { hooks: { SessionStart: [{ hooks: [{ type: 'command', command: 'node /x/tldr-activate.js' }] }] } };
-  assert.equal(SETTINGS.hasBluntHook(s, 'SessionStart', 'tldr-activate'), true);
-  assert.equal(SETTINGS.hasBluntHook(s, 'SessionStart', 'gsd'), false);
-  assert.equal(SETTINGS.hasBluntHook(s, 'UserPromptSubmit'), false);
+  assert.equal(SETTINGS.hasTldrHook(s, 'SessionStart', 'tldr-activate'), true);
+  assert.equal(SETTINGS.hasTldrHook(s, 'SessionStart', 'gsd'), false);
+  assert.equal(SETTINGS.hasTldrHook(s, 'UserPromptSubmit'), false);
 });
 
-test('removeBluntHooks tolerates malformed hook event values without throwing', () => {
+test('removeTldrHooks tolerates malformed hook event values without throwing', () => {
   // Pre-fix bug: settings.hooks.SessionStart = "oops" (string, not array)
   // would crash on .filter(...) inside the filter loop. Fix delegates to
   // validateHookFields first + adds Array.isArray guard.
   const s = { hooks: { SessionStart: "oops", UserPromptSubmit: { not: 'an array either' } } };
   let removed;
-  assert.doesNotThrow(() => { removed = SETTINGS.removeBluntHooks(s, 'blunt'); });
+  assert.doesNotThrow(() => { removed = SETTINGS.removeTldrHooks(s, 'tldr'); });
   assert.equal(removed, 0);
   assert.equal(s.hooks, undefined);
 });
 
-test('removeBluntHooks strips by marker and cleans empties', () => {
+test('removeTldrHooks strips by marker and cleans empties', () => {
   const s = {
     hooks: {
       SessionStart: [
-        { hooks: [{ type: 'command', command: 'blunt-x' }] },
+        { hooks: [{ type: 'command', command: 'tldr-x' }] },
         { hooks: [{ type: 'command', command: 'other' }] },
       ],
-      UserPromptSubmit: [{ hooks: [{ type: 'command', command: 'blunt-y' }] }],
+      UserPromptSubmit: [{ hooks: [{ type: 'command', command: 'tldr-y' }] }],
     },
   };
-  const removed = SETTINGS.removeBluntHooks(s, 'blunt');
+  const removed = SETTINGS.removeTldrHooks(s, 'tldr');
   assert.equal(removed, 2);
   assert.equal(s.hooks.SessionStart.length, 1);
   assert.equal(s.hooks.UserPromptSubmit, undefined);

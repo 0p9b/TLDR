@@ -55,7 +55,7 @@ All validations passed ✅ — headings, code blocks, URLs, file paths preserved
 </td>
 <td width="50%">
 
-### <img src="../../docs/assets/dancing-rock.svg" width="20" height="20" alt="rock"/> TLDR (285 tokens)
+### <img src="https://raw.githubusercontent.com/jqbit/TLDR/main/docs/assets/tldr-mascot.png" width="20" height="20" alt="rock"/> TLDR (285 tokens)
 
 > "Prefer TypeScript strict mode always. No `any` unless unavoidable — comment why if used. Proper types catch bugs early."
 
@@ -71,7 +71,7 @@ All validations passed ✅ — headings, code blocks, URLs, file paths preserved
 
 ## Install
 
-Compress is built in with the `blunt` plugin. Install `blunt` once, then use `/tldr-compress`.
+Compress is built into TLDR. Install TLDR once, then use `/tldr-compress`.
 
 If you need local files, the compress skill lives at:
 
@@ -155,9 +155,9 @@ TLDR cut that by ~46% on average. Same instructions. Same accuracy. Less waste.
 └────────────────────────────────────────────┘
 ```
 
-## Part of Blunt
+## Part of TLDR
 
-This skill is part of the [blunt](https://github.com/jqbit/TLDR) toolkit — making Claude use fewer tokens without losing accuracy.
+This skill is part of the [TLDR](https://github.com/jqbit/TLDR) toolkit — making Claude use fewer tokens without losing accuracy.
 
-- **blunt** — make Claude *speak* like TLDR (cuts response tokens ~65%)
+- **TLDR** — make Claude *speak* tersely (cuts response tokens ~65%)
 - **tldr-compress** — make Claude *read* less (cuts context tokens ~46%)

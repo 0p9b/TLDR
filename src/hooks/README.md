@@ -34,7 +34,7 @@ The statusline badge shows which tldr mode is active directly in your Claude Cod
 
 If you already have a custom statusline, TLDR does not overwrite it and Claude stays quiet. Add the badge snippet to your existing script instead.
 
-**Standalone users:** the unified installer (`bin/install.js`, invoked by the `install.sh` / `install.ps1` shims at the repo root) wires the statusline automatically if you do not already have a custom statusline. If you do, the installer leaves it alone and prints the merge note.
+**Standalone users:** the unified installer (`bin/install.js`, invoked by the `install-full.sh` / `install.ps1` shims at the repo root) wires the statusline automatically if you do not already have a custom statusline. If you do, the installer leaves it alone and prints the merge note.
 
 **Manual setup:** If you need to configure it yourself, add one of these to `~/.claude/settings.json`:
 
@@ -61,15 +61,15 @@ Replace the path with the actual script location (e.g. `~/.claude/hooks/` for st
 **Custom statusline:** If you already have a statusline script, add this snippet to it:
 
 ```bash
-blunt_text=""
-blunt_flag="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/.tldr-active"
-if [ -f "$blunt_flag" ]; then
-  tldr_mode=$(cat "$blunt_flag" 2>/dev/null)
+tldr_text=""
+tldr_flag="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/.tldr-active"
+if [ -f "$tldr_flag" ]; then
+  tldr_mode=$(cat "$tldr_flag" 2>/dev/null)
   if [ "$tldr_mode" = "full" ] || [ -z "$tldr_mode" ]; then
-    blunt_text=$'\033[38;5;172m[TLDR]\033[0m'
+    tldr_text=$'\033[38;5;172m[TLDR]\033[0m'
   else
-    blunt_suffix=$(echo "$tldr_mode" | tr '[:lower:]' '[:upper:]')
-    blunt_text=$'\033[38;5;172m[TLDR:'"${blunt_suffix}"$']\033[0m'
+    tldr_suffix=$(echo "$tldr_mode" | tr '[:lower:]' '[:upper:]')
+    tldr_text=$'\033[38;5;172m[TLDR:'"${tldr_suffix}"$']\033[0m'
   fi
 fi
 ```

@@ -38,7 +38,7 @@ const requireCjs = createRequire(import.meta.url);
 const SETTINGS = requireCjs(path.join(REPO_ROOT, 'bin', 'lib', 'settings.js'));
 
 function freshTmpDir() {
-  return fs.mkdtempSync(path.join(os.tmpdir(), 'blunt-freshinstall-'));
+  return fs.mkdtempSync(path.join(os.tmpdir(), 'tldr-freshinstall-'));
 }
 
 function pathWithout(binNames) {
@@ -115,9 +115,9 @@ test('fresh install populates hooks dir and settings.json (skipped without `clau
     assert.ok(fs.existsSync(settingsPath), 'settings.json missing');
     const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
 
-    assert.ok(SETTINGS.hasBluntHook(settings, 'SessionStart', 'tldr-activate'),
+    assert.ok(SETTINGS.hasTldrHook(settings, 'SessionStart', 'tldr-activate'),
       'SessionStart hook missing or wrong marker');
-    assert.ok(SETTINGS.hasBluntHook(settings, 'UserPromptSubmit', 'tldr-mode-tracker'),
+    assert.ok(SETTINGS.hasTldrHook(settings, 'UserPromptSubmit', 'tldr-mode-tracker'),
       'UserPromptSubmit hook missing or wrong marker');
     assert.ok(settings.statusLine, 'statusLine not set');
     assert.match(getStatuslineCommand(settings), /tldr-statusline/,
@@ -194,7 +194,7 @@ test('uninstall strips TLDR hooks but preserves user-authored ones (skipped with
 
     // Statusline pointing at TLDR should be removed.
     assert.doesNotMatch(getStatuslineCommand(settings), /tldr-statusline/,
-      'blunt statusline survived uninstall');
+      'TLDR statusline survived uninstall');
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }
@@ -227,8 +227,8 @@ test('install tolerates JSONC settings.json (comments + trailing commas)', { ski
     assert.equal(parsed.model, 'opus', 'user-authored model setting was dropped');
 
     // TLDR hooks must be wired.
-    assert.ok(SETTINGS.hasBluntHook(parsed, 'SessionStart', 'tldr-activate'));
-    assert.ok(SETTINGS.hasBluntHook(parsed, 'UserPromptSubmit', 'tldr-mode-tracker'));
+    assert.ok(SETTINGS.hasTldrHook(parsed, 'SessionStart', 'tldr-activate'));
+    assert.ok(SETTINGS.hasTldrHook(parsed, 'UserPromptSubmit', 'tldr-mode-tracker'));
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }
@@ -318,7 +318,7 @@ test('openclaw install preserves user content in SOUL.md (append, not overwrite)
     const soulRaw = fs.readFileSync(path.join(ws, 'SOUL.md'), 'utf8');
     assert.match(soulRaw, /# my workspace/, 'user heading wiped during install');
     assert.match(soulRaw, /foo bar baz/, 'user content wiped during install');
-    assert.match(soulRaw, /<!-- tldr-begin -->/, 'blunt block not appended');
+    assert.match(soulRaw, /<!-- tldr-begin -->/, 'TLDR block not appended');
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }
@@ -344,8 +344,8 @@ test('openclaw uninstall removes skill folder + strips SOUL.md block, preserving
 
     assert.equal(fs.existsSync(path.join(ws, 'skills', 'tldr')), false, 'skill folder should be removed');
     const soulAfter = fs.readFileSync(path.join(ws, 'SOUL.md'), 'utf8');
-    assert.doesNotMatch(soulAfter, /<!-- tldr-begin -->/, 'blunt block survived uninstall');
-    assert.doesNotMatch(soulAfter, /<!-- tldr-end -->/, 'blunt end marker survived uninstall');
+    assert.doesNotMatch(soulAfter, /<!-- tldr-begin -->/, 'TLDR block survived uninstall');
+    assert.doesNotMatch(soulAfter, /<!-- tldr-end -->/, 'TLDR end marker survived uninstall');
     assert.match(soulAfter, /# my workspace/, 'user heading wiped during uninstall');
     assert.match(soulAfter, /foo bar baz/, 'user content wiped during uninstall');
   } finally {

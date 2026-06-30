@@ -1,7 +1,7 @@
 {
   "name": "tldr-opencode-plugin",
   "version": "0.1.0",
-  "description": "blunt plugin for opencode — terse mode tracking + slash commands",
+  "description": "TLDR plugin for opencode — terse mode tracking + slash commands",
   "type": "module",
   "main": "plugin.js",
   "private": true

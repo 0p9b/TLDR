@@ -18,7 +18,7 @@ $PluginInstalled = $false
 $PluginsDir = Join-Path $ClaudeDir "plugins"
 if (Test-Path $PluginsDir) {
     $found = Get-ChildItem -Path $PluginsDir -Recurse -Filter "plugin.json" -ErrorAction SilentlyContinue |
-        Where-Object { $_.FullName -match "blunt" }
+        Where-Object { $_.FullName -match "tldr" }
     if ($found) { $PluginInstalled = $true }
 }
 

@@ -95,7 +95,7 @@ body {
   pointer-events: none;
 }
 .telemetry-val { color: var(--text-primary); font-size: 0.85rem; }
-.bonk-flash { color: var(--accent); text-shadow: 0 0 10px var(--accent); }
+.metric-flash { color: var(--accent); text-shadow: 0 0 10px var(--accent); }
 
 /* HERO */
 .hero { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; padding-top: 4rem; position: relative; }
@@ -212,7 +212,7 @@ body {
 
 <div class="telemetry-widget">
   <div>STATUS: <span class="telemetry-val" style="color:#4ade80">OPTIMIZED</span></div>
-  <div>PHYSICAL_IMPACTS: <span class="telemetry-val" id="bonkCount">0</span></div>
+  <div>COMPRESSION_EVENTS: <span class="telemetry-val" id="compressionCount">0</span></div>
   <div>TOKENS_PURGED: <span class="telemetry-val">~75%</span></div>
 </div>
 
@@ -253,7 +253,7 @@ body {
     </div>
     <div class="diff-toggle">
       <button class="toggle-btn active" onclick="setDiffMode('diff', this)">View Diff</button>
-      <button class="toggle-btn" onclick="setDiffMode('blunt', this)">Output Only</button>
+      <button class="toggle-btn" onclick="setDiffMode('output', this)">Output Only</button>
     </div>
   </div>
 </section>
@@ -341,14 +341,14 @@ body {
     <div class="term-body" id="termBody">
       <div class="term-line">System ready. Establishing connection to Claude Code Env...</div>
       <div class="term-line">Installing plugins via marketplace...</div>
-      <div class="term-line term-accent">claude plugin install blunt@blunt</div>
+      <div class="term-line term-accent">claude plugin install tldr@tldr</div>
       <div class="term-line" style="margin-top: 16px;">Trigger the protocol:</div>
       <div class="term-line term-accent">/tldr</div>
-      <div class="term-line">Me ready.</div>
+      <div class="term-line">Verdict first.</div>
       
       <div class="term-input-row">
         <span class="term-accent">❯</span>
-        <input class="term-input" id="cli-input" type="text" autocomplete="off" spellcheck="false" placeholder="Enter prompt or impact surface anywhere to bonk...">
+        <input class="term-input" id="cli-input" type="text" autocomplete="off" spellcheck="false" placeholder="Enter prompt...">
       </div>
     </div>
   </div>
@@ -401,17 +401,15 @@ function setDiffMode(mode, btn) {
   }
 }
 
-// --- Stealth Bonk System ---
-let bonkCount = 0;
-const bonkVal = document.getElementById('bonkCount');
+// --- Compression event counter ---
+let compressionCount = 0;
+const compressionVal = document.getElementById('compressionCount');
 document.addEventListener('click', (e) => {
-  // Prevent bonk on interactive elements
   if(e.target.closest('a') || e.target.closest('button') || e.target.closest('input')) return;
-  
-  bonkCount++;
-  bonkVal.textContent = bonkCount;
-  bonkVal.classList.add('bonk-flash');
-  setTimeout(() => bonkVal.classList.remove('bonk-flash'), 150);
+  compressionCount++;
+  compressionVal.textContent = compressionCount;
+  compressionVal.classList.add('metric-flash');
+  setTimeout(() => compressionVal.classList.remove('metric-flash'), 150);
 });
 
 // --- CLI Interactions ---

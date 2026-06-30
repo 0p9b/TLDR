@@ -22,7 +22,7 @@ if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
 $ClaudeDir = if ($env:CLAUDE_CONFIG_DIR) { $env:CLAUDE_CONFIG_DIR } else { Join-Path $env:USERPROFILE ".claude" }
 $HooksDir = Join-Path $ClaudeDir "hooks"
 $Settings = Join-Path $ClaudeDir "settings.json"
-$RepoUrl = "https://raw.githubusercontent.com/jqbit/TLDR/main/hooks"
+$RepoUrl = "https://raw.githubusercontent.com/jqbit/TLDR/main/src/hooks"
 
 $HookFiles = @("package.json", "tldr-config.js", "tldr-activate.js", "tldr-mode-tracker.js", "tldr-stats.js", "tldr-statusline.sh", "tldr-statusline.ps1")
 

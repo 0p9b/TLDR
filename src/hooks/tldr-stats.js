@@ -200,7 +200,7 @@ function formatHistory({ sessions, outputTokens, estSavedTokens, estSavedUsd, si
 // Single-line tweetable summary. Stays human-friendly when no ratio is known.
 function formatShare({ outputTokens, turns, mode, model }) {
   if (turns === 0) {
-    return '🪨 TLDR armed but no turns yet — TLDR.sh';
+    return '🦉 TLDR armed but no turns yet — github.com/jqbit/TLDR';
   }
   const ratio = COMPRESSION[mode] != null ? COMPRESSION[mode] : null;
   const price = priceForModel(model);
@@ -212,9 +212,9 @@ function formatShare({ outputTokens, turns, mode, model }) {
       const amt = (estSaved / 1_000_000) * price;
       usd = ` (~${formatUsd(amt)})`;
     }
-    return `🪨 Saved ${estSaved.toLocaleString()} output tokens${usd} across ${turns} turns this session — TLDR.sh`;
+    return `🦉 Saved ${estSaved.toLocaleString()} output tokens${usd} across ${turns} turns this session — github.com/jqbit/TLDR`;
   }
-  return `🪨 ${turns} turns, ${outputTokens.toLocaleString()} output tokens this session — TLDR.sh`;
+  return `🦉 ${turns} turns, ${outputTokens.toLocaleString()} output tokens this session — github.com/jqbit/TLDR`;
 }
 
 // Pure formatter — separated from main() so tests can pass synthetic inputs.

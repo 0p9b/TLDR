@@ -20,7 +20,7 @@ Canonical hero art (transparent PNG, README width 120px like caveman/ponytail): 
 
 | Pattern | caveman | ponytail | TLDR |
 |---------|---------|----------|------|
-| Hero image | 🪨 rock emoji / dancing-rock | `assets/logo.png` full width | `docs/assets/tldr-mascot.png` @ 120px |
+| Hero image | 🪨 rock emoji / dancing-rock | `assets/logo.png` full width | `docs/assets/tldr-mascot.png` @ 120px, transparent |
 | Title | `caveman` | `Ponytail` | `TLDR` |
 | Tagline | under title, centered | italic one-liner | centered strong |
 | Proof | ASCII meter + benchmarks/ | % table + reproduce | bench script + `data/benchmarks.md` |

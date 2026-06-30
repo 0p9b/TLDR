@@ -16,7 +16,7 @@ const path = require('path');
  * - Offer basic root confinement for user-supplied target directories
  */
 
-function createSecureTempDir(prefix = 'blunt-') {
+function createSecureTempDir(prefix = 'tldr-') {
   const base = fs.mkdtempSync(path.join(os.tmpdir(), prefix));
   // Best-effort restrictive permissions (owner read/write/exec only)
   try { fs.chmodSync(base, 0o700); } catch (_) {}
@@ -32,7 +32,7 @@ function atomicWrite(dest, content, mode = 0o600) {
   const dir = path.dirname(dest);
   fs.mkdirSync(dir, { recursive: true });
 
-  const tempDir = fs.mkdtempSync(path.join(dir, '.blunt-atomic-'));
+  const tempDir = fs.mkdtempSync(path.join(dir, '.tldr-atomic-'));
   try { fs.chmodSync(tempDir, 0o700); } catch (_) {}
   const tempFile = path.join(tempDir, 'write.tmp');
 

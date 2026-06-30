@@ -163,6 +163,7 @@ def verify_manifests_and_syntax() -> None:
         ROOT / ".claude-plugin/marketplace.json",
         ROOT / ".codex/hooks.json",
         ROOT / "gemini-extension.json",
+        ROOT / "plugins/tldr/plugin.json",
         ROOT / "plugins/tldr/.codex-plugin/plugin.json",
     ]
     for path in manifest_paths:
@@ -375,7 +376,7 @@ def verify_hook_install_flow() -> None:
 
         run(["bash", "src/hooks/uninstall.sh"], env=hook_env)
         settings_after = read_json(claude_dir / "settings.json")
-        ensure(settings_after == existing_settings, "uninstall.sh did not restore non-blunt settings")
+        ensure(settings_after == existing_settings, "uninstall.sh did not restore non-TLDR settings")
         ensure(not (claude_dir / ".tldr-active").exists(), "uninstall.sh should remove flag file")
 
     with tempfile.TemporaryDirectory(prefix="blunt-verify-fresh-") as temp_root:

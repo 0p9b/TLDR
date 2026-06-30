@@ -1,0 +1,56 @@
+name: Sync skill mirrors
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "skills/**"
+      - "agents/tldrcrew-*.md"
+      - "commands/**"
+      - ".github/workflows/sync-skill.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    if: ${{ !contains(github.event.head_commit.message, '[skip ci]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Sync Claude plugin mirrors and dist zip
+        run: |
+          set -euo pipefail
+          mkdir -p plugins/tldr/skills/tldr plugins/tldr/skills/tldr-compress plugins/tldr/skills/tldrcrew plugins/tldr/agents dist
+          rsync -a --delete skills/tldr/ plugins/tldr/skills/tldr/
+          rsync -a --delete skills/tldr-compress/ plugins/tldr/skills/tldr-compress/
+          rsync -a --delete skills/tldrcrew/ plugins/tldr/skills/tldrcrew/
+          cp agents/tldrcrew-*.md plugins/tldr/agents/
+          python3 - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile, ZIP_DEFLATED
+          root = Path('skills/tldr')
+          out = Path('dist/tldr.skill')
+          with ZipFile(out, 'w', ZIP_DEFLATED) as z:
+              for p in sorted(root.rglob('*')):
+                  if p.is_file():
+                      z.write(p, Path('tldr') / p.relative_to(root))
+          PY
+          python3 tests/verify_repo.py
+      - name: Commit synced artifacts
+        run: |
+          if git diff --quiet; then
+            echo "No sync changes."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add plugins/tldr/skills/tldr plugins/tldr/skills/tldr-compress plugins/tldr/skills/tldrcrew plugins/tldr/agents dist/tldr.skill
+          git commit -m "chore: sync skill mirrors [skip ci]"
+          git push

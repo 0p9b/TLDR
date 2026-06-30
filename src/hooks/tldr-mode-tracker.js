@@ -25,8 +25,8 @@ process.stdin.on('end', () => {
     // Natural language activation (e.g. "activate TLDR", "turn on tldr mode",
     // "talk like TLDR"). README tells users they can say these, but the hook
     // only matched /tldr commands — flag file and statusline stayed out of sync.
-    if (/\b(activate|enable|turn on|start|talk like)\b.*\bblunt\b/i.test(prompt) ||
-        /\bblunt\b.*\b(mode|activate|enable|turn on|start)\b/i.test(prompt)) {
+    if (/\b(activate|enable|turn on|start|talk like)\b.*\btldr\b/i.test(prompt) ||
+        /\btldr\b.*\b(mode|activate|enable|turn on|start)\b/i.test(prompt)) {
       if (!/\b(stop|disable|turn off|deactivate)\b/i.test(prompt)) {
         const mode = getDefaultMode();
         if (mode !== 'off') {
@@ -38,7 +38,7 @@ process.stdin.on('end', () => {
     // /tldr-stats [--share] — block the prompt and inject stats output as
     // the hook's reason. The script reads the active session log, so we pass
     // transcript_path through when Claude Code provides it.
-    const statsMatch = /^\/tldr(?::blunt)?-stats(?:\s+(.*))?$/.exec(prompt);
+    const statsMatch = /^\/tldr-stats(?:\s+(.*))?$/.exec(prompt);
     if (statsMatch) {
       const tailArgs = (statsMatch[1] || '').trim().split(/\s+/).filter(Boolean);
       try {
@@ -76,14 +76,12 @@ process.stdin.on('end', () => {
         mode = 'review';
       } else if (cmd === '/tldr-compress' || cmd === '/tldr:tldr-compress') {
         mode = 'compress';
-      } else if (cmd === '/tldr' || cmd === '/tldr:blunt') {
+      } else if (cmd === '/tldr') {
         // Bare /tldr → activate at configured default
         if (!arg) {
           mode = getDefaultMode();
         } else if (arg === 'off' || arg === 'stop' || arg === 'disable') {
           mode = 'off';
-        } else if (arg === 'blunt') {
-          mode = 'full';
         } else if (arg === 'wenyan-full') {
           // Canonical alias — config stores as 'wenyan'
           mode = 'wenyan';
@@ -101,8 +99,8 @@ process.stdin.on('end', () => {
     }
 
     // Detect deactivation — natural language and slash commands
-    if (/\b(stop|disable|deactivate|turn off)\b.*\bblunt\b/i.test(prompt) ||
-        /\bblunt\b.*\b(stop|disable|deactivate|turn off)\b/i.test(prompt) ||
+    if (/\b(stop|disable|deactivate|turn off)\b.*\btldr\b/i.test(prompt) ||
+        /\btldr\b.*\b(stop|disable|deactivate|turn off)\b/i.test(prompt) ||
         /\bnormal mode\b/i.test(prompt)) {
       try { fs.unlinkSync(flagPath); } catch (e) {}
     }

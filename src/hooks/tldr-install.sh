@@ -35,7 +35,7 @@ fi
 CLAUDE_DIR="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
 HOOKS_DIR="$CLAUDE_DIR/hooks"
 SETTINGS="$CLAUDE_DIR/settings.json"
-REPO_URL="https://raw.githubusercontent.com/jqbit/TLDR/main/hooks"
+REPO_URL="https://raw.githubusercontent.com/jqbit/TLDR/main/src/hooks"
 
 HOOK_FILES=("package.json" "tldr-config.js" "tldr-activate.js" "tldr-mode-tracker.js" "tldr-stats.js" "tldr-statusline.sh")
 

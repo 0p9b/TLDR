@@ -27,7 +27,7 @@ test('--help prints usage and exits 0', () => {
 test('--list prints provider matrix', () => {
   const r = run('--list');
   assert.equal(r.status, 0);
-  // install.js prints "🪨 TLDR provider matrix" (brand casing)
+  // install.js prints "🦉 TLDR provider matrix" (brand casing)
   assert.match(r.stdout, /TLDR provider matrix/);
   assert.match(r.stdout, /claude\b/);
   assert.match(r.stdout, /gemini\b/);

@@ -900,7 +900,7 @@ function downloadTo(url, dest) {
 // ── Uninstall ─────────────────────────────────────────────────────────────
 function uninstall(ctx) {
   const { say, note, warn, ok, opts, configDir } = ctx;
-  say('🪨 TLDR uninstall');
+  say('🦉 TLDR uninstall');
 
   if (opts.dryRun) note('  (dry run — nothing will be removed)');
 
@@ -912,7 +912,7 @@ function uninstall(ctx) {
     if (settings) {
       let removed = 0;
       for (const marker of ['tldr-activate', 'tldr-mode-tracker', 'tldr-stats']) {
-        removed += SETTINGS.removeBluntHooks(settings, marker);
+        removed += SETTINGS.removeTldrHooks(settings, marker);
       }
       // Drop our statusline if it points at our script
       if (settings.statusLine) {
@@ -1090,7 +1090,7 @@ async function promptForOnly(detected) {
 // ── --list ─────────────────────────────────────────────────────────────────
 function printList(noColor) {
   const c = makeChalk(noColor);
-  process.stdout.write(c.orange('🪨 TLDR provider matrix') + '\n\n');
+  process.stdout.write(c.orange('🦉 TLDR provider matrix') + '\n\n');
   process.stdout.write(`  ${pad('ID', 13)} ${pad('AGENT', 22)} INSTALL MECHANISM\n`);
   process.stdout.write(`  ${pad('--', 13)} ${pad('-----', 22)} -----------------\n`);
   for (const p of PROVIDERS) {
@@ -1111,7 +1111,7 @@ function printHelp() {
 USAGE
   npx -y github:jqbit/TLDR -- [flags]
   node bin/install.js [flags]
-  bash install.sh [flags]              # shim → npx
+  bash install-full.sh [flags]         # shim → npx
   pwsh install.ps1 [flags]             # shim → npx
 
 FLAGS
@@ -1173,7 +1173,7 @@ async function main() {
 
   if (opts.uninstall) { uninstall(ctx); return 0; }
 
-  ctx.say('🪨 TLDR installer');
+  ctx.say('🦉 TLDR installer');
   ctx.note(`  ${REPO}`);
   if (opts.dryRun) ctx.note('  (dry run — nothing will be written)');
   process.stdout.write('\n');
@@ -1234,7 +1234,7 @@ async function main() {
 
   // Summary
   process.stdout.write('\n');
-  ctx.say('🪨 done');
+  ctx.say('🦉 done');
   if (ctx.results.installed.length) {
     ctx.ok('  installed:');
     for (const a of ctx.results.installed) process.stdout.write(`    • ${a}\n`);

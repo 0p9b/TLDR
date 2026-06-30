@@ -1,5 +1,5 @@
 ---
-description: Blunt-style code review — one-line findings with severity
+description: TLDR-style code review — one-line findings with severity
 ---
 Review the current diff (or files: $ARGUMENTS).
 

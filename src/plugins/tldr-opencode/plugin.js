@@ -76,15 +76,15 @@ function parseModeChange(promptRaw) {
 
   // Natural-language deactivation — checked before activation so "stop talking
   // like TLDR" doesn't trip the activation regex.
-  if (/\b(stop|disable|deactivate|turn off)\b.*\b(tldr|blunt)\b/i.test(prompt) ||
-      /\b(tldr|blunt)\b.*\b(stop|disable|deactivate|turn off)\b/i.test(prompt) ||
+  if (/\b(stop|disable|deactivate|turn off)\b.*\btldr\b/i.test(prompt) ||
+      /\btldr\b.*\b(stop|disable|deactivate|turn off)\b/i.test(prompt) ||
       /\bnormal mode\b/i.test(prompt)) {
     return 'off';
   }
 
   // Natural-language activation
-  if (/\b(activate|enable|turn on|start|talk like)\b.*\b(tldr|blunt)\b/i.test(prompt) ||
-      /\b(tldr|blunt)\b.*\b(mode|activate|enable|turn on|start)\b/i.test(prompt)) {
+  if (/\b(activate|enable|turn on|start|talk like)\b.*\btldr\b/i.test(prompt) ||
+      /\btldr\b.*\b(mode|activate|enable|turn on|start)\b/i.test(prompt)) {
     const mode = getDefaultMode();
     return mode === 'off' ? null : mode;
   }
@@ -103,7 +103,7 @@ function parseModeChange(promptRaw) {
     if (cmd === '/tldr') {
       if (!arg)                                     return getDefaultMode();
       if (arg === 'off' || arg === 'stop' || arg === 'disable') return 'off';
-      if (arg === 'tldr' || arg === 'blunt')                         return 'full';
+      if (arg === 'tldr')                                      return 'full';
       if (arg === 'wenyan-full')                   return 'wenyan';
       if (VALID_MODES.includes(arg) && !INDEPENDENT_MODES.has(arg)) return arg;
       // Unknown arg — leave flag alone. No silent overwrite.
@@ -123,7 +123,7 @@ function applyModeChange(mode) {
   safeWriteFlag(flagPath, mode);
 }
 
-export const BluntPlugin = async (_ctx) => ({
+export const TldrPlugin = async (_ctx) => ({
   'session.created': async () => {
     const mode = getDefaultMode();
     if (mode === 'off') {
@@ -152,4 +152,4 @@ export const BluntPlugin = async (_ctx) => ({
   },
 });
 
-export default BluntPlugin;
+export default TldrPlugin;

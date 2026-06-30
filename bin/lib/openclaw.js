@@ -180,7 +180,7 @@ function installOpenclaw({ workspace, repoRoot, dryRun = false, force = false, l
 
   if (dryRun) {
     log.note(`  would write ${skillFile} (with version/always frontmatter)`);
-    log.note(`  would ${fs.existsSync(soulFile) ? 'append to' : 'create'} ${soulFile} (blunt bootstrap block)`);
+    log.note(`  would ${fs.existsSync(soulFile) ? 'append to' : 'create'} ${soulFile} (TLDR bootstrap block)`);
     return { ok: true, dryRun: true };
   }
 

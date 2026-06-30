@@ -194,7 +194,7 @@ function main() {
   if (opts.help) { help(); return; }
 
   opts.target = resolveSafeTarget(opts.target);
-  console.log(`🪨 TLDR init — ${opts.target}${opts.dryRun ? ' (dry run)' : ''}\n`);
+  console.log(`🦉 TLDR init — ${opts.target}${opts.dryRun ? ' (dry run)' : ''}\n`);
 
   const ruleBody = loadRuleBody();
   const counts = { added: 0, appended: 0, overwritten: 0, skipped: 0 };

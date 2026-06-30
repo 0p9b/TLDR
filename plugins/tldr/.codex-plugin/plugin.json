@@ -1,13 +1,13 @@
 {
-  "name": "blunt",
+  "name": "tldr",
   "version": "0.1.0",
   "description": "Ultra-compressed communication mode. Cut filler. Keep technical accuracy.",
   "author": {
-    "name": "Julius Brussee",
-    "url": "https://github.com/JuliusBrussee"
+    "name": "jqbit",
+    "url": "https://github.com/jqbit"
   },
-  "homepage": "https://github.com/JuliusBrussee/tldr",
-  "repository": "https://github.com/JuliusBrussee/tldr",
+  "homepage": "https://github.com/jqbit/TLDR",
+  "repository": "https://github.com/jqbit/TLDR",
   "license": "MIT",
   "keywords": [
     "productivity",
@@ -17,17 +17,17 @@
   ],
   "skills": "./skills/",
   "interface": {
-    "displayName": "Blunt",
+    "displayName": "TLDR",
     "shortDescription": "Talk like TLDR. Cut filler. Keep technical accuracy.",
     "longDescription": "Ultra-compressed communication mode for Codex. Use fewer words. Keep exact technical substance.",
-    "developerName": "Julius Brussee",
+    "developerName": "jqbit",
     "category": "Productivity",
     "capabilities": [
       "Write"
     ],
-    "websiteURL": "https://github.com/JuliusBrussee/tldr",
-    "privacyPolicyURL": "https://github.com/JuliusBrussee/tldr/blob/main/README.md",
-    "termsOfServiceURL": "https://github.com/JuliusBrussee/tldr/blob/main/LICENSE",
+    "websiteURL": "https://github.com/jqbit/TLDR",
+    "privacyPolicyURL": "https://github.com/jqbit/TLDR/blob/main/README.md",
+    "termsOfServiceURL": "https://github.com/jqbit/TLDR/blob/main/LICENSE",
     "defaultPrompt": [
       "Use tldr mode. Cut filler. Keep technical accuracy."
     ],

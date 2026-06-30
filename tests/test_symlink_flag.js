@@ -16,7 +16,7 @@ let passed = 0;
 let failed = 0;
 
 function test(name, fn) {
-  const tmpBase = fs.mkdtempSync(path.join(os.tmpdir(), 'blunt-symlink-test-'));
+  const tmpBase = fs.mkdtempSync(path.join(os.tmpdir(), 'tldr-symlink-test-'));
   try {
     fn(tmpBase);
     passed++;
