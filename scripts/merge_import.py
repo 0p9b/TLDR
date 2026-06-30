@@ -29,13 +29,13 @@ COPY_DIRS = [
     ".agents",
     "gemini-extension.json",
     "GEMINI.md",
-    "INSTALL.md",
+
     "install.ps1",
     "package.json",
     "skills-lock.json",
     "CLAUDE.md",
     "AGENTS.md",
-    "CONTRIBUTING.md",
+
 ]
 
 SKIP_NAMES = {".git", "node_modules", "__pycache__"}
@@ -201,7 +201,8 @@ def cherry_pick_caveman() -> None:
 
 
 def write_attribution() -> None:
-    path = ROOT / "ATTRIBUTION.md"
+    path = ROOT / "docs" / "legal" / "ATTRIBUTION.md"
+    path.parent.mkdir(parents=True, exist_ok=True)
     if path.exists():
         return
     path.write_text(

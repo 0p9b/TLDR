@@ -6,14 +6,21 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+
 jobs:
   verify:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [20, 22, 24]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: ${{ matrix.node-version }}
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
@@ -34,3 +41,41 @@ jobs:
           node tests/test_repo_local_config.js
           node tests/test_tldr_init.js
           node tests/test_tldr_stats.js
+      - name: HTML asset links
+        run: |
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+          html = Path('docs/index.html').read_text()
+          refs = re.findall(r'''(?:href|src)=["']([^"']+)["']''', html)
+          missing = []
+          for ref in refs:
+              if ref.startswith(('http://', 'https://', '#', 'mailto:')):
+                  continue
+              path = Path('docs') / ref.split('#', 1)[0].split('?', 1)[0]
+              if ref and not path.exists():
+                  missing.append((ref, str(path)))
+          if missing:
+              for ref, path in missing:
+                  print(f'missing docs asset: {ref} -> {path}')
+              raise SystemExit(1)
+          print(f'checked {len(refs)} HTML href/src refs')
+          PY
+      - name: npm package hygiene
+        run: |
+          npm pack --dry-run --json > /tmp/tldr-pack.json
+          python3 - <<'PY'
+          import json
+          pack = json.load(open('/tmp/tldr-pack.json'))[0]
+          bad = [f['path'] for f in pack['files'] if '__pycache__' in f['path'] or f['path'].endswith('.pyc')]
+          if bad:
+              print('\n'.join(bad))
+              raise SystemExit('npm pack contains Python bytecode')
+          print(f"npm pack files: {len(pack['files'])}")
+          PY
+      - name: Secret pattern smoke scan
+        run: |
+          if git grep -n -E '(sk-[A-Za-z0-9_-]{20,}|ghp_[A-Za-z0-9_]{20,}|AIza[0-9A-Za-z_-]{20,})' -- ':!data/**' ':!*.png' ':!*.jpg' ':!*.ico'; then
+            echo 'Potential secret pattern found.' >&2
+            exit 1
+          fi

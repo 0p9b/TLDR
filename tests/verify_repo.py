@@ -172,7 +172,9 @@ def verify_manifests_and_syntax() -> None:
     run(["node", "--check", "src/hooks/tldr-config.js"])
     run(["node", "--check", "src/hooks/tldr-activate.js"])
     run(["node", "--check", "src/hooks/tldr-mode-tracker.js"])
+    run(["node", "--check", "src/mcp-servers/tldr-shrink/spawn-options.js"])
     run(["node", "--check", "bin/install.js"])
+    run(["node", "--check", "bin/lib/opencode-agent.js"])
     run(["node", "--check", "bin/lib/settings.js"])
     run(["bash", "-n", "src/hooks/install.sh"])
     run(["bash", "-n", "src/hooks/uninstall.sh"])
@@ -183,6 +185,11 @@ def verify_manifests_and_syntax() -> None:
     uninstall_sh = (ROOT / "src/hooks/uninstall.sh").read_text(encoding="utf-8")
     ensure("tldr-config.js" in install_sh, "install.sh missing tldr-config.js")
     ensure("tldr-config.js" in uninstall_sh, "uninstall.sh missing tldr-config.js")
+    ensure((ROOT / "commands/tldr.toml").exists(), "commands/tldr.toml missing — bare /tldr TOML command not represented")
+    ensure((ROOT / "bin/lib/opencode-agent.js").exists(), "opencode agent sanitizer missing")
+    ensure((ROOT / "src/mcp-servers/tldr-shrink/spawn-options.js").exists(), "tldr-shrink spawn-options.js missing")
+    bench = (ROOT / "benchmarks/run.py").read_text(encoding="utf-8")
+    ensure('skills" / "tldr" / "SKILL.md' in bench, "benchmarks/run.py must read skills/tldr/SKILL.md")
 
     print("JSON manifests and JS/bash syntax OK")
 

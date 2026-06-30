@@ -1,8 +1,8 @@
 # Install TLDR
 
-One installer for every AI coding agent on your machine — plus a separate **prompt-only** path if you only want [`TLDR.md`](TLDR.md) copied into config files.
+One installer for every AI coding agent on your machine — plus a separate **prompt-only** path if you only want [`TLDR.md`](../TLDR.md) copied into config files.
 
-Overview and repo map: **[README.md](README.md)**.
+Overview and repo map: **[README.md](../README.md)**.
 
 If you just want it to work, run the one-liner below. To see exactly what gets touched, scroll down.
 
@@ -18,7 +18,7 @@ npx -y github:jqbit/TLDR
 
 Equivalent from a clone: `node bin/install.js`
 
-**Prompt only (no Node)** — copies [`TLDR.md`](TLDR.md) to standard agent paths; see [README.md#install--prompt-only-installsh](README.md#install--prompt-only-installsh):
+**Prompt only (no Node)** — copies [`TLDR.md`](../TLDR.md) to standard agent paths; see [README.md#install--prompt-only-installsh](../README.md#install--prompt-only-installsh):
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/jqbit/TLDR/main/install.sh | bash -s --
@@ -142,7 +142,7 @@ curl -fsSL https://raw.githubusercontent.com/jqbit/TLDR/main/src/rules/tldr-acti
   > .cursor/rules/tldr.mdc   # or .windsurf/rules/tldr.md, .clinerules/tldr.md, .github/copilot-instructions.md
 ```
 
-`--with-init` writes the rule into every supported per-agent location it can detect (`.cursor/rules/`, `.windsurf/rules/`, `.clinerules/`, `.github/copilot-instructions.md`, `.opencode/AGENTS.md`, `AGENTS.md`). OpenClaw is intentionally excluded from default per-repo init because it writes global workspace state; install it explicitly with `--only openclaw`. Single source: [`src/rules/tldr-activate.md`](src/rules/tldr-activate.md).
+`--with-init` writes the rule into every supported per-agent location it can detect (`.cursor/rules/`, `.windsurf/rules/`, `.clinerules/`, `.github/copilot-instructions.md`, `.opencode/AGENTS.md`, `AGENTS.md`). OpenClaw is intentionally excluded from default per-repo init because it writes global workspace state; install it explicitly with `--only openclaw`. Single source: [`src/rules/tldr-activate.md`](../src/rules/tldr-activate.md).
 
 ## Verify
 
@@ -158,7 +158,7 @@ You should see ~30 rows. Detected agents are marked. Anything you wanted but isn
 
 **2. Talk to Claude Code.**
 
-Open Claude Code, type `/tldr`. Response should be terse fragments — "Got it. TLDR mode on." or similar. Try a real question: "What is closures in JS?" — answer should drop articles and read like grunts.
+Open Claude Code, type `/tldr`. Response should be terse fragments — "Got it. TLDR mode on." or similar. Try a real question: "What are closures in JS?" — answer should drop filler and use compact technical prose.
 
 **3. Check the flag file.**
 
@@ -197,7 +197,7 @@ What it does **not** remove:
 
 Open your agent in this repo and say:
 
-> "Read CLAUDE.md and INSTALL.md. Install TLDR for me."
+> "Read CLAUDE.md and docs/INSTALL.md. Install TLDR for me."
 
 Agent read repo. Agent run install. TLDR make agent talk less — agent first job is install TLDR to talk less. Snake eat tail.
 
@@ -252,7 +252,7 @@ The installer doesn't phone home. It writes to:
 - Your current working directory (only with `--with-init`) — repo-local rule files.
 - `~/.openclaw/workspace/` (only with `--only openclaw`) — OpenClaw's global workspace skill + SOUL.md bootstrap.
 
-No telemetry. No analytics. The installer's own code makes no network calls. Network requests do happen indirectly through the per-agent CLIs it shells out to — `claude plugin marketplace add`, `claude plugin install`, `gemini extensions install`, `npm view tldr-shrink`, and `npx -y skills add`. Each fetches from its own registry (Anthropic / GitHub / npm). Source: [`bin/install.js`](bin/install.js).
+No telemetry. No analytics. The installer's own code makes no network calls. Network requests do happen indirectly through the per-agent CLIs it shells out to — `claude plugin marketplace add`, `claude plugin install`, `gemini extensions install`, `npm view tldr-shrink`, and `npx -y skills add`. Each fetches from its own registry (Anthropic / GitHub / npm). Source: [`bin/install.js`](../bin/install.js).
 
 ---
 

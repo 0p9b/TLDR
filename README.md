@@ -20,7 +20,7 @@
   <a href="#the-prompt--tldrmd">Prompt</a> •
   <a href="#install--prompt-only-installsh">Prompt install</a> •
   <a href="#install--full-stack-bininstalljs">Full install</a> •
-  <a href="./INSTALL.md">INSTALL.md</a> •
+  <a href="./docs/INSTALL.md">Install</a> •
   <a href="data/benchmarks.md">Benchmarks</a>
 </p>
 
@@ -33,7 +33,7 @@ Terse, high-signal responses for AI coding agents — less filler, same accuracy
 | Path | What you get | Best for |
 |------|----------------|----------|
 | **[`TLDR.md`](TLDR.md) + [`install.sh`](install.sh)** | Copies the system prompt (and `/tldr` command) into standard agent config locations | Quick global rules file, no Node required |
-| **[`bin/install.js`](bin/install.js)** (via `npx`) | Detects installed agents; plugins, hooks, skills, optional MCP shrink | Claude Code, Cursor, Codex, Gemini, 30+ agents — see **[INSTALL.md](INSTALL.md)** |
+| **[`bin/install.js`](bin/install.js)** (via `npx`) | Detects installed agents; plugins, hooks, skills, optional MCP shrink | Claude Code, Cursor, Codex, Gemini, 30+ agents — see **[docs/INSTALL.md](docs/INSTALL.md)** |
 
 > Historical prompt variants and benchmarks: [`data/changelog.md`](data/changelog.md), [`data/progression.md`](data/progression.md).
 
@@ -113,7 +113,7 @@ node bin/install.js --list   # agent matrix
 
 Windows: [`install.ps1`](install.ps1) runs the Node installer.
 
-**Full flags, per-agent table, verify, uninstall, troubleshooting:** **[INSTALL.md](INSTALL.md)**.
+**Full flags, per-agent table, verify, uninstall, troubleshooting:** **[docs/INSTALL.md](docs/INSTALL.md)**.
 
 ## Verify (prompt install)
 
@@ -138,8 +138,8 @@ grep -q "^## Prime directive" ~/.hermes/SOUL.md 2>/dev/null && echo "✓ ~/.herm
 | `skills/` | TLDR skill suite (source of truth for behavior) |
 | `plugins/tldr/` | Claude Code / distribution mirrors (CI-synced) |
 | `src/hooks/` | Claude Code SessionStart / mode hooks |
-| `INSTALL.md` | Full installer documentation |
-| `CONTRIBUTING.md` | How to change skills or add agents |
+| `docs/INSTALL.md` | Full installer documentation |
+| `.github/CONTRIBUTING.md` | How to change skills or add agents |
 | `data/agent-locations.md` | Per-agent install paths |
 
 ## Research & benchmarks
@@ -148,7 +148,8 @@ grep -q "^## Prime directive" ~/.hermes/SOUL.md 2>/dev/null && echo "✓ ~/.herm
 - [data/benchmarks.md](data/benchmarks.md)
 - [data/dspy-cross-model-results.md](data/dspy-cross-model-results.md)
 - [data/changelog.md](data/changelog.md)
+- [docs/LAUNCH.md](docs/LAUNCH.md)
 
 ## License
 
-MIT — see [`LICENSE`](LICENSE). Third-party lineage: [`ATTRIBUTION.md`](ATTRIBUTION.md).
+MIT — see [`LICENSE`](LICENSE). Third-party lineage/notices: [`ATTRIBUTION.md`](docs/legal/ATTRIBUTION.md), [`THIRD_PARTY_NOTICES.md`](docs/legal/THIRD_PARTY_NOTICES.md).

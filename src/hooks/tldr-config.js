@@ -76,11 +76,9 @@ function readModeFromConfigFile(configPath) {
 }
 
 function getDefaultMode() {
-  const envCandidates = [process.env.TLDR_DEFAULT_MODE, process.env.CAVEMAN_DEFAULT_MODE];
-  for (const envMode of envCandidates) {
-    if (envMode && VALID_MODES.includes(String(envMode).toLowerCase())) {
-      return String(envMode).toLowerCase();
-    }
+  const envMode = process.env.TLDR_DEFAULT_MODE;
+  if (envMode && VALID_MODES.includes(String(envMode).toLowerCase())) {
+    return String(envMode).toLowerCase();
   }
 
   const repoConfigPath = findRepoConfigPath(process.cwd());

@@ -9,6 +9,9 @@ const ROOT = path.resolve(__dirname, '..');
 const { compress, compressDescriptionsInPlace } = require(
   path.join(ROOT, 'src', 'mcp-servers', 'tldr-shrink', 'compress.js')
 );
+const { getSpawnOptions } = require(
+  path.join(ROOT, 'src', 'mcp-servers', 'tldr-shrink', 'spawn-options.js')
+);
 
 let passed = 0;
 let failed = 0;
@@ -121,6 +124,19 @@ test('compressDescriptionsInPlace skips non-string description fields', () => {
   // Should not throw.
   compressDescriptionsInPlace(obj, ['description']);
   assert.deepStrictEqual(obj.description, { not: 'a string' });
+});
+
+test('spawn options use Windows shell for .cmd shim resolution only', () => {
+  assert.deepStrictEqual(getSpawnOptions('win32'), {
+    stdio: ['pipe', 'pipe', 'inherit'],
+    shell: true,
+    windowsHide: true,
+  });
+  assert.deepStrictEqual(getSpawnOptions('linux'), {
+    stdio: ['pipe', 'pipe', 'inherit'],
+    shell: false,
+    windowsHide: true,
+  });
 });
 
 console.log(`\n${passed} passed, ${failed} failed`);

@@ -71,7 +71,7 @@ All validations passed ✅ — headings, code blocks, URLs, file paths preserved
 
 ## Install
 
-Compress is built in with the TLDR plugin. Install TLDR once ([INSTALL.md](https://github.com/jqbit/TLDR/blob/main/INSTALL.md)), then use `/tldr-compress`.
+Compress is built in with the TLDR plugin. Install TLDR once ([docs/INSTALL.md](https://github.com/jqbit/TLDR/blob/main/docs/INSTALL.md)), then use `/tldr-compress`.
 
 If you need local files, the compress skill lives at:
 

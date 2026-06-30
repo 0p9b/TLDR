@@ -1,6 +1,6 @@
 {
   "name": "tldr-installer",
-  "version": "0.1.0",
+  "version": "0.20.0",
   "description": "TLDR installer \u2014 detects your AI coding agents and installs TLDR (verdict-first style enforcer) for each one.",
   "license": "MIT",
   "author": "jqbit",
@@ -30,6 +30,28 @@
     "commands/",
     "dist/tldr.skill",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "docs/INSTALL.md",
+    "docs/legal/",
+    ".github/SECURITY.md",
+    ".github/CODE_OF_CONDUCT.md",
+    ".github/CITATION.cff",
+    "!**/__pycache__/**",
+    "!**/*.pyc"
+  ],
+  "main": "./bin/install.js",
+  "keywords": [
+    "tldr",
+    "ai-agents",
+    "llm",
+    "prompt-engineering",
+    "agent-tools",
+    "claude-code",
+    "codex",
+    "gemini",
+    "opencode",
+    "cursor",
+    "token-reduction",
+    "terse-output"
   ]
 }

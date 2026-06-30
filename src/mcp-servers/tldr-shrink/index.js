@@ -28,6 +28,7 @@
 
 const { spawn } = require('child_process');
 const { compressDescriptionsInPlace, compress } = require('./compress');
+const { getSpawnOptions } = require('./spawn-options');
 
 const args = process.argv.slice(2);
 if (args.length === 0) {
@@ -40,9 +41,7 @@ const debug = process.env.TLDR_SHRINK_DEBUG === '1';
 const fields = (process.env.TLDR_SHRINK_FIELDS || 'description')
   .split(',').map(s => s.trim()).filter(Boolean);
 
-const upstream = spawn(args[0], args.slice(1), {
-  stdio: ['pipe', 'pipe', 'inherit'],
-});
+const upstream = spawn(args[0], args.slice(1), getSpawnOptions());
 
 upstream.on('error', err => {
   process.stderr.write(`tldr-shrink: failed to spawn upstream: ${err.message}\n`);

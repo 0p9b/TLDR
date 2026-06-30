@@ -36,7 +36,7 @@ claude_phase2() {
   echo "=== Claude phase 2 ===" | tee "$LOG_DIR/claude-phase2.log"
   claude -p "${CLAUDE_REASONING[@]}" --add-dir "$ROOT" --add-dir /home/user/caveman \
     --allowedTools "Bash,Read,Edit,Write,Glob,Grep" \
-    "Read $HANDOFF and docs/MERGE_STATUS.md if present. Review Codex phase 1 work in $ROOT. Rewrite README.md + INSTALL.md for unified TLDR (prompt + 30-agent installer). Update SECURITY.md URLs to jqbit/TLDR. Ensure install.sh delegates to bin/install.js where appropriate while keeping --with-hermes. Do NOT remove data/ or bench/ history. Commit-ready quality." \
+    "Read $HANDOFF and docs/MERGE_STATUS.md if present. Review Codex phase 1 work in $ROOT. Rewrite README.md + docs/INSTALL.md for unified TLDR (prompt + 30-agent installer). Update .github/SECURITY.md URLs to jqbit/TLDR. Ensure install.sh delegates to bin/install.js where appropriate while keeping --with-hermes. Do NOT remove data/ or bench/ history. Commit-ready quality." \
     2>&1 | tee -a "$LOG_DIR/claude-phase2.log"
 }
 

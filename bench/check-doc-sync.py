@@ -12,9 +12,10 @@ TLDR = ROOT / "TLDR.md"
 COMMAND = ROOT / "commands" / "tldr.md"
 INSTALL = ROOT / "install.sh"
 BENCH = ROOT / "bench" / "v0.14-bench.sh"
-CITATION = ROOT / "CITATION.cff"
+CITATION = ROOT / ".github" / "CITATION.cff"
 OLD_CITATION = ROOT / "data" / "citations.cff"
-IDEA_TEMPLATE = ROOT / ".github" / "ISSUE_TEMPLATE" / "idea.md"
+IDEA_TEMPLATE = ROOT / ".github" / "ISSUE_TEMPLATE" / "idea.yml"
+LEGACY_IDEA_TEMPLATE = ROOT / ".github" / "ISSUE_TEMPLATE" / "idea.md"
 
 
 def fail(msg: str) -> None:
@@ -110,14 +111,19 @@ for needle in [
     expect_contains(bench, needle, "bench/v0.14-bench.sh")
 
 if OLD_CITATION.exists():
-    fail("data/citations.cff should be root CITATION.cff for citation tooling")
+    fail("data/citations.cff should be .github/CITATION.cff for citation tooling")
 
-expect_contains(citation, 'url: "https://github.com/jqbit/TLDR"', "CITATION.cff repository URL")
-expect_contains(citation, 'repository-code: "https://github.com/jqbit/TLDR"', "CITATION.cff repository URL")
+expect_contains(citation, 'url: "https://github.com/jqbit/TLDR"', ".github/CITATION.cff repository URL")
+expect_contains(citation, 'repository-code: "https://github.com/jqbit/TLDR"', ".github/CITATION.cff repository URL")
 if "https://github.com/jqbit/TLDR.md" in citation:
-    fail("CITATION.cff still references non-existent jqbit/TLDR.md repository")
+    fail(".github/CITATION.cff still references non-existent jqbit/TLDR.md repository")
+
+if LEGACY_IDEA_TEMPLATE.exists():
+    fail("legacy .github/ISSUE_TEMPLATE/idea.md should stay removed; use idea.yml")
+if not IDEA_TEMPLATE.exists():
+    fail(".github/ISSUE_TEMPLATE/idea.yml missing")
 
 if "BENCHMARKS.md" in idea_template:
-    fail(".github/ISSUE_TEMPLATE/idea.md references non-existent BENCHMARKS.md")
+    fail(".github/ISSUE_TEMPLATE/idea.yml references non-existent BENCHMARKS.md")
 
 print("OK: docs and prompt metadata are in sync")
