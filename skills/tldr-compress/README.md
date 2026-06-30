@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://em-content.zobj.net/source/apple/391/rock_1faa8.png" width="80" />
+  <img src="https://raw.githubusercontent.com/jqbit/TLDR/main/docs/assets/tldr-mascot.png" width="80" />
 </p>
 
 <h1 align="center">tldr-compress</h1>
@@ -55,7 +55,7 @@ All validations passed ✅ — headings, code blocks, URLs, file paths preserved
 </td>
 <td width="50%">
 
-### <img src="https://raw.githubusercontent.com/jqbit/TLDR/main/docs/assets/tldr-mascot.png" width="20" height="20" alt="rock"/> TLDR (285 tokens)
+### <img src="https://raw.githubusercontent.com/jqbit/TLDR/main/docs/assets/tldr-mascot.png" width="20" height="20" alt="TLDR mascot"/> TLDR (285 tokens)
 
 > "Prefer TypeScript strict mode always. No `any` unless unavoidable — comment why if used. Proper types catch bugs early."
 
@@ -71,7 +71,7 @@ All validations passed ✅ — headings, code blocks, URLs, file paths preserved
 
 ## Install
 
-Compress is built in with the TLDR plugin. Install TLDR once ([INSTALL.md](../../INSTALL.md)), then use `/tldr-compress`.
+Compress is built in with the TLDR plugin. Install TLDR once ([INSTALL.md](https://github.com/jqbit/TLDR/blob/main/INSTALL.md)), then use `/tldr-compress`.
 
 If you need local files, the compress skill lives at:
 
