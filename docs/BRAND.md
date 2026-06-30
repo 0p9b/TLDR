@@ -1,10 +1,12 @@
 # TLDR brand (shareable repo)
 
-## Mascot: **folded summary page** (`docs/assets/tldr-mark.svg`)
+## Mascot: **owl + scroll + scissors + sticky** (`docs/assets/tldr-mascot.jpg`)
 
-- **Reads in 0.5s:** long page → dog-eared corner → one bold line (verdict).
-- **Professional, not parody:** line-art document vs caveman's rock / ponytail's face.
-- **Screenshot unit:** center mark + tagline + badge row (per [[viral-repo-playbook]]).
+Canonical hero art: skeptical owl in the text scroll, scissors ready, sticky **TL;DR / Verdict first.**
+
+- **Cast:** owl = wise brevity; scroll = agent wall-of-text; scissors = cut filler; note = output.
+- **Screenshot unit:** mascot + tagline + badges (viral-repo-playbook).
+- **Legacy:** `tldr-mark.svg` (minimal icon); `dancing-rock.svg` (lineage / attribution era only).
 
 ## Tagline
 
@@ -16,7 +18,7 @@
 
 | Pattern | caveman | ponytail | TLDR |
 |---------|---------|----------|------|
-| Hero image | 🪨 rock emoji / dancing-rock | `assets/logo.png` full width | `tldr-mark.svg` centered |
+| Hero image | 🪨 rock emoji / dancing-rock | `assets/logo.png` full width | `docs/assets/tldr-mascot.jpg` |
 | Title | `caveman` | `Ponytail` | `TLDR` |
 | Tagline | under title, centered | italic one-liner | centered strong |
 | Proof | ASCII meter + benchmarks/ | % table + reproduce | bench script + `data/benchmarks.md` |
