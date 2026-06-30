@@ -71,7 +71,7 @@ All validations passed ✅ — headings, code blocks, URLs, file paths preserved
 
 ## Install
 
-Compress is built into TLDR. Install TLDR once, then use `/tldr-compress`.
+Compress is built in with the TLDR plugin. Install TLDR once ([INSTALL.md](../../INSTALL.md)), then use `/tldr-compress`.
 
 If you need local files, the compress skill lives at:
 
@@ -157,7 +157,7 @@ TLDR cut that by ~46% on average. Same instructions. Same accuracy. Less waste.
 
 ## Part of TLDR
 
-This skill is part of the [TLDR](https://github.com/jqbit/TLDR) toolkit — making Claude use fewer tokens without losing accuracy.
+This skill is part of the [TLDR](https://github.com/jqbit/TLDR) toolkit — fewer tokens without losing accuracy.
 
-- **TLDR** — make Claude *speak* tersely (cuts response tokens ~65%)
-- **tldr-compress** — make Claude *read* less (cuts context tokens ~46%)
+- **tldr** — make agents *speak* terse (cuts response tokens ~65%)
+- **tldr-compress** — make agents *read* less (cuts context tokens ~46%)

@@ -45,4 +45,4 @@ Ultra:
 ## See also
 
 - [`SKILL.md`](./SKILL.md) — full LLM-facing instructions
-- [TLDR README](../../../../README.md) — repo overview and install
+- [TLDR README](../../README.md) — repo overview and install
