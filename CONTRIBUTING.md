@@ -117,17 +117,20 @@ merging.
 ## Running tests
 
 ```bash
-# Installer unit + e2e tests (Node)
+# Primary CI / merge gates
+python3 tests/verify_repo.py
+python3 bench/check-doc-sync.py
 npm test
 
-# Compress-skill safety tests (Python)
+# Additional standalone suites
 python3 -m unittest tests.test_compress_safety
-
-# Per-repo init tests
+python3 -m unittest tests.test_hooks
+python3 -m unittest tests.test_validate_inline
 node tests/test_tldr_init.js
-
-# Flag-file symlink-safety tests
 node tests/test_symlink_flag.js
+node tests/test_repo_local_config.js
+node tests/test_tldr_stats.js
+node tests/test_mcp_shrink.js
 ```
 
 CI runs all of the above on every PR. If any test depends on a network or

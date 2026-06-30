@@ -64,14 +64,14 @@ if [ "$FORCE" -eq 0 ]; then
     if TLDR_SETTINGS="$SETTINGS" node -e "
       const fs = require('fs');
       const settings = JSON.parse(fs.readFileSync(process.env.TLDR_SETTINGS, 'utf8'));
-      const hasBluntHook = (event) =>
+      const hasHook = (event, needle) =>
         Array.isArray(settings.hooks?.[event]) &&
         settings.hooks[event].some(e =>
-          e.hooks && e.hooks.some(h => h.command && h.command.includes('tldr-activate'))
+          e.hooks && e.hooks.some(h => h.command && h.command.includes(needle))
         );
       process.exit(
-        hasBluntHook('SessionStart') &&
-        hasBluntHook('UserPromptSubmit') &&
+        hasHook('SessionStart', 'tldr-activate') &&
+        hasHook('UserPromptSubmit', 'tldr-mode-tracker') &&
         !!settings.statusLine
           ? 0
           : 1
@@ -153,7 +153,7 @@ TLDR_SETTINGS="$SETTINGS" TLDR_HOOKS_DIR="$HOOKS_DIR" node -e "
   // UserPromptSubmit — track mode changes when user types /tldr commands
   if (!settings.hooks.UserPromptSubmit) settings.hooks.UserPromptSubmit = [];
   const hasPrompt = settings.hooks.UserPromptSubmit.some(e =>
-    e.hooks && e.hooks.some(h => h.command && h.command.includes('tldr-activate'))
+    e.hooks && e.hooks.some(h => h.command && h.command.includes('tldr-mode-tracker'))
   );
   if (!hasPrompt) {
     settings.hooks.UserPromptSubmit.push({

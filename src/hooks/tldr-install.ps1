@@ -46,15 +46,15 @@ if (-not $Force) {
     if ($AllFilesPresent -and (Test-Path $Settings)) {
         try {
             $settingsObj = Get-Content $Settings -Raw | ConvertFrom-Json
-            $hasBluntHook = {
-                param([string]$eventName)
+            $hasTldrHook = {
+                param([string]$eventName, [string]$needle)
                 if (-not $settingsObj.hooks) { return $false }
                 $entries = $settingsObj.hooks.$eventName
                 if (-not $entries) { return $false }
                 foreach ($entry in $entries) {
                     if ($entry.hooks) {
                         foreach ($hookDef in $entry.hooks) {
-                            if ($hookDef.command -and $hookDef.command.Contains("blunt")) {
+                            if ($hookDef.command -and $hookDef.command.Contains($needle)) {
                                 return $true
                             }
                         }
@@ -62,7 +62,7 @@ if (-not $Force) {
                 }
                 return $false
             }
-            $HooksWired = (& $hasBluntHook "SessionStart") -and (& $hasBluntHook "UserPromptSubmit")
+            $HooksWired = (& $hasTldrHook "SessionStart" "tldr-activate") -and (& $hasTldrHook "UserPromptSubmit" "tldr-mode-tracker")
             $HasStatusLine = $null -ne $settingsObj.statusLine
         } catch {
             $HooksWired = $false
@@ -144,7 +144,7 @@ if (!hasStart) {
 // UserPromptSubmit
 if (!settings.hooks.UserPromptSubmit) settings.hooks.UserPromptSubmit = [];
 const hasPrompt = settings.hooks.UserPromptSubmit.some(e =>
-  e.hooks && e.hooks.some(h => h.command && h.command.includes('tldr-activate'))
+  e.hooks && e.hooks.some(h => h.command && h.command.includes('tldr-mode-tracker'))
 );
 if (!hasPrompt) {
   settings.hooks.UserPromptSubmit.push({

@@ -66,9 +66,9 @@ if [ -f "$SETTINGS" ]; then
       const managedStatusLinePath = hooksDir + '/tldr-statusline.sh';
       const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
 
-      const isBluntEntry = (entry) =>
+      const isTldrEntry = (entry) =>
         entry && entry.hooks && entry.hooks.some(h =>
-          h.command && h.command.includes('tldr-activate')
+          h.command && (h.command.includes('tldr-activate') || h.command.includes('tldr-mode-tracker'))
         );
 
       let removed = 0;
@@ -76,7 +76,7 @@ if [ -f "$SETTINGS" ]; then
         for (const event of ['SessionStart', 'UserPromptSubmit']) {
           if (Array.isArray(settings.hooks[event])) {
             const before = settings.hooks[event].length;
-            settings.hooks[event] = settings.hooks[event].filter(e => !isBluntEntry(e));
+            settings.hooks[event] = settings.hooks[event].filter(e => !isTldrEntry(e));
             removed += before - settings.hooks[event].length;
             // Drop the event key if it's now empty (keeps settings.json tidy)
             if (settings.hooks[event].length === 0) {
