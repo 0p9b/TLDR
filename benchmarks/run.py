@@ -11,7 +11,8 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 
-import anthropic
+# Imported lazily in main() so --dry-run works without optional API deps.
+anthropic = None
 
 # Load .env.local from repo root if it exists
 _env_file = Path(__file__).parent.parent / ".env.local"
@@ -26,7 +27,7 @@ SCRIPT_VERSION = "1.0.0"
 SCRIPT_DIR = Path(__file__).parent
 REPO_DIR = SCRIPT_DIR.parent
 PROMPTS_PATH = SCRIPT_DIR / "prompts.json"
-SKILL_PATH = REPO_DIR / "skills" / "blunt" / "SKILL.md"
+SKILL_PATH = REPO_DIR / "skills" / "tldr" / "SKILL.md"
 README_PATH = REPO_DIR / "README.md"
 RESULTS_DIR = SCRIPT_DIR / "results"
 
@@ -41,7 +42,7 @@ def load_prompts():
     return data["prompts"]
 
 
-def load_blunt_system():
+def load_tldr_system():
     return SKILL_PATH.read_text()
 
 
@@ -75,7 +76,7 @@ def call_api(client, model, system, prompt, max_retries=3):
                 raise
 
 
-def run_benchmarks(client, model, prompts, blunt_system, trials):
+def run_benchmarks(client, model, prompts, tldr_system, trials):
     results = []
     total = len(prompts)
 
@@ -90,7 +91,7 @@ def run_benchmarks(client, model, prompts, blunt_system, trials):
             "tldr": [],
         }
 
-        for mode, system in [("normal", NORMAL_SYSTEM), ("blunt", blunt_system)]:
+        for mode, system in [("normal", NORMAL_SYSTEM), ("tldr", tldr_system)]:
             for t in range(1, trials + 1):
                 print(
                     f"  [{i}/{total}] {pid} | {mode} | trial {t}/{trials}",
@@ -113,10 +114,10 @@ def compute_stats(results):
         normal_medians = statistics.median(
             [t["output_tokens"] for t in entry["normal"]]
         )
-        blunt_medians = statistics.median(
-            [t["output_tokens"] for t in entry["blunt"]]
+        tldr_medians = statistics.median(
+            [t["output_tokens"] for t in entry["tldr"]]
         )
-        savings = 1 - (blunt_medians / normal_medians) if normal_medians > 0 else 0
+        savings = 1 - (tldr_medians / normal_medians) if normal_medians > 0 else 0
         all_savings.append(savings)
 
         rows.append(
@@ -125,7 +126,7 @@ def compute_stats(results):
                 "category": entry["category"],
                 "prompt": entry["prompt"],
                 "normal_median": int(normal_medians),
-                "blunt_median": int(blunt_medians),
+                "tldr_median": int(tldr_medians),
                 "savings_pct": round(savings * 100),
             }
         )
@@ -134,14 +135,14 @@ def compute_stats(results):
     min_savings = round(min(all_savings) * 100)
     max_savings = round(max(all_savings) * 100)
     avg_normal = round(statistics.mean([r["normal_median"] for r in rows]))
-    avg_blunt = round(statistics.mean([r["blunt_median"] for r in rows]))
+    avg_tldr = round(statistics.mean([r["tldr_median"] for r in rows]))
 
     return rows, {
         "avg_savings": avg_savings,
         "min_savings": min_savings,
         "max_savings": max_savings,
         "avg_normal": avg_normal,
-        "avg_blunt": avg_blunt,
+        "avg_tldr": avg_tldr,
     }
 
 
@@ -169,10 +170,10 @@ def format_table(rows, summary):
     for r in rows:
         label = format_prompt_label(r["id"])
         lines.append(
-            f"| {label} | {r['normal_median']} | {r['blunt_median']} | {r['savings_pct']}% |"
+            f"| {label} | {r['normal_median']} | {r['tldr_median']} | {r['savings_pct']}% |"
         )
     lines.append(
-        f"| **Average** | **{summary['avg_normal']}** | **{summary['avg_blunt']}** | **{summary['avg_savings']}%** |"
+        f"| **Average** | **{summary['avg_normal']}** | **{summary['avg_tldr']}** | **{summary['avg_savings']}%** |"
     )
     lines.append("")
     lines.append(
@@ -250,8 +251,12 @@ def main():
         dry_run(prompts, args.model, args.trials)
         return
 
-    blunt_system = load_blunt_system()
+    tldr_system = load_tldr_system()
     skill_hash = sha256_file(SKILL_PATH)
+
+    global anthropic
+    import anthropic as anthropic_client
+    anthropic = anthropic_client
 
     client = anthropic.Anthropic()
 
@@ -259,7 +264,7 @@ def main():
     print(f"Model: {args.model}", file=sys.stderr)
     print(file=sys.stderr)
 
-    results = run_benchmarks(client, args.model, prompts, blunt_system, args.trials)
+    results = run_benchmarks(client, args.model, prompts, tldr_system, args.trials)
     rows, summary = compute_stats(results)
     table_md = format_table(rows, summary)
 

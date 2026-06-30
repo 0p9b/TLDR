@@ -8,7 +8,7 @@
 //
 // Distribution:
 //   Local clone: node bin/install.js [flags]
-//   curl|bash:   delegated from install.sh shim → npx -y github:jqbit/TLDR -- [flags]
+//   curl|bash:   delegated from install-full.sh shim → npx -y github:jqbit/TLDR -- [flags]
 //   Windows:     pwsh install.ps1 [flags] → same npx delegation
 //
 // Pure stdlib, zero npm runtime deps.
@@ -23,6 +23,7 @@ const readline = require('readline');
 
 const SETTINGS = require('./lib/settings');
 const OPENCLAW = require('./lib/openclaw');
+const { stripOpencodeAgentTools } = require('./lib/opencode-agent');
 const { atomicWrite, createSecureTempDir, safeRmdir } = require('./lib/safe-fs');
 
 const REPO = 'jqbit/TLDR';
@@ -566,7 +567,7 @@ function installOpencode(ctx) {
       const dest = path.join(agentsDir, f);
       if (!fs.existsSync(src)) continue;
       if (fs.existsSync(dest) && !opts.force) { note(`  skipped ${dest} (exists; --force to overwrite)`); continue; }
-      fs.copyFileSync(src, dest);
+      fs.writeFileSync(dest, stripOpencodeAgentTools(fs.readFileSync(src, 'utf8')));
       process.stdout.write(`  installed: ${dest}\n`);
     }
 

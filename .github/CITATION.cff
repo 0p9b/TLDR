@@ -1,7 +1,7 @@
 cff-version: 1.2.0
-message: "If you use TLDR.md in research, benchmarks, or production deployments, please cite it as below."
-title: "TLDR.md — Too Long Didn't Read"
-abstract: "A 1.5 KB single-file system prompt that compresses AI coding-agent prose output by 77–87% across 5 production agent CLIs (Claude Code, Google Gemini, Factory Droid, Pi Coding Agent, Cursor Agent) at 100% compliance with hard prompt-shape caps (v0.13.1 5-agent × 5-prompt re-bench). Inspired by caveman (Brussee, 2026); diverges by replacing the caveman persona with a senior-engineer register."
+message: "If you use TLDR in research, benchmarks, or production deployments, please cite it as below."
+title: "TLDR — Verdict-first agent output"
+abstract: "A compact system prompt and multi-agent installer that reduces AI coding-agent filler while preserving technical accuracy, tool use, code blocks, paths, and safety-critical prose. The project merges the public TLDR prompt, a private blunt fork, and MIT-licensed caveman-derived installer/skill infrastructure into one rebranded TLDR toolkit."
 type: software
 authors:
   - alias: jqbit
@@ -9,8 +9,8 @@ authors:
 url: "https://github.com/jqbit/TLDR"
 repository-code: "https://github.com/jqbit/TLDR"
 license: MIT
-version: "0.13.1"
-date-released: "2026-04-24"
+version: "0.20.0"
+date-released: "2026-06-30"
 keywords:
   - prompt-engineering
   - llm
