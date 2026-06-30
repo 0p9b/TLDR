@@ -27,6 +27,7 @@ test('--help prints usage and exits 0', () => {
 test('--list prints provider matrix', () => {
   const r = run('--list');
   assert.equal(r.status, 0);
+  // install.js prints "🪨 TLDR provider matrix" (brand casing)
   assert.match(r.stdout, /TLDR provider matrix/);
   assert.match(r.stdout, /claude\b/);
   assert.match(r.stdout, /gemini\b/);
@@ -73,6 +74,7 @@ test('--only with unknown agent id exits 2', () => {
   const r = run('--only', 'definitely-not-an-agent', '--non-interactive');
   assert.equal(r.status, 2);
   assert.match(r.stderr, /unknown agent: definitely-not-an-agent/);
+  // install.js die() text: see 'tldr --list' for valid ids
   assert.match(r.stderr, /tldr --list/);
 });
 
