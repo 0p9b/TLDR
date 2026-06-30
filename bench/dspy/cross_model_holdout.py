@@ -261,7 +261,7 @@ def main(variant: str):
             "optimized": read_optional(DSPY_DIR / "v2" / "tldr_best.md"),
         }
     else:
-        # Backward-compatible alias: use the merged TLDR prompt for legacy blunt flow.
+        # Backward-compatible alias: use the merged TLDR prompt for legacy TLDR flow.
         prompts = {
             "shipped": (ROOT / "TLDR.md").read_text(),
             "optimized": read_optional(DSPY_DIR / "v2" / "blunt_best.md") or read_optional(DSPY_DIR / "v2" / "tldr_best.md"),

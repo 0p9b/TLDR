@@ -1,0 +1,17 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "tldr",
+  "description": "Verdict-first communication mode for Claude Code. No filler, full technical accuracy.",
+  "owner": {
+    "name": "jqbit",
+    "url": "https://github.com/jqbit"
+  },
+  "plugins": [
+    {
+      "name": "tldr",
+      "description": "Verdict first. No filler. Keep all technical accuracy.",
+      "source": "./",
+      "category": "productivity"
+    }
+  ]
+}

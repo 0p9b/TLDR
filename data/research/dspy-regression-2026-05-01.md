@@ -171,7 +171,7 @@ Actions taken:
 
 The proposed wording polish looked intuitively safer, but measurable regressions appeared:
 
-- “don’t disagree unless materially warranted” softened blunt-mode pushback too much
+- “don’t disagree unless materially warranted” softened tldr-mode pushback too much
 - substance-preservation wording increased single-turn concept verbosity
 - regular TLDR became less reliable on override compliance in the override-pair harness
 

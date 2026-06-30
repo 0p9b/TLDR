@@ -1,0 +1,287 @@
+// opencode native install — fresh install, idempotency, uninstall, plugin smoke.
+//
+// Detection of opencode is gated behind `command -v opencode`, so to run on a
+// CI box without opencode installed we prepend a tmpdir with a no-op `opencode`
+// shim to PATH. The installer's per-provider dispatch only checks PATH; it
+// never invokes the binary itself.
+
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import { createRequire } from 'node:module';
+
+const HERE = path.dirname(fileURLToPath(import.meta.url));
+const REPO_ROOT = path.resolve(HERE, '..', '..');
+const INSTALLER = path.join(REPO_ROOT, 'bin', 'install.js');
+const requireCjs = createRequire(import.meta.url);
+const SETTINGS = requireCjs(path.join(REPO_ROOT, 'bin', 'lib', 'settings.js'));
+
+const IS_WIN = process.platform === 'win32';
+
+function freshTmpDir() {
+  return fs.mkdtempSync(path.join(os.tmpdir(), 'tldr-opencode-'));
+}
+
+// Make a throwaway `opencode` binary on PATH so detectMatch('command:opencode')
+// returns true. The shim never executes — installer only checks PATH presence.
+function shimOpencode() {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'cm-shim-'));
+  if (IS_WIN) {
+    fs.writeFileSync(path.join(dir, 'opencode.cmd'), '@echo off\r\n');
+  } else {
+    const f = path.join(dir, 'opencode');
+    fs.writeFileSync(f, '#!/bin/sh\nexit 0\n');
+    fs.chmodSync(f, 0o755);
+  }
+  return dir;
+}
+
+function runInstaller(args, env) {
+  return spawnSync('node', [INSTALLER, ...args, '--non-interactive', '--no-mcp-shrink'], {
+    env, encoding: 'utf8',
+  });
+}
+
+function pathWith(prependDir) {
+  const sep = IS_WIN ? ';' : ':';
+  return prependDir + sep + (process.env.PATH || '');
+}
+
+// ── 1. Fresh install populates expected files ────────────────────────────
+test('opencode fresh install drops plugin, commands, agents, skills, AGENTS.md, opencode.json', () => {
+  const xdg = freshTmpDir();
+  const shimDir = shimOpencode();
+  try {
+    const r = runInstaller(['--only', 'opencode'], {
+      ...process.env,
+      XDG_CONFIG_HOME: xdg,
+      PATH: pathWith(shimDir),
+      NO_COLOR: '1',
+    });
+    assert.notEqual(r.status, 2, `argv error: ${r.stderr}`);
+
+    const ocDir = path.join(xdg, 'opencode');
+    assert.ok(fs.existsSync(path.join(ocDir, 'plugins', 'tldr', 'plugin.js')), 'plugin.js missing');
+    assert.ok(fs.existsSync(path.join(ocDir, 'plugins', 'tldr', 'package.json')), 'plugin package.json missing');
+    assert.ok(fs.existsSync(path.join(ocDir, 'plugins', 'tldr', 'tldr-config.cjs')), 'tldr-config.cjs sibling missing');
+
+    for (const f of ['tldr.md', 'tldr-commit.md', 'tldr-review.md', 'tldr-compress.md', 'tldr-stats.md', 'tldr-help.md']) {
+      assert.ok(fs.existsSync(path.join(ocDir, 'commands', f)), `command ${f} missing`);
+    }
+    for (const f of ['tldrcrew-investigator.md', 'tldrcrew-builder.md', 'tldrcrew-reviewer.md']) {
+      assert.ok(fs.existsSync(path.join(ocDir, 'agents', f)), `agent ${f} missing`);
+    }
+    for (const name of ['tldr', 'tldr-commit', 'tldr-review', 'tldr-help', 'tldr-stats', 'tldr-compress', 'tldrcrew']) {
+      assert.ok(fs.existsSync(path.join(ocDir, 'skills', name, 'SKILL.md')), `skill ${name}/SKILL.md missing`);
+    }
+    assert.ok(fs.existsSync(path.join(ocDir, 'AGENTS.md')), 'AGENTS.md missing');
+    const agentsBody = fs.readFileSync(path.join(ocDir, 'AGENTS.md'), 'utf8');
+    assert.match(agentsBody, /Respond terse like smart TLDR/);
+    // Block must be wrapped in begin/end markers so uninstall can isolate it
+    // from user-authored content above and below.
+    assert.match(agentsBody, /<!-- tldr-begin -->/);
+    assert.match(agentsBody, /<!-- tldr-end -->/);
+
+    const cfgPath = path.join(ocDir, 'opencode.json');
+    assert.ok(fs.existsSync(cfgPath), 'opencode.json missing');
+    const cfg = JSON.parse(fs.readFileSync(cfgPath, 'utf8'));
+    assert.ok(Array.isArray(cfg.plugin), 'opencode.json missing plugin array');
+    assert.ok(cfg.plugin.includes('./plugins/tldr/plugin.js'), 'plugin entry missing');
+  } finally {
+    fs.rmSync(xdg, { recursive: true, force: true });
+    fs.rmSync(shimDir, { recursive: true, force: true });
+  }
+});
+
+// ── 2. Idempotency: install twice, plugin array stays length 1 ───────────
+test('opencode idempotent install does not duplicate plugin entries', () => {
+  const xdg = freshTmpDir();
+  const shimDir = shimOpencode();
+  try {
+    const env = { ...process.env, XDG_CONFIG_HOME: xdg, PATH: pathWith(shimDir), NO_COLOR: '1' };
+    const r1 = runInstaller(['--only', 'opencode'], env);
+    assert.notEqual(r1.status, 2);
+    const r2 = runInstaller(['--only', 'opencode'], env);
+    assert.notEqual(r2.status, 2);
+
+    const cfg = JSON.parse(fs.readFileSync(path.join(xdg, 'opencode', 'opencode.json'), 'utf8'));
+    const matches = cfg.plugin.filter(p => p === './plugins/tldr/plugin.js');
+    assert.equal(matches.length, 1, `expected 1 plugin entry, got ${matches.length}`);
+
+    // AGENTS.md should not have the ruleset duplicated either.
+    const agentsMd = fs.readFileSync(path.join(xdg, 'opencode', 'AGENTS.md'), 'utf8');
+    const sentinelCount = (agentsMd.match(/Respond terse like smart TLDR/g) || []).length;
+    assert.equal(sentinelCount, 1, `expected 1 sentinel, got ${sentinelCount}`);
+  } finally {
+    fs.rmSync(xdg, { recursive: true, force: true });
+    fs.rmSync(shimDir, { recursive: true, force: true });
+  }
+});
+
+// ── 2b. Plugin payload not overwritten on re-install (without --force) ────
+test('opencode re-install preserves user edits to plugin.js without --force', () => {
+  const xdg = freshTmpDir();
+  const shimDir = shimOpencode();
+  try {
+    const env = { ...process.env, XDG_CONFIG_HOME: xdg, PATH: pathWith(shimDir), NO_COLOR: '1' };
+    const r1 = runInstaller(['--only', 'opencode'], env);
+    assert.notEqual(r1.status, 2);
+
+    const pluginPath = path.join(xdg, 'opencode', 'plugins', 'tldr', 'plugin.js');
+    const tweak = '\n// USER-TWEAK-DO-NOT-OVERWRITE\n';
+    fs.appendFileSync(pluginPath, tweak);
+    const beforeBytes = fs.readFileSync(pluginPath, 'utf8');
+
+    const r2 = runInstaller(['--only', 'opencode'], env);
+    assert.notEqual(r2.status, 2);
+
+    const afterBytes = fs.readFileSync(pluginPath, 'utf8');
+    assert.equal(afterBytes, beforeBytes, 'second install should not overwrite plugin.js without --force');
+    assert.match(afterBytes, /USER-TWEAK-DO-NOT-OVERWRITE/);
+
+    // With --force, the file should be replaced (no tweak afterward).
+    const r3 = runInstaller(['--only', 'opencode', '--force'], env);
+    assert.notEqual(r3.status, 2);
+    const forced = fs.readFileSync(pluginPath, 'utf8');
+    assert.doesNotMatch(forced, /USER-TWEAK-DO-NOT-OVERWRITE/, '--force should overwrite plugin.js');
+  } finally {
+    fs.rmSync(xdg, { recursive: true, force: true });
+    fs.rmSync(shimDir, { recursive: true, force: true });
+  }
+});
+
+// ── 2c. AGENTS.md fence preserves user content above and below ───────────
+test('opencode uninstall strips fenced AGENTS.md block, preserving user prefix and suffix', () => {
+  const xdg = freshTmpDir();
+  const shimDir = shimOpencode();
+  try {
+    const env = { ...process.env, XDG_CONFIG_HOME: xdg, PATH: pathWith(shimDir), NO_COLOR: '1' };
+    const r1 = runInstaller(['--only', 'opencode'], env);
+    assert.notEqual(r1.status, 2);
+
+    const agentsMd = path.join(xdg, 'opencode', 'AGENTS.md');
+    const installed = fs.readFileSync(agentsMd, 'utf8');
+    // Sandwich the TLDR block between user prefix and suffix.
+    const userPrefix = '# my project\n\nuse 2-space indent.\n\n';
+    const userSuffix = '\n## extra\n\nkeep PRs small.\n';
+    fs.writeFileSync(agentsMd, userPrefix + installed.trimEnd() + '\n' + userSuffix);
+
+    const r2 = runInstaller(['--uninstall'], env);
+    assert.notEqual(r2.status, 2);
+
+    const after = fs.readFileSync(agentsMd, 'utf8');
+    assert.doesNotMatch(after, /<!-- tldr-begin -->/, 'blunt block should be stripped');
+    assert.doesNotMatch(after, /<!-- tldr-end -->/, 'blunt end marker should be stripped');
+    assert.doesNotMatch(after, /Respond in TLDR style/, 'blunt body should be stripped');
+    assert.match(after, /# my project/, 'user prefix should survive');
+    assert.match(after, /use 2-space indent/, 'user prefix body should survive');
+    assert.match(after, /## extra/, 'user suffix should survive');
+    assert.match(after, /keep PRs small/, 'user suffix body should survive');
+  } finally {
+    fs.rmSync(xdg, { recursive: true, force: true });
+    fs.rmSync(shimDir, { recursive: true, force: true });
+  }
+});
+
+// ── 3. Tolerates JSONC opencode.json (#249-class regression guard) ───────
+test('opencode install tolerates JSONC opencode.json (comments + trailing commas)', () => {
+  const xdg = freshTmpDir();
+  const shimDir = shimOpencode();
+  try {
+    const ocDir = path.join(xdg, 'opencode');
+    fs.mkdirSync(ocDir, { recursive: true });
+    fs.writeFileSync(path.join(ocDir, 'opencode.json'),
+      `// hand-written
+{
+  /* user prefs */
+  "model": "anthropic/claude-sonnet-4-5",
+  "theme": "dark",
+}
+`);
+
+    const env = { ...process.env, XDG_CONFIG_HOME: xdg, PATH: pathWith(shimDir), NO_COLOR: '1' };
+    const r = runInstaller(['--only', 'opencode'], env);
+    assert.notEqual(r.status, 2);
+
+    const cfg = JSON.parse(fs.readFileSync(path.join(ocDir, 'opencode.json'), 'utf8'));
+    assert.equal(cfg.model, 'anthropic/claude-sonnet-4-5', 'user model setting wiped');
+    assert.equal(cfg.theme, 'dark', 'user theme setting wiped');
+    assert.ok(cfg.plugin.includes('./plugins/tldr/plugin.js'), 'plugin entry missing');
+  } finally {
+    fs.rmSync(xdg, { recursive: true, force: true });
+    fs.rmSync(shimDir, { recursive: true, force: true });
+  }
+});
+
+// ── 4. Uninstall removes opencode artifacts and prunes config ────────────
+test('opencode uninstall removes plugin dir, command/agent/skill files, prunes opencode.json', () => {
+  const xdg = freshTmpDir();
+  const shimDir = shimOpencode();
+  try {
+    const env = { ...process.env, XDG_CONFIG_HOME: xdg, PATH: pathWith(shimDir), NO_COLOR: '1' };
+    const r1 = runInstaller(['--only', 'opencode'], env);
+    assert.notEqual(r1.status, 2);
+
+    const r2 = runInstaller(['--uninstall'], env);
+    assert.notEqual(r2.status, 2);
+
+    const ocDir = path.join(xdg, 'opencode');
+    assert.equal(fs.existsSync(path.join(ocDir, 'plugins', 'tldr')), false, 'plugin dir survived');
+    assert.equal(fs.existsSync(path.join(ocDir, 'commands', 'tldr.md')), false, 'blunt.md command survived');
+    assert.equal(fs.existsSync(path.join(ocDir, 'agents', 'tldrcrew-builder.md')), false, 'tldrcrew agent survived');
+    assert.equal(fs.existsSync(path.join(ocDir, 'skills', 'tldr')), false, 'blunt skill dir survived');
+    assert.equal(fs.existsSync(path.join(ocDir, 'AGENTS.md')), false, 'AGENTS.md (we wrote it) survived');
+
+    if (fs.existsSync(path.join(ocDir, 'opencode.json'))) {
+      const cfg = JSON.parse(fs.readFileSync(path.join(ocDir, 'opencode.json'), 'utf8'));
+      const stillHasPlugin = Array.isArray(cfg.plugin) && cfg.plugin.includes('./plugins/tldr/plugin.js');
+      assert.equal(stillHasPlugin, false, 'plugin entry survived in opencode.json');
+    }
+  } finally {
+    fs.rmSync(xdg, { recursive: true, force: true });
+    fs.rmSync(shimDir, { recursive: true, force: true });
+  }
+});
+
+// ── 5. Plugin smoke: load installed plugin.js, fire fake hooks ────────────
+test('opencode plugin handles /tldr ultra and stop tldr via tui.prompt.append', async () => {
+  const xdg = freshTmpDir();
+  const shimDir = shimOpencode();
+  try {
+    const env = { ...process.env, XDG_CONFIG_HOME: xdg, PATH: pathWith(shimDir), NO_COLOR: '1' };
+    const r = runInstaller(['--only', 'opencode'], env);
+    assert.notEqual(r.status, 2);
+
+    const pluginPath = path.join(xdg, 'opencode', 'plugins', 'tldr', 'plugin.js');
+    const flagPath = path.join(xdg, 'opencode', '.tldr-active');
+
+    // Set XDG_CONFIG_HOME for the plugin so flagPath resolves to our temp dir.
+    process.env.XDG_CONFIG_HOME = xdg;
+
+    const mod = await import(pathToFileURL(pluginPath).href);
+    const factory = mod.default || mod.BluntPlugin;
+    const handlers = await factory({});
+
+    // Slash command activates ultra
+    const out1 = await handlers['tui.prompt.append']({ prompt: '/tldr ultra' });
+    assert.equal(fs.readFileSync(flagPath, 'utf8'), 'ultra');
+    assert.ok(out1 && typeof out1.append === 'string', 'expected reinforcement append');
+    assert.match(out1.append, /TLDR MODE ACTIVE \(ultra\)/);
+
+    // Natural-language deactivation removes flag
+    const out2 = await handlers['tui.prompt.append']({ prompt: 'stop tldr please' });
+    assert.equal(fs.existsSync(flagPath), false, 'flag should be deleted after deactivation');
+    assert.equal(out2, undefined, 'no reinforcement when flag absent');
+
+    // session.created writes default mode
+    await handlers['session.created']();
+    assert.equal(fs.readFileSync(flagPath, 'utf8'), 'full');
+  } finally {
+    fs.rmSync(xdg, { recursive: true, force: true });
+    fs.rmSync(shimDir, { recursive: true, force: true });
+  }
+});

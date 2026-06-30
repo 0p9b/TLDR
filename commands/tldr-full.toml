@@ -1,0 +1,2 @@
+description = "Switch TLDR intensity level (lite/full/ultra/wenyan)"
+prompt = "Switch to TLDR {{args}} mode. If no level specified, use full. Enforce verdict-first, 1-sentence default, shape dispatch, no filler, no preamble, no validation. Truth and utility first. Fragments OK. Technical terms exact. Code unchanged."

@@ -1,0 +1,34 @@
+{
+  "name": "tldr",
+  "description": "Verdict-first communication mode. Cuts output tokens while keeping full technical accuracy.",
+  "author": {
+    "name": "jqbit",
+    "url": "https://github.com/jqbit"
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/src/hooks/tldr-activate.js\"",
+            "timeout": 5,
+            "statusMessage": "Loading tldr mode..."
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/src/hooks/tldr-mode-tracker.js\"",
+            "timeout": 5,
+            "statusMessage": "Tracking tldr mode..."
+          }
+        ]
+      }
+    ]
+  }
+}

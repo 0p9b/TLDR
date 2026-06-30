@@ -410,7 +410,7 @@ def main(variant: str):
         seed = (ROOT / "TLDR.md").read_text()
         scorer = score_tldr_probe
     else:
-        # Backward-compatible alias: evaluate the merged TLDR prompt under the older blunt variant.
+        # Backward-compatible alias: evaluate the merged TLDR prompt under the older TLDR variant.
         seed = (ROOT / "TLDR.md").read_text()
         scorer = score_blunt_probe
 

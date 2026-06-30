@@ -1,0 +1,30 @@
+{
+  "name": "tldr-shrink",
+  "version": "0.1.0",
+  "description": "MCP proxy that compresses prose fields (tool descriptions, etc.) using TLDR rules. Same accuracy, fewer context tokens.",
+  "license": "MIT",
+  "homepage": "https://github.com/jqbit/TLDR",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jqbit/TLDR.git",
+    "directory": "src/mcp-servers/tldr-shrink"
+  },
+  "author": "jqbit",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "claude",
+    "blunt",
+    "proxy",
+    "tokens"
+  ],
+  "main": "compress.js",
+  "bin": {
+    "tldr-shrink": "index.js"
+  },
+  "files": [
+    "index.js",
+    "compress.js",
+    "README.md"
+  ]
+}

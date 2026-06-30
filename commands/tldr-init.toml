@@ -1,0 +1,2 @@
+description = "Drop the always-on TLDR activation rule (AGENTS.md etc.) into the current repo for every IDE agent"
+prompt = "Run `node src/tools/tldr-init.js {{args}}` in the current repo and report the result. Use --dry-run first if the user did not pass --force. Write the canonical TLDR rules (verdict first, no filler, shape dispatch) into AGENTS.md / CLAUDE.md / GEMINI.md / .cursor/rules as appropriate for the IDEs present."
