@@ -27,8 +27,20 @@ Canonical hero art: skeptical owl in the text scroll, scissors ready, sticky **T
 ## Optional upgrades
 
 - Animated GIF: terminal before/after (`/tldr` toggle) in README.
-- `social-preview.png` (1280×640): mark + tagline for Open Graph (GitHub settings).
-- Favicon: export 32px PNG from `tldr-mark.svg` for `docs/` or GitHub Pages.
+- **GitHub social preview:** upload `docs/assets/social-preview.png` (1280×640) under repo **Settings → General → Social preview**.
+- **Favicons:** `favicon-32.png`, `apple-touch-icon.png`, `android-chrome-192.png` (cropped from mascot owl).
+- **Vector:** `tldr-mascot.svg` for crisp README/scaling; `tldr-mascot.jpg` is canonical raster hero.
+
+## Asset map
+
+| File | Use |
+|------|-----|
+| `tldr-mascot.jpg` | README hero (1024²) |
+| `tldr-mascot.svg` | Scalable brand / favicon fallback |
+| `social-preview.png` | GitHub OG / X link card |
+| `favicon-32.png` | Browser tab / docs site |
+| `apple-touch-icon.png` | iOS bookmark |
+| `tldr-mark.svg` | Legacy minimal mark |
 
 ## Do not
 
