@@ -12,7 +12,11 @@ Examples:
   curl -fsSL https://raw.githubusercontent.com/jqbit/TLDR/main/install.sh | bash -s -- --with-hermes
 
 Behavior:
-  - Installs TLDR.md to the 7 standard coding-agent locations.
+  - Installs TLDR.md to the 8 standard coding-agent locations (claude, gemini,
+    codex, opencode, factory, pi, grok, and a repo-root AGENTS.md).
+  - Overwrites an existing rules file (a timestamped .bak is kept first). For a
+    NON-destructive, per-agent native install of all 37 supported agents, use
+    the full installer instead: `npx -y github:jqbit/TLDR -- --all`.
   - Also installs /tldr command to supported agents' command dirs (claude, opencode, factory, cursor).
   - --with-hermes updates ~/.hermes/SOUL.md too.
   - If SOUL.md already exists, --with-hermes preserves it and appends or updates
@@ -149,6 +153,7 @@ install_standard_locations() {
   write_standard_path "$HOME/.config/opencode/AGENTS.md"
   write_standard_path "$HOME/.factory/AGENTS.md"
   write_standard_path "$HOME/.pi/agent/AGENTS.md"
+  write_standard_path "$HOME/.grok/AGENTS.md"
 }
 
 install_hermes() {

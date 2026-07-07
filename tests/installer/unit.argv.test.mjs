@@ -31,7 +31,12 @@ test('--list prints provider matrix', () => {
   assert.match(r.stdout, /TLDR provider matrix/);
   assert.match(r.stdout, /claude\b/);
   assert.match(r.stdout, /gemini\b/);
-  assert.match(r.stdout, /antigravity\b.*\(soft\)/);
+  // native providers appear in the matrix
+  assert.match(r.stdout, /codex\b/);
+  assert.match(r.stdout, /\bpi\b/);
+  assert.match(r.stdout, /grok\b/);
+  // a still-soft provider keeps its (soft) tag (antigravity is now native)
+  assert.match(r.stdout, /copilot\b.*\(soft\)/);
 });
 
 test('unknown flag exits 2 with error', () => {

@@ -56,7 +56,7 @@ If you want to install for one agent (or want to know exactly what command runs 
 | **Codex CLI** | `node bin/install.js --only codex` *(or `npx -y github:jqbit/TLDR -- --only codex`)* | Yes (global `~/.codex/AGENTS.md` + skill) |
 | **Pi Coding Agent** | `node bin/install.js --only pi` *(or `npx -y github:jqbit/TLDR -- --only pi`)* | Yes (global `~/.pi/agent/AGENTS.md` + skill) |
 | **Grok Build CLI** | `node bin/install.js --only grok` *(or `npx -y github:jqbit/TLDR -- --only grok`)* | Yes (global `~/.grok/AGENTS.md` + skill) |
-| **Cursor** | `npx skills add jqbit/TLDR -a cursor` | Per-session by default; `--with-init` for an always-on rule file |
+| **Cursor** | `node bin/install.js --only cursor` *(or `npx -y github:jqbit/TLDR -- --only cursor`)* | Skill (`/tldr`) at `~/.cursor/skills/`; cursor-agent has no global rules file, so always-on is per-repo via `--with-init` |
 | **Windsurf** | `npx skills add jqbit/TLDR -a windsurf` | Per-session by default; `--with-init` for an always-on rule file |
 | **Cline** | `npx skills add jqbit/TLDR -a cline` | Per-session by default; `--with-init` for an always-on rule file |
 | **GitHub Copilot** *(soft probe)* | `npx -y github:jqbit/TLDR -- --only copilot --with-init` | Repo-wide instructions via `--with-init` |
@@ -84,7 +84,7 @@ If you want to install for one agent (or want to know exactly what command runs 
 | **Replit Agent** | `npx skills add jqbit/TLDR -a replit` | No |
 | **JetBrains Junie** *(soft probe)* | `npx skills add jqbit/TLDR -a junie` | No |
 | **Qoder** *(soft probe)* | `npx skills add jqbit/TLDR -a qoder` | No |
-| **Google Antigravity** *(soft probe)* | `npx skills add jqbit/TLDR -a antigravity` | No |
+| **Google Antigravity** | `node bin/install.js --only antigravity` *(or `npx -y github:jqbit/TLDR -- --only antigravity`)* | Yes (global `~/.gemini/config/AGENTS.md` + skill) |
 
 "Soft probe" = installer won't auto-detect these without `--only <id>` because there's no reliable always-on signal (Copilot subscription state is auth-gated; the others have no CLI / config-dir-only). Pass the flag when you want them.
 

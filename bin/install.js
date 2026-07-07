@@ -187,7 +187,7 @@ const PROVIDERS = [
   // IDE / VS Code-family — extension probes are precise. Cursor/Windsurf also
   // ship CLI binaries; we drop the dir fallback because the dir lingers after
   // uninstall and false-positives heavily.
-  { id: 'cursor',     label: 'Cursor',              mech: 'npx skills add (cursor)',       detect: 'command:cursor||macapp:Cursor', profile: 'cursor' },
+  { id: 'cursor',     label: 'Cursor',              mech: 'native skill (per-repo rules)',  detect: 'command:cursor-agent||command:cursor||macapp:Cursor', native: { dir: '$HOME/.cursor', skills: 'skills', rules: null } },
   { id: 'windsurf',   label: 'Windsurf',            mech: 'npx skills add (windsurf)',     detect: 'command:windsurf||macapp:Windsurf', profile: 'windsurf' },
   { id: 'cline',      label: 'Cline',               mech: 'npx skills add (cline)',        detect: 'vscode-ext:cline',        profile: 'cline' },
   { id: 'continue',   label: 'Continue',            mech: 'npx skills add (continue)',     detect: 'vscode-ext:continue.continue||vscode-ext:continue', profile: 'continue' },
@@ -230,7 +230,7 @@ const PROVIDERS = [
   //   gemini CLI on first use — not a reliable signal of antigravity itself.
   { id: 'junie',      label: 'JetBrains Junie',     mech: 'npx skills add (junie)',        detect: 'jetbrains-plugin:junie', profile: 'junie', soft: true },
   { id: 'qoder',      label: 'Qoder',               mech: 'npx skills add (qoder)',        detect: 'dir:$HOME/.qoder', profile: 'qoder', soft: true },
-  { id: 'antigravity',label: 'Google Antigravity',  mech: 'npx skills add (antigravity)',  detect: 'dir:$HOME/.gemini/antigravity', profile: 'antigravity', soft: true },
+  { id: 'antigravity',label: 'Google Antigravity',  mech: 'native AGENTS.md + skill',       detect: 'command:agy||dir:$HOME/.gemini/antigravity', native: { dir: '$HOME/.gemini/config', rules: 'AGENTS.md', skills: 'skills' } },
 ];
 
 // ── Detection ─────────────────────────────────────────────────────────────
@@ -597,8 +597,12 @@ function installNativeAgentsMd(ctx, prov) {
   say(`→ ${prov.label} detected`);
   const n = prov.native;
   const dir = expandHome(n.dir);
-  const rulesFile = path.join(dir, n.rules || 'AGENTS.md');
+  // `rules: null` means the agent has NO global always-on rules file (e.g.
+  // cursor-agent, which only honors per-project AGENTS.md/.cursor/rules); we
+  // still install the auto-discovered skill and point users at --with-init.
+  const rulesFile = n.rules === null ? null : path.join(dir, n.rules || 'AGENTS.md');
   const skillDest = path.join(dir, n.skills || 'skills', 'tldr');
+  const noRulesNote = '  no global always-on rules file for this agent — skill installed; use --with-init for a per-repo rule file';
 
   if (!repoRoot) {
     warn(`  ${prov.label} native install requires a local clone of the TLDR repo.`);
@@ -608,7 +612,8 @@ function installNativeAgentsMd(ctx, prov) {
     return;
   }
   if (opts.dryRun) {
-    note(`  would write fenced TLDR ruleset to ${rulesFile}`);
+    if (rulesFile) note(`  would write fenced TLDR ruleset to ${rulesFile}`);
+    else note(noRulesNote);
     note(`  would copy skills/tldr/ into ${skillDest}/`);
     results.installed.push(prov.id);
     process.stdout.write('\n');
@@ -625,7 +630,8 @@ function installNativeAgentsMd(ctx, prov) {
         process.stdout.write(`  installed: ${skillDest}/\n`);
       }
     }
-    writeFencedRuleset(rulesFile, repoRoot, opts, note);
+    if (rulesFile) writeFencedRuleset(rulesFile, repoRoot, opts, note);
+    else note(noRulesNote);
     results.installed.push(prov.id);
   } catch (e) {
     warn(`  ${prov.label} install failed: ` + (e && e.message || e));
@@ -1370,9 +1376,9 @@ function uninstall(ctx) {
   // TLDR block from each agent's rules file and remove its skills/tldr/ dir.
   for (const prov of PROVIDERS.filter(p => p.native)) {
     const ndir = expandHome(prov.native.dir);
-    const rulesFile = path.join(ndir, prov.native.rules || 'AGENTS.md');
+    const rulesFile = prov.native.rules === null ? null : path.join(ndir, prov.native.rules || 'AGENTS.md');
     const skillDir = path.join(ndir, prov.native.skills || 'skills', 'tldr');
-    let touched = stripFencedRuleset(rulesFile, opts, note);
+    let touched = rulesFile ? stripFencedRuleset(rulesFile, opts, note) : false;
     if (fs.existsSync(skillDir)) {
       if (!opts.dryRun) { try { fs.rmSync(skillDir, { recursive: true, force: true }); } catch (_) {} }
       note(`  removed ${skillDir}`);
