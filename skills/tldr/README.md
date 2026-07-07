@@ -8,7 +8,7 @@ Compress every model response to tldr-style prose. Drops articles, filler, pleas
 
 ## Levels
 
-| Level | What change |
+| Level | What changes |
 |-------|-------------|
 | `lite` | Drop filler/hedging. Sentences stay full. |
 | `full` / `/tldr` | Default. Drop articles, fragments OK, short synonyms. |

@@ -19,16 +19,23 @@ const { readFlag, appendFlag, readHistory, safeWriteFlag } = require('./tldr-con
 const COMPRESSION = { 'full': 0.65 };
 
 // Approximate Anthropic public output-token pricing, USD per million.
-// Match by model id prefix so this stays correct across point releases
-// (e.g. claude-sonnet-4-20250514, claude-sonnet-4-7). Update from
-// https://www.anthropic.com/pricing if a release changes the tier.
+// Output-token price per 1M tokens, matched by model-id prefix. ORDER MATTERS:
+// priceForModel returns the FIRST prefix that matches, so more-specific legacy
+// prefixes must precede the generic ones. The original Opus 4.0/4.1 tier is
+// $75/M output; current Opus (4.5–4.8) is $25/M — collapsing them all to $75
+// overstates the default model (claude-opus-4-8) 3x. Haiku 4.5 is $5/M.
+// Update from https://www.anthropic.com/pricing if a release changes the tier.
 const MODEL_OUTPUT_PRICE_PER_M = [
-  ['claude-opus-4',     75.00],
-  ['claude-sonnet-4',   15.00],
-  ['claude-haiku-4',     4.00],
-  ['claude-3-5-sonnet', 15.00],
-  ['claude-3-5-haiku',   4.00],
-  ['claude-3-opus',     75.00],
+  ['claude-opus-4-0',        75.00],  // Opus 4.0 (2025-05) — legacy tier
+  ['claude-opus-4-1',        75.00],  // Opus 4.1 (2025-08) — legacy tier
+  ['claude-opus-4-20250514', 75.00],  // dated Opus 4.0 snapshot
+  ['claude-opus-4',          25.00],  // current Opus 4.5/4.6/4.7/4.8
+  ['claude-sonnet-4',        15.00],
+  ['claude-sonnet-5',        15.00],
+  ['claude-haiku-4',          5.00],  // Haiku 4.5
+  ['claude-3-5-sonnet',      15.00],
+  ['claude-3-5-haiku',        4.00],
+  ['claude-3-opus',          75.00],
 ];
 
 function priceForModel(model) {
@@ -133,6 +140,16 @@ function summarizeCompressed(pairs) {
 }
 
 // Compute the savings figures we want to log/share for one session snapshot.
+//
+// Single-mode assumption: the estimate applies ONE mode's compression ratio to
+// the whole session's output tokens (the mode active when stats are read). It
+// does not re-attribute tokens per message to whichever mode was active at that
+// message's timestamp. If you switch modes mid-session, the estimate reflects
+// the final mode, not a per-turn weighting — hence the `est.` label on every
+// figure. This is a deliberate simplification: the number is an extrapolation,
+// not a measurement, so per-turn attribution would add machinery without making
+// it a real (billed) figure. For the honest cost/benefit picture see
+// docs/HONEST-NUMBERS.md; for true billing, A/B against your provider's usage page.
 function deriveSavings({ outputTokens, mode, model }) {
   const ratio = COMPRESSION[mode] != null ? COMPRESSION[mode] : null;
   const price = priceForModel(model);

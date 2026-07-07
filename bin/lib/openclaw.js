@@ -91,7 +91,7 @@ function loadBootstrapSnippet(repoRoot) {
     MARK_BEGIN,
     '## TLDR mode (always on)',
     '',
-    'Respond terse like smart TLDR. All technical substance stay. Only fluff die.',
+    'Respond in TLDR style: verdict first, no filler. All technical substance stays.',
     '',
     "The full ruleset and intensity levels live in this workspace's TLDR skill:",
     '',

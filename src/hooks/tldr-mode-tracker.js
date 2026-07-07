@@ -17,6 +17,11 @@ const flagPath = path.join(claudeDir, '.tldr-active');
 
 let input = '';
 process.stdin.on('data', chunk => { input += chunk; });
+// A broken pipe / parent crash emits 'error' on stdin; without a handler Node
+// throws "Unhandled 'error' event" and the UserPromptSubmit hook exits non-zero,
+// which surfaces as a spurious failure in the user's agent. Hooks must fail
+// silent — swallow it and exit cleanly.
+process.stdin.on('error', () => { process.exit(0); });
 process.stdin.on('end', () => {
   try {
     const data = JSON.parse(input);
@@ -37,8 +42,11 @@ process.stdin.on('end', () => {
 
     // /tldr-stats [--share] — block the prompt and inject stats output as
     // the hook's reason. The script reads the active session log, so we pass
-    // transcript_path through when Claude Code provides it.
-    const statsMatch = /^\/tldr-stats(?:\s+(.*))?$/.exec(prompt);
+    // transcript_path through when Claude Code provides it. Also matches the
+    // plugin-namespaced form (/tldr:tldr-stats) that Claude Code uses for
+    // marketplace installs. tests/installer/slash-commands.test.mjs mirrors
+    // this regex — keep both in sync.
+    const statsMatch = /^\/tldr(?::tldr)?-stats(?:\s+(.*))?$/.exec(prompt);
     if (statsMatch) {
       const tailArgs = (statsMatch[1] || '').trim().split(/\s+/).filter(Boolean);
       try {

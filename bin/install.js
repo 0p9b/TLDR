@@ -20,6 +20,7 @@ const os = require('os');
 const path = require('path');
 const child_process = require('child_process');
 const readline = require('readline');
+const crypto = require('crypto');
 
 const SETTINGS = require('./lib/settings');
 const OPENCLAW = require('./lib/openclaw');
@@ -30,7 +31,14 @@ const REPO = 'jqbit/TLDR';
 const RAW_BASE = `https://raw.githubusercontent.com/${REPO}/main`;
 const HOOKS_REMOTE = `${RAW_BASE}/src/hooks`;
 const INIT_SCRIPT_URL = `${RAW_BASE}/src/tools/tldr-init.js`;
-const MCP_SHRINK_PKG = 'tldr-shrink';
+// Scoped package name, owner-controlled. A bare unscoped name ('tldr-shrink')
+// is a dependency-confusion vector: it is not published, so `npx -y tldr-shrink`
+// would resolve to whatever an attacker publishes under that name and execute
+// it as an auto-started MCP server. Names under the @jqbit scope cannot be
+// squatted by anyone who does not own the scope, which closes that hole. Until
+// the package is published, the npm-view probe below skips registration
+// cleanly rather than fetching anything.
+const MCP_SHRINK_PKG = '@jqbit/tldr-shrink';
 // Hook files to copy. Statusline ships in both .sh (macOS/Linux) and .ps1
 // (Windows) flavors — copy both regardless of host OS so a roaming
 // $CLAUDE_CONFIG_DIR (e.g. dotfiles repo) keeps working across platforms.
@@ -42,6 +50,7 @@ const HOOK_FILES = [
   'tldr-stats.js',
   'tldr-statusline.sh',
   'tldr-statusline.ps1',
+  'tldrcrew-model-overrides.js',
 ];
 
 // ── Argv ───────────────────────────────────────────────────────────────────
@@ -165,6 +174,7 @@ const PROVIDERS = [
   { id: 'gemini',     label: 'Gemini CLI',          mech: 'gemini extensions install',     detect: 'command:gemini' },
   { id: 'opencode',   label: 'opencode',            mech: 'native opencode plugin',        detect: 'command:opencode' },
   { id: 'openclaw',   label: 'OpenClaw',            mech: 'workspace skill + SOUL.md',     detect: 'command:openclaw||dir:$HOME/.openclaw/workspace' },
+  { id: 'hermes',     label: 'Hermes Agent',        mech: 'native hermes SOUL.md merge',   detect: 'command:hermes' },
   { id: 'codex',      label: 'Codex CLI',           mech: 'npx skills add (codex)',        detect: 'command:codex',           profile: 'codex' },
 
   // IDE / VS Code-family — extension probes are precise. Cursor/Windsurf also
@@ -344,17 +354,19 @@ function detectRepoRoot() {
 // Node's spawnSync('claude', ...) returns ENOENT for these unless we either
 // (a) set shell:true (cmd.exe respects PATHEXT) or
 // (b) resolve the actual `.cmd` path before spawning.
-// We pick (a) — simpler, fewer cross-version corner cases. The cost is that
-// args with spaces need quoting; we quote them defensively below.
+// We pick (a) — simpler, fewer cross-version corner cases (and modern Node
+// refuses to spawn .cmd/.bat shims with shell:false, CVE-2024-27980). Because
+// cmd.exe parses & | < > ^ ( ) BEFORE the CRT argv split, we quote EVERY arg,
+// not just ones with spaces: those metacharacters are literal inside double
+// quotes, so quoting neutralizes command injection from an attacker-influenced
+// path (e.g. process.cwd() = C:\dev\a&calc\TLDR). (%VAR% still expands inside
+// quotes, but that substitutes a value — it does not execute a command.)
 const IS_WIN = process.platform === 'win32';
 
 function quoteWinArg(a) {
   if (!IS_WIN) return a;
-  if (a === '' || /[\s"]/.test(a)) {
-    // Standard CommandLineToArgvW escaping
-    return '"' + String(a).replace(/\\(?=\\*"|$)/g, '\\\\').replace(/"/g, '\\"') + '"';
-  }
-  return a;
+  // Standard CommandLineToArgvW escaping, applied unconditionally.
+  return '"' + String(a).replace(/\\(?=\\*"|$)/g, '\\\\').replace(/"/g, '\\"') + '"';
 }
 
 function spawnXplat(cmd, args, opts) {
@@ -468,6 +480,9 @@ const OPENCODE_SKILL_DIRS  = ['tldr', 'tldr-commit', 'tldr-review', 'tldr-help',
 const OPENCODE_AGENT_FILES = ['tldrcrew-investigator.md', 'tldrcrew-builder.md', 'tldrcrew-reviewer.md'];
 const OPENCODE_COMMAND_FILES = ['tldr.md', 'tldr-commit.md', 'tldr-review.md', 'tldr-compress.md', 'tldr-stats.md', 'tldr-help.md'];
 const OPENCODE_PLUGIN_REL = './plugins/tldr/plugin.js';
+// Legacy sentinel from installs that pre-date the marker fence and the
+// persona-register cleanup. Detection-only (idempotency + uninstall of old
+// unfenced blocks) — never written to disk or emitted to the model.
 const OPENCODE_AGENTS_MD_SENTINEL = 'Respond terse like smart TLDR';
 // Marker fence for the opencode AGENTS.md ruleset block. Same convention as
 // bin/lib/openclaw.js for SOUL.md — lets us strip our block cleanly even when
@@ -628,7 +643,9 @@ function installOpencode(ctx) {
     // otherwise overwrite the only known-good copy with an already-merged file.
     const opencodeBak = opencodeJson + '.bak';
     if (fs.existsSync(opencodeJson) && !fs.existsSync(opencodeBak)) {
-      try { fs.copyFileSync(opencodeJson, opencodeBak); } catch (_) {}
+      // COPYFILE_EXCL fails (EEXIST) on any pre-existing destination, including
+      // a planted symlink, so the backup never follows/clobbers a link target.
+      try { fs.copyFileSync(opencodeJson, opencodeBak, fs.constants.COPYFILE_EXCL); } catch (_) {}
     }
     if (!Array.isArray(cfg.plugin)) cfg.plugin = [];
     if (!cfg.plugin.includes(OPENCODE_PLUGIN_REL)) {
@@ -687,6 +704,107 @@ function installOpenclaw(ctx) {
   process.stdout.write('\n');
 }
 
+// ── Hermes Agent native install ─────────────────────────────────────────────
+// Hermes reads its live instructions from <HERMES_HOME>/SOUL.md (default
+// ~/.hermes/SOUL.md). We MERGE the TLDR ruleset (TLDR.md) into SOUL.md between
+// managed markers — the SAME markers the prompt-only `install.sh --with-hermes`
+// path uses — so both installers converge on one file, stay idempotent against
+// each other, and never double-insert. Uninstall strips exactly the marked
+// block, preserving any user-authored content above and below.
+//
+// Interop note: install.sh honors only $HOME/.hermes; we additionally respect
+// HERMES_HOME (matches the full-installer convention and makes the path
+// testable). When HERMES_HOME is unset both resolve to ~/.hermes, so real-world
+// default installs remain byte-interoperable via the shared markers.
+const HERMES_MARK_BEGIN = '<!-- TLDR.MD START -->';
+const HERMES_MARK_END = '<!-- TLDR.MD END -->';
+
+function hermesConfigDir() {
+  return process.env.HERMES_HOME || path.join(os.homedir(), '.hermes');
+}
+
+function hermesSoulPath() {
+  return path.join(hermesConfigDir(), 'SOUL.md');
+}
+
+// The managed block body is TLDR.md (repo root) — the same source install.sh
+// resolves as PROMPT_PATH. Returns null when there's no local clone on disk.
+function loadHermesRuleset(repoRoot) {
+  if (!repoRoot) return null;
+  try { return fs.readFileSync(path.join(repoRoot, 'TLDR.md'), 'utf8'); }
+  catch (_) { return null; }
+}
+
+// Compute the next SOUL.md contents for an install. Mirrors the merge algorithm
+// in install.sh's `install_hermes` python block, but always wraps the ruleset
+// in the managed markers (install.sh writes raw on a fresh file) so our own
+// --uninstall can strip cleanly. Idempotency uses the same `promptBody in text`
+// short-circuit as install.sh, so it also recognizes install.sh's raw write.
+function mergeHermesSoul(existing, promptText) {
+  const promptBody = promptText.replace(/\n+$/, '');           // python rstrip("\n")
+  const managed = `${HERMES_MARK_BEGIN}\n${promptBody}\n${HERMES_MARK_END}`;
+
+  if (existing === null || existing.trim() === '') {
+    return { action: 'installed', text: managed + '\n' };
+  }
+  if (existing.includes(promptBody)) {
+    return { action: 'unchanged', text: null };
+  }
+  const begin = existing.indexOf(HERMES_MARK_BEGIN);
+  const end = existing.indexOf(HERMES_MARK_END);
+  if (begin !== -1 && end !== -1 && begin < end) {
+    const before = existing.slice(0, begin);
+    const after = existing.slice(end + HERMES_MARK_END.length);
+    let next = before.replace(/\s+$/, '') + '\n\n' + managed;   // before.rstrip()
+    if (after.trim()) next += '\n\n' + after.replace(/^\n+/, ''); // after.lstrip("\n")
+    else next += '\n';
+    return { action: 'updated', text: next };
+  }
+  return { action: 'merged', text: existing.replace(/\s+$/, '') + '\n\n' + managed + '\n' };
+}
+
+function installHermes(ctx) {
+  const { say, note, warn, opts, repoRoot, results } = ctx;
+  results.detected++;
+  say('→ Hermes Agent detected');
+
+  const promptText = loadHermesRuleset(repoRoot);
+  if (!promptText) {
+    warn('  Hermes native install requires a local clone of the TLDR repo (TLDR.md missing).');
+    note('  Re-run from a clone: git clone https://github.com/' + REPO + ' && cd TLDR && node bin/install.js --only hermes');
+    results.failed.push(['hermes', 'native install requires local repo clone']);
+    process.stdout.write('\n');
+    return;
+  }
+
+  const soul = hermesSoulPath();
+
+  if (opts.dryRun) {
+    note(`  would merge TLDR.md ruleset into ${soul}`);
+    note(`  (between ${HERMES_MARK_BEGIN} / ${HERMES_MARK_END} markers)`);
+    results.installed.push('hermes');
+    process.stdout.write('\n');
+    return;
+  }
+
+  try {
+    const existing = fs.existsSync(soul) ? fs.readFileSync(soul, 'utf8') : null;
+    const r = mergeHermesSoul(existing, promptText);
+    if (r.action === 'unchanged') {
+      note(`  ${soul} already contains the current TLDR ruleset`);
+    } else {
+      fs.mkdirSync(path.dirname(soul), { recursive: true });
+      fs.writeFileSync(soul, r.text, { mode: 0o644 });
+      process.stdout.write(`  ${r.action}: ${soul}\n`);
+    }
+    results.installed.push('hermes');
+  } catch (e) {
+    warn('  hermes install failed: ' + (e && e.message || e));
+    results.failed.push(['hermes', (e && e.message) || 'unknown error']);
+  }
+  process.stdout.write('\n');
+}
+
 // ── Hooks installer ────────────────────────────────────────────────────────
 // Replaces src/hooks/install.sh + src/hooks/install.ps1.
 async function installHooks(ctx) {
@@ -705,6 +823,13 @@ async function installHooks(ctx) {
   fs.mkdirSync(hooksDir, { recursive: true });
 
   // Copy or download each hook file. Local-clone-first for offline installs.
+  // Downloaded files (the rare detached-script / curl fallback) are verified
+  // against the SHA-256 manifest published alongside them
+  // (src/hooks/checksums.sha256); a mismatch aborts before the file is wired
+  // into settings.json. Local copies are trusted — they come from the same
+  // clone as this script.
+  let checksums; // undefined = not yet loaded; null = unavailable
+  let warnedNoChecksums = false;
   for (const f of HOOK_FILES) {
     const dest = path.join(hooksDir, f);
     if (sourceDir && fs.existsSync(path.join(sourceDir, f))) {
@@ -712,6 +837,19 @@ async function installHooks(ctx) {
     } else {
       try { await downloadTo(`${HOOKS_REMOTE}/${f}`, dest); }
       catch (e) { return `download ${f} failed: ${e.message}`; }
+      if (checksums === undefined) checksums = await loadRemoteHookChecksums();
+      if (checksums) {
+        const want = checksums.get(f);
+        const got = sha256File(dest);
+        if (!want || want !== got) {
+          try { fs.unlinkSync(dest); } catch (_) {}
+          return `integrity check failed for ${f} (expected ${want || '<not in manifest>'}, got ${got}) — ` +
+                 `refusing to install a hook that does not match the published manifest`;
+        }
+      } else if (!warnedNoChecksums) {
+        warnedNoChecksums = true;
+        warn('  note: integrity manifest unavailable — downloaded hooks installed unverified.');
+      }
     }
     process.stdout.write(`  installed: ${dest}\n`);
   }
@@ -730,7 +868,9 @@ async function installHooks(ctx) {
   // the already-merged file, destroying recovery.
   const bak = settingsPath + '.bak';
   if (fs.existsSync(settingsPath) && !fs.existsSync(bak)) {
-    try { fs.copyFileSync(settingsPath, bak); } catch (_) {}
+    // COPYFILE_EXCL: refuse a pre-existing destination (incl. a planted
+    // symlink) instead of following it and clobbering the link target.
+    try { fs.copyFileSync(settingsPath, bak, fs.constants.COPYFILE_EXCL); } catch (_) {}
   }
 
   const node = absoluteNodePath();
@@ -853,17 +993,24 @@ const ALLOWED_DOWNLOAD_HOSTS = new Set([
 ]);
 
 function downloadTo(url, dest) {
-  // Prefer curl/wget when available (better proxy + cert handling on legacy
-  // systems); fall back to Node https.
-  if (hasCmd('curl')) {
-    const r = child_process.spawnSync('curl', ['-fsSL', '--max-time', '30', '-o', dest, url], { stdio: 'inherit' });
-    if (r.status === 0) return;
-    throw new Error(`curl failed for ${url}`);
+  // One host/protocol guard covers BOTH paths (curl and the Node https
+  // fallback), so the preferred curl branch cannot be pointed at an arbitrary
+  // host/scheme via a redirect or a poisoned PATH curl.
+  const u = new URL(url);
+  if (u.protocol !== 'https:' || !ALLOWED_DOWNLOAD_HOSTS.has(u.hostname)) {
+    throw new Error(`Refusing download from untrusted URL: ${url}`);
   }
 
-  const u = new URL(url);
-  if (!ALLOWED_DOWNLOAD_HOSTS.has(u.hostname)) {
-    throw new Error(`Refusing download from untrusted host: ${u.hostname}`);
+  // Prefer curl/wget when available (better proxy + cert handling on legacy
+  // systems); fall back to Node https. Constrain curl to https, cap redirects
+  // and size, so it enforces the same limits as the stdlib path.
+  if (hasCmd('curl')) {
+    const r = child_process.spawnSync('curl', [
+      '-fsSL', '--proto', '=https', '--max-redirs', '3',
+      '--max-filesize', '524288', '--max-time', '30', '-o', dest, url,
+    ], { stdio: 'inherit' });
+    if (r.status === 0) return;
+    throw new Error(`curl failed for ${url}`);
   }
 
   const https = require('https');
@@ -896,6 +1043,35 @@ function downloadTo(url, dest) {
     req.on('error', reject);
     req.on('timeout', () => req.destroy(new Error('Download timeout')));
   });
+}
+
+// ── Integrity verification for downloaded hooks ─────────────────────────────
+function sha256File(p) {
+  return crypto.createHash('sha256').update(fs.readFileSync(p)).digest('hex');
+}
+
+// Download + parse the hook integrity manifest published next to the hook
+// files. Returns Map<basename, sha256hex>, or null when the manifest is
+// unavailable — the caller treats null as "cannot verify" and warns rather
+// than aborting, for back-compat with checkouts that predate the manifest.
+// Parses the standard `sha256sum` text format: "<64-hex>  <path>" (two
+// spaces, or " *<path>" binary marker).
+async function loadRemoteHookChecksums() {
+  const tmp = path.join(os.tmpdir(), `tldr-checksums-${process.pid}-${Date.now()}.sha256`);
+  try {
+    await downloadTo(`${HOOKS_REMOTE}/checksums.sha256`, tmp);
+    const txt = fs.readFileSync(tmp, 'utf8');
+    const map = new Map();
+    for (const line of txt.split('\n')) {
+      const m = line.trim().match(/^([0-9a-fA-F]{64})\s+\*?(.+)$/);
+      if (m) map.set(path.basename(m[2].trim()), m[1].toLowerCase());
+    }
+    return map.size ? map : null;
+  } catch (_) {
+    return null;
+  } finally {
+    try { fs.unlinkSync(tmp); } catch (_) { /* best effort */ }
+  }
 }
 
 // ── Uninstall ─────────────────────────────────────────────────────────────
@@ -1060,6 +1236,27 @@ function uninstall(ctx) {
     if (r.touched) ok('  pruned TLDR entries from OpenClaw workspace');
   }
 
+  // Hermes native install — strip the TLDR marker block from SOUL.md, preserving
+  // any user-authored content above and below. Probed by SOUL.md existence; if
+  // absent (or it holds no marker block), skip silently.
+  const hermesSoul = hermesSoulPath();
+  if (fs.existsSync(hermesSoul)) {
+    const body = fs.readFileSync(hermesSoul, 'utf8');
+    const begin = body.indexOf(HERMES_MARK_BEGIN);
+    const end = body.indexOf(HERMES_MARK_END);
+    if (begin !== -1 && end !== -1 && end > begin) {
+      const before = body.slice(0, begin).replace(/\n+$/, '\n');
+      const after = body.slice(end + HERMES_MARK_END.length).replace(/^\n+/, '\n');
+      let next = (before + after).trimEnd();
+      next = next ? next + '\n' : '';
+      if (!opts.dryRun) {
+        if (next === '') { try { fs.unlinkSync(hermesSoul); } catch (_) {} }
+        else fs.writeFileSync(hermesSoul, next, { mode: 0o644 });
+      }
+      note(next === '' ? `  removed ${hermesSoul}` : `  stripped TLDR block from ${hermesSoul}`);
+    }
+  }
+
   // Flag file
   const flag = path.join(configDir, '.tldr-active');
   if (fs.existsSync(flag) && !opts.dryRun) { try { fs.unlinkSync(flag); } catch (_) {} }
@@ -1172,7 +1369,24 @@ async function main() {
     results: { installed: [], skipped: [], failed: [], detected: 0 },
   };
 
+  // Uninstall only edits settings.json — it never interpolates configDir into a
+  // shell command — so it runs before the shell-safety guard below.
   if (opts.uninstall) { uninstall(ctx); return 0; }
+
+  // The resolved config-dir path is interpolated into settings.json hook
+  // command strings that Claude Code later runs through a shell, always inside
+  // double quotes (e.g. `"${node}" "${activate}"`). Reject only the characters
+  // that stay active INSIDE double quotes and enable injection: `"` (breaks out
+  // of the quoting), and `` ` `` / `$` (command/variable substitution on POSIX),
+  // plus newlines. Do NOT reject ( ) & < > ; | (literal when double-quoted, so
+  // they block legit paths like `C:\Program Files (x86)\...\.claude`) and do NOT
+  // reject `\` (the Windows path separator — every Windows config dir has it).
+  if (/["`$\n\r]/.test(configDir)) {
+    process.stderr.write(
+      c.red(`config-dir contains shell-unsafe characters and was refused: ${configDir}\n`)
+    );
+    return 2;
+  }
 
   ctx.say('🦉 TLDR installer');
   ctx.note(`  ${REPO}`);
@@ -1208,6 +1422,7 @@ async function main() {
     if (prov.id === 'gemini')   { installGemini(ctx); continue; }
     if (prov.id === 'opencode') { installOpencode(ctx); continue; }
     if (prov.id === 'openclaw') { installOpenclaw(ctx); continue; }
+    if (prov.id === 'hermes')   { installHermes(ctx); continue; }
     if (prov.profile)           { installViaSkills(ctx, prov); continue; }
   }
 

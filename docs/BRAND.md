@@ -2,7 +2,7 @@
 
 ## Mascot: **owl + scroll + scissors + sticky** (`docs/assets/tldr-mascot.png`)
 
-Canonical hero art (transparent PNG, README width 120px like caveman/ponytail): skeptical owl in the text scroll, scissors ready, sticky **TL;DR / Verdict first.**
+Canonical hero art (transparent PNG, README width 120px): skeptical owl in the text scroll, scissors ready, sticky **TL;DR / Verdict first.**
 
 - **Raster:** `tldr-mascot.png` (transparent); `tldr-mascot.jpg` (archival full bleed).
 
@@ -14,17 +14,15 @@ Canonical hero art (transparent PNG, README width 120px like caveman/ponytail): 
 
 **Primary:** *Verdict first. Filler never.*
 
-**Alt (more viral / caveman-adjacent):** *Why read many word when few word say same?*
+## Layout
 
-## Layout (reference repos)
-
-| Pattern | caveman | ponytail | TLDR |
-|---------|---------|----------|------|
-| Hero image | 🪨 rock emoji / dancing-rock | `assets/logo.png` full width | `docs/assets/tldr-mascot.png` @ 120px, transparent |
-| Title | `caveman` | `Ponytail` | `TLDR` |
-| Tagline | under title, centered | italic one-liner | centered strong |
-| Proof | ASCII meter + benchmarks/ | % table + reproduce | bench script + `data/benchmarks.md` |
-| Install | one-line curl | marketplace + npx | `install.sh` + `npx github:jqbit/TLDR` |
+| Pattern | TLDR |
+|---------|------|
+| Hero image | `docs/assets/tldr-mascot.png` @ 120px, transparent |
+| Title | `TLDR` |
+| Tagline | centered strong |
+| Proof | bench script + `data/benchmarks.md` |
+| Install | `install.sh` + `npx github:jqbit/TLDR` |
 
 ## Optional upgrades
 
@@ -47,5 +45,5 @@ Canonical hero art (transparent PNG, README width 120px like caveman/ponytail): 
 
 ## Do not
 
-- Reuse caveman rock as primary mark (different product; attribution only).
-- Copy ponytail mascot (different pain: LOC bloat vs prose tokens).
+- No rock imagery as primary mark (legacy attribution era only; see `docs/legal/ATTRIBUTION.md`).
+- No borrowed mascots; the owl is the only primary mark.

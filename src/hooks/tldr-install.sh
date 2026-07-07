@@ -37,7 +37,7 @@ HOOKS_DIR="$CLAUDE_DIR/hooks"
 SETTINGS="$CLAUDE_DIR/settings.json"
 REPO_URL="https://raw.githubusercontent.com/jqbit/TLDR/main/src/hooks"
 
-HOOK_FILES=("package.json" "tldr-config.js" "tldr-activate.js" "tldr-mode-tracker.js" "tldr-stats.js" "tldr-statusline.sh")
+HOOK_FILES=("package.json" "tldr-config.js" "tldr-activate.js" "tldr-mode-tracker.js" "tldr-stats.js" "tldr-statusline.sh" "tldrcrew-model-overrides.js")
 
 # Resolve source — works from repo clone or curl pipe
 SCRIPT_DIR=""
@@ -104,12 +104,39 @@ fi
 # 1. Ensure hooks dir exists
 mkdir -p "$HOOKS_DIR"
 
-# 2. Copy or download hook files
+# 2. Copy or download hook files. Downloaded files (curl-pipe installs) are
+# verified against the SHA-256 manifest published alongside them
+# (checksums.sha256); local copies come from the same clone as this script and
+# are trusted as-is. curl is constrained to https so a redirect cannot downgrade
+# the transport.
+sha256_of() {
+  if command -v sha256sum >/dev/null 2>&1; then
+    sha256sum "$1" | awk '{print $1}'
+  elif command -v shasum >/dev/null 2>&1; then
+    shasum -a 256 "$1" | awk '{print $1}'
+  fi
+}
+CHECKSUMS=""
+CHECKSUMS_TRIED=0
 for hook in "${HOOK_FILES[@]}"; do
   if [ -n "$SCRIPT_DIR" ] && [ -f "$SCRIPT_DIR/$hook" ]; then
     cp "$SCRIPT_DIR/$hook" "$HOOKS_DIR/$hook"
   else
-    curl -fsSL "$REPO_URL/$hook" -o "$HOOKS_DIR/$hook"
+    curl -fsSL --proto '=https' --tlsv1.2 "$REPO_URL/$hook" -o "$HOOKS_DIR/$hook"
+    # Fetch the manifest once, then verify each downloaded hook against it.
+    if [ "$CHECKSUMS_TRIED" -eq 0 ]; then
+      CHECKSUMS_TRIED=1
+      CHECKSUMS="$(curl -fsSL --proto '=https' --tlsv1.2 "$REPO_URL/checksums.sha256" 2>/dev/null || true)"
+    fi
+    if [ -n "$CHECKSUMS" ]; then
+      want="$(printf '%s\n' "$CHECKSUMS" | awk -v h="$hook" '$2 ~ ("(^|/)" h "$") {print $1; exit}')"
+      got="$(sha256_of "$HOOKS_DIR/$hook")"
+      if [ -n "$want" ] && [ -n "$got" ] && [ "$want" != "$got" ]; then
+        rm -f "$HOOKS_DIR/$hook"
+        echo "  Integrity check failed for $hook (expected $want, got $got) — aborting." >&2
+        exit 1
+      fi
+    fi
   fi
   echo "  Installed: $HOOKS_DIR/$hook"
 done

@@ -24,7 +24,7 @@ class HookScriptTests(unittest.TestCase):
         )
 
     def test_install_upgrades_old_two_file_install(self):
-        with tempfile.TemporaryDirectory(prefix="blunt-hooks-upgrade-") as tmp:
+        with tempfile.TemporaryDirectory(prefix="tldr-hooks-upgrade-") as tmp:
             home = Path(tmp)
             hooks_dir = home / ".claude" / "hooks"
             hooks_dir.mkdir(parents=True)
@@ -42,7 +42,7 @@ class HookScriptTests(unittest.TestCase):
             self.assertIn(str(statusline), settings["statusLine"]["command"])
 
     def test_install_reconfigures_missing_statusline(self):
-        with tempfile.TemporaryDirectory(prefix="blunt-hooks-statusline-") as tmp:
+        with tempfile.TemporaryDirectory(prefix="tldr-hooks-statusline-") as tmp:
             home = Path(tmp)
             claude_dir = home / ".claude"
             hooks_dir = claude_dir / "hooks"
@@ -86,7 +86,7 @@ class HookScriptTests(unittest.TestCase):
             self.assertIn(str(hooks_dir / "tldr-statusline.sh"), updated["statusLine"]["command"])
 
     def test_uninstall_preserves_custom_statusline(self):
-        with tempfile.TemporaryDirectory(prefix="blunt-hooks-uninstall-") as tmp:
+        with tempfile.TemporaryDirectory(prefix="tldr-hooks-uninstall-") as tmp:
             home = Path(tmp)
             claude_dir = home / ".claude"
             hooks_dir = claude_dir / "hooks"
@@ -98,7 +98,7 @@ class HookScriptTests(unittest.TestCase):
             settings = {
                 "statusLine": {
                     "type": "command",
-                    "command": "bash /tmp/custom-status-with-blunt.sh",
+                    "command": "bash /tmp/custom-status-with-tldr.sh",
                 },
                 "hooks": {
                     "SessionStart": [
@@ -130,12 +130,12 @@ class HookScriptTests(unittest.TestCase):
             updated = json.loads((claude_dir / "settings.json").read_text())
             self.assertEqual(
                 updated["statusLine"]["command"],
-                "bash /tmp/custom-status-with-blunt.sh",
+                "bash /tmp/custom-status-with-tldr.sh",
             )
             self.assertNotIn("hooks", updated)
 
     def test_activate_does_not_nudge_when_custom_statusline_exists(self):
-        with tempfile.TemporaryDirectory(prefix="blunt-hooks-activate-") as tmp:
+        with tempfile.TemporaryDirectory(prefix="tldr-hooks-activate-") as tmp:
             home = Path(tmp)
             claude_dir = home / ".claude"
             claude_dir.mkdir(parents=True)

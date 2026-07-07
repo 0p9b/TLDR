@@ -36,9 +36,15 @@ fi
 
 # If we're inside the repo clone, run the local installer directly — saves
 # the npx round-trip and keeps offline installs working. BASH_SOURCE is unset
-# when bash is invoked from stdin (curl | bash), and `set -u` would trip on a
-# bare reference — default to empty so the curl-pipe path falls through cleanly.
-here="$(cd "$(dirname "${BASH_SOURCE[0]:-}")" 2>/dev/null && pwd)" || here=""
+# when bash is invoked from stdin (curl | bash); guard on it being a REAL file
+# before deriving a directory. Never fall back to the cwd: `dirname ""` returns
+# `.`, so an empty BASH_SOURCE would otherwise resolve `here` to the current
+# working directory and `exec node` a bin/install.js an attacker planted there.
+if [ -f "${BASH_SOURCE[0]:-}" ]; then
+  here="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)" || here=""
+else
+  here=""
+fi
 if [ -n "$here" ] && [ -f "$here/bin/install.js" ]; then
   exec node "$here/bin/install.js" "$@"
 fi

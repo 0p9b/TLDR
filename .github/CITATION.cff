@@ -1,7 +1,7 @@
 cff-version: 1.2.0
 message: "If you use TLDR in research, benchmarks, or production deployments, please cite it as below."
 title: "TLDR — Verdict-first agent output"
-abstract: "A compact system prompt and multi-agent installer that reduces AI coding-agent filler while preserving technical accuracy, tool use, code blocks, paths, and safety-critical prose. The project merges the public TLDR prompt, a private blunt fork, and MIT-licensed caveman-derived installer/skill infrastructure into one rebranded TLDR toolkit."
+abstract: "A compact system prompt and multi-agent installer that reduces AI coding-agent filler while preserving technical accuracy, tool use, code blocks, paths, and safety-critical prose. Independently maintained; third-party lineage and credits are documented in docs/legal/ATTRIBUTION.md."
 type: software
 authors:
   - alias: jqbit

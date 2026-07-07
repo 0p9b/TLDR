@@ -45,7 +45,7 @@ TLDR/
 | `pwsh install.ps1 -- --all` | PowerShell shim to full installer |
 | `node bin/install.js --list` | provider matrix |
 
-Supported full-installer providers include Claude, Gemini, Codex, Cursor, Windsurf, Cline, Continue, Kilo, Roo, Augment, opencode, OpenClaw, Copilot, Aider Desk, Amp, Bob, Crush, Devin, Droid/Factory, ForgeCode, Goose, iFlow, Kiro, Mistral, OpenHands, Qwen, Rovo Dev, Tabnine, Trae, Warp, Replit, Junie, Qoder, and Antigravity.
+Supported full-installer providers include Claude, Gemini, Codex, Cursor, Windsurf, Cline, Continue, Kilo, Roo, Augment, opencode, OpenClaw, Hermes Agent, Copilot, Aider Desk, Amp, Bob, Crush, Devin, Droid/Factory, ForgeCode, Goose, iFlow, Kiro, Mistral, OpenHands, Qwen, Rovo Dev, Tabnine, Trae, Warp, Replit, Junie, Qoder, and Antigravity (35 total; `node bin/install.js --list`).
 
 ## Hook/statusline stack
 
@@ -56,6 +56,7 @@ Claude hook files live in `src/hooks/`:
 - `tldr-config.js` — config resolution + symlink-safe flag I/O.
 - `tldr-stats.js` — token/savings stats.
 - `tldr-statusline.sh` / `.ps1` — `[TLDR]` status badge.
+- `tldrcrew-model-overrides.js` — applies `TLDRCREW_{REVIEWER,BUILDER,INVESTIGATOR}_MODEL` env vars to installed `agents/tldrcrew-*.md` `model:` frontmatter at SessionStart. Control chars/newlines in values are no-ops; missing files fail silent; CRLF preserved.
 
 The active-mode flag is `$CLAUDE_CONFIG_DIR/.tldr-active`; stats suffix is `$CLAUDE_CONFIG_DIR/.tldr-statusline-suffix`.
 
@@ -80,8 +81,11 @@ node tests/test_tldr_init.js
 node tests/test_symlink_flag.js
 node tests/test_repo_local_config.js
 node tests/test_tldr_stats.js
+node tests/test_tldrcrew_model_overrides.js
+node tests/test_mode_tracker_stdin.js
 node tests/test_mcp_shrink.js
-python3 -m unittest tests.test_compress_safety tests.test_hooks tests.test_validate_inline
+python3 tests/test_mode_tracker.py
+python3 -m unittest tests.test_compress_safety tests.test_hooks tests.test_validate_inline tests.test_detect tests.test_mode_tracker
 ```
 
 Installer smoke:

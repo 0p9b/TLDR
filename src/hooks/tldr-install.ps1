@@ -24,7 +24,7 @@ $HooksDir = Join-Path $ClaudeDir "hooks"
 $Settings = Join-Path $ClaudeDir "settings.json"
 $RepoUrl = "https://raw.githubusercontent.com/jqbit/TLDR/main/src/hooks"
 
-$HookFiles = @("package.json", "tldr-config.js", "tldr-activate.js", "tldr-mode-tracker.js", "tldr-stats.js", "tldr-statusline.sh", "tldr-statusline.ps1")
+$HookFiles = @("package.json", "tldr-config.js", "tldr-activate.js", "tldr-mode-tracker.js", "tldr-stats.js", "tldr-statusline.sh", "tldr-statusline.ps1", "tldrcrew-model-overrides.js")
 
 # Resolve source — works from repo clone or remote
 $ScriptDir = if ($PSScriptRoot) { $PSScriptRoot } else { $null }
@@ -98,7 +98,7 @@ foreach ($hook in $HookFiles) {
     if ($localSource -and (Test-Path $localSource)) {
         Copy-Item $localSource $dest -Force
     } else {
-        Invoke-WebRequest -Uri "$RepoUrl/$hook" -OutFile $dest -UseBasicParsing
+        Invoke-WebRequest -Uri "$RepoUrl/$hook" -OutFile $dest -UseBasicParsing -MaximumRedirection 0
     }
     Write-Host "  Installed: $dest"
 }
@@ -180,13 +180,13 @@ fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2) + '\n');
 console.log('  Hooks wired in settings.json');
 '@
 
-$tmpScript = Join-Path $env:TEMP "tldr-install-$([System.Diagnostics.Process]::GetCurrentProcess().Id).js"
-try {
-    [System.IO.File]::WriteAllText($tmpScript, $nodeScript, [System.Text.Encoding]::UTF8)
-    node $tmpScript
-} finally {
-    if (Test-Path $tmpScript) { Remove-Item $tmpScript -Force }
-}
+# Pipe the script to node via stdin instead of a predictable temp file. A
+# PID-named file in $env:TEMP is guessable, so on a shared/redirected TEMP an
+# attacker could pre-plant it as a symlink (WriteAllText follows it) or win the
+# write→execute race. stdin has no such filename to race, matching the bash
+# installer's inline `node -e`. Inputs travel via env vars, so there is nothing
+# to quote.
+$nodeScript | node -
 
 Write-Host ""
 Write-Host "Done! Restart Claude Code to activate." -ForegroundColor Green

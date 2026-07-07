@@ -80,7 +80,7 @@ test('opencode fresh install drops plugin, commands, agents, skills, AGENTS.md, 
     }
     assert.ok(fs.existsSync(path.join(ocDir, 'AGENTS.md')), 'AGENTS.md missing');
     const agentsBody = fs.readFileSync(path.join(ocDir, 'AGENTS.md'), 'utf8');
-    assert.match(agentsBody, /Respond terse like smart TLDR/);
+    assert.match(agentsBody, /Respond in TLDR style/);
     // Block must be wrapped in begin/end markers so uninstall can isolate it
     // from user-authored content above and below.
     assert.match(agentsBody, /<!-- tldr-begin -->/);
@@ -114,7 +114,7 @@ test('opencode idempotent install does not duplicate plugin entries', () => {
 
     // AGENTS.md should not have the ruleset duplicated either.
     const agentsMd = fs.readFileSync(path.join(xdg, 'opencode', 'AGENTS.md'), 'utf8');
-    const sentinelCount = (agentsMd.match(/Respond terse like smart TLDR/g) || []).length;
+    const sentinelCount = (agentsMd.match(/Respond in TLDR style/g) || []).length;
     assert.equal(sentinelCount, 1, `expected 1 sentinel, got ${sentinelCount}`);
   } finally {
     fs.rmSync(xdg, { recursive: true, force: true });
@@ -248,7 +248,7 @@ test('opencode uninstall removes plugin dir, command/agent/skill files, prunes o
 });
 
 // ── 5. Plugin smoke: load installed plugin.js, fire fake hooks ────────────
-test('opencode plugin handles /tldr ultra and stop tldr via tui.prompt.append', async () => {
+test('opencode plugin handles /tldr ultra and stop tldr via chat.message + system.transform', async () => {
   const xdg = freshTmpDir();
   const shimDir = shimOpencode();
   try {
@@ -266,19 +266,41 @@ test('opencode plugin handles /tldr ultra and stop tldr via tui.prompt.append', 
     const factory = mod.default || mod.TldrPlugin;
     const handlers = await factory({});
 
-    // Slash command activates ultra
-    const out1 = await handlers['tui.prompt.append']({ prompt: '/tldr ultra' });
+    // Factory-time write covers the one-shot `opencode run` race: the flag
+    // is asserted before any event dispatch is wired.
+    assert.equal(fs.readFileSync(flagPath, 'utf8'), 'full', 'factory-time flag write missing');
+
+    // Slash command activates ultra (chat.message carries message parts).
+    await handlers['chat.message']({}, { parts: [{ type: 'text', text: '/tldr ultra' }] });
     assert.equal(fs.readFileSync(flagPath, 'utf8'), 'ultra');
-    assert.ok(out1 && typeof out1.append === 'string', 'expected reinforcement append');
-    assert.match(out1.append, /TLDR MODE ACTIVE \(ultra\)/);
 
-    // Natural-language deactivation removes flag
-    const out2 = await handlers['tui.prompt.append']({ prompt: 'stop tldr please' });
+    // Reinforcement is injected into the outgoing system prompt.
+    const out1 = { system: [] };
+    await handlers['experimental.chat.system.transform']({}, out1);
+    assert.equal(out1.system.length, 1, 'expected reinforcement in system prompt');
+    assert.match(out1.system[0], /TLDR MODE ACTIVE \(ultra\)/);
+
+    // Expanded command template: the TUI replaces "/tldr <level>" with the
+    // command body before chat.message fires. The level must be recovered
+    // even though the body itself contains "stop tldr" / "normal mode".
+    const template = fs.readFileSync(
+      path.join(REPO_ROOT, 'src', 'plugins', 'tldr-opencode', 'commands', 'tldr.md'), 'utf8')
+      .replace(/^---[\s\S]*?---\n/, '')
+      .replace('$ARGUMENTS', 'lite');
+    await handlers['chat.message']({}, { parts: [{ type: 'text', text: template }] });
+    assert.equal(fs.readFileSync(flagPath, 'utf8'), 'lite', 'template level not recovered');
+
+    // Natural-language deactivation removes flag.
+    await handlers['chat.message']({}, { parts: [{ type: 'text', text: 'stop tldr please' }] });
     assert.equal(fs.existsSync(flagPath), false, 'flag should be deleted after deactivation');
-    assert.equal(out2, undefined, 'no reinforcement when flag absent');
 
-    // session.created writes default mode
-    await handlers['session.created']();
+    // No reinforcement when flag absent.
+    const out2 = { system: [] };
+    await handlers['experimental.chat.system.transform']({}, out2);
+    assert.equal(out2.system.length, 0, 'no reinforcement when flag absent');
+
+    // session.created is dispatched through the single `event` handler.
+    await handlers.event({ event: { type: 'session.created' } });
     assert.equal(fs.readFileSync(flagPath, 'utf8'), 'full');
   } finally {
     fs.rmSync(xdg, { recursive: true, force: true });

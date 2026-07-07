@@ -17,6 +17,21 @@ SKIP_EXTENSIONS = {
     ".dockerfile", ".makefile", ".csv", ".ini", ".cfg",
 }
 
+# Well-known build/config files that carry no (or a misleading) extension —
+# `Dockerfile` has no suffix so `.dockerfile` above never matches it, and
+# `CMakeLists.txt` would otherwise ride the compressible `.txt` rule. Matched
+# by basename BEFORE any extension rule so these are never mistaken for prose.
+KNOWN_CODE_FILENAMES = {
+    "dockerfile", "containerfile", "makefile", "gnumakefile", "jenkinsfile",
+    "vagrantfile", "rakefile", "gemfile", "justfile", "procfile", "brewfile",
+    "cmakelists.txt",
+}
+
+# Dependency-manifest basenames that ride the compressible `.txt` extension.
+# `requirements.txt`, `requirements-dev.txt`, `constraints.txt`, etc. are config,
+# not prose, and must not be overwritten with compressed text.
+DEPENDENCY_MANIFEST_REGEX = re.compile(r"^(requirements|constraints)[\w.\-]*\.txt$")
+
 # Patterns that indicate a line is code
 CODE_PATTERNS = [
     re.compile(r"^\s*(import |from .+ import |require\(|const |let |var )"),
@@ -66,6 +81,23 @@ def detect_file_type(filepath: Path) -> str:
         One of: 'natural_language', 'code', 'config', 'unknown'
     """
     ext = filepath.suffix.lower()
+    name_lower = filepath.name.lower()
+
+    # Known build/config filenames win over any extension rule. Important:
+    # `CMakeLists.txt` ends in `.txt` (a compressible extension), so this
+    # basename check MUST run before the extension rules below.
+    if name_lower in KNOWN_CODE_FILENAMES:
+        return "code"
+
+    # Variant build files (Dockerfile.prod, Containerfile.dev, ...) carry the
+    # base name as a prefix, which the exact-match set above never catches.
+    if name_lower.startswith("dockerfile.") or name_lower.startswith("containerfile."):
+        return "code"
+
+    # Dependency manifests (requirements*.txt / constraints*.txt) ride the
+    # compressible `.txt` extension but are config, not prose.
+    if DEPENDENCY_MANIFEST_REGEX.match(name_lower):
+        return "config"
 
     # Extension-based classification
     if ext in COMPRESSIBLE_EXTENSIONS:
@@ -81,6 +113,10 @@ def detect_file_type(filepath: Path) -> str:
             return "unknown"
 
         lines = text.splitlines()[:50]
+
+        # A shebang means an executable script, never prose.
+        if text.startswith("#!"):
+            return "code"
 
         if _is_json_content(text[:10000]):
             return "config"

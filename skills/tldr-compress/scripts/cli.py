@@ -21,7 +21,7 @@ for _stream in (sys.stdout, sys.stderr):
 
 from pathlib import Path
 
-from .compress import compress_file
+from .compress import compress_file, backup_path_for
 from .detect import detect_file_type, should_compress
 
 
@@ -64,9 +64,8 @@ def main():
 
         if success:
             print("\nCompression completed successfully")
-            backup_path = filepath.with_name(filepath.stem + ".original.md")
             print(f"Compressed: {filepath}")
-            print(f"Original:   {backup_path}")
+            print(f"Original:   {backup_path_for(filepath)}")
             sys.exit(0)
         else:
             print("\n❌ Compression failed after retries")

@@ -9,9 +9,9 @@
 <link rel="icon" type="image/svg+xml" href="assets/tldr-mascot.svg">
 <meta property="og:image" content="https://raw.githubusercontent.com/jqbit/TLDR/main/docs/assets/social-preview.png">
 <meta property="og:title" content="TLDR — Verdict first. Filler never.">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<!-- No third-party webfonts: the CSS falls back to system UI + monospace
+     stacks, so rendering the page contacts no external host (no visitor-IP
+     disclosure to Google Fonts). -->
 <style>
 :root {
   /* Ultra-premium stark palette */
@@ -213,7 +213,7 @@ body {
 <div class="telemetry-widget">
   <div>STATUS: <span class="telemetry-val" style="color:#4ade80">OPTIMIZED</span></div>
   <div>COMPRESSION_EVENTS: <span class="telemetry-val" id="compressionCount">0</span></div>
-  <div>TOKENS_PURGED: <span class="telemetry-val">~75%</span></div>
+  <div>PROSE_TOKENS_HIST: <span class="telemetry-val">−60–75%</span></div>
 </div>
 
 <section class="hero container">
@@ -240,13 +240,13 @@ body {
 
 <section class="section container reveal">
   <span class="section-badge">01 // Compression Matrix</span>
-  <h2 class="section-title">The Lithic Payload Diff</h2>
-  <p class="section-desc">Visualize the exact tokens purged by the TLDR protocol. Technical imperatives are retained; conversational padding is annihilated.</p>
+  <h2 class="section-title">The Payload Diff</h2>
+  <p class="section-desc">An illustrative example of the compression style — not a benchmark result. Technical imperatives are retained; conversational padding is removed.</p>
 
   <div class="diff-container">
     <div class="diff-header">
       <span>Payload: React Re-render Diagnosis</span>
-      <span style="color: var(--text-primary);">69 Tokens → 19 Tokens</span>
+      <span style="color: var(--text-primary);">Illustrative: 69 → 19 tokens</span>
     </div>
     <div class="diff-body" id="diffBody">
       <span class="diff-strike">"The reason your React component is re-rendering is likely because you're creating a</span> <span class="diff-keep">New</span> object ref<span class="diff-keep">erence on</span> each render <span class="diff-strike">cycle. When you pass an</span> inline object <span class="diff-strike">as a</span> prop<span class="diff-strike">, React's shallow comparison sees it as a different object every time, which triggers a</span> = new ref = re-render. <span class="diff-strike">I'd recommend using</span> <span class="diff-keep">Wrap in <code>useMemo</code></span><span class="diff-strike"> to memoize the object."</span>
@@ -259,44 +259,44 @@ body {
 </section>
 
 <section class="section container reveal">
-  <span class="section-badge">02 // Empirical Data</span>
-  <h2 class="section-title">Token Latency Reduction</h2>
-  <p class="section-desc">Average reduction of 65% across standard software engineering tasks. Reasoning tokens remain unaffected; only the output payload is compressed.</p>
+  <span class="section-badge">02 // Historical Bench Data</span>
+  <h2 class="section-title">Output Token Reduction</h2>
+  <p class="section-desc">Prose-token reduction from the v0.13.1 benchmark run (5 agent CLIs, 15 prompts, earlier prompt generation). The current, tighter prompt has not been rerun through the full suite — treat these numbers as historical. Only the output payload is compressed; input and reasoning tokens are unaffected. Method and caveats: <a href="https://github.com/jqbit/TLDR/blob/main/data/benchmarks.md" style="color: var(--text-primary);">data/benchmarks.md</a> · <a href="https://github.com/jqbit/TLDR/blob/main/docs/HONEST-NUMBERS.md" style="color: var(--text-primary);">HONEST-NUMBERS.md</a>.</p>
 
   <div class="viz-container">
     <div class="viz-row">
-      <div class="viz-label">Explain React re-render bug</div>
+      <div class="viz-label">gemini — 15-prompt suite (v0.13.1)</div>
       <div class="viz-track-container">
-        <div class="viz-track"><div class="viz-fill" style="width: 13.4%;"></div></div>
-        <div class="viz-stats"><span>159/1180</span> 87%</div>
+        <div class="viz-track"><div class="viz-fill" style="width: 13.2%;"></div></div>
+        <div class="viz-stats"><span>133/1008</span> 87%</div>
       </div>
     </div>
     <div class="viz-row">
-      <div class="viz-label">Fix auth token expiry</div>
+      <div class="viz-label">pi — 15-prompt suite (v0.13.1)</div>
       <div class="viz-track-container">
-        <div class="viz-track"><div class="viz-fill" style="width: 17.1%;"></div></div>
-        <div class="viz-stats"><span>121/704</span> 83%</div>
+        <div class="viz-track"><div class="viz-fill" style="width: 15.8%;"></div></div>
+        <div class="viz-stats"><span>153/967</span> 84%</div>
       </div>
     </div>
     <div class="viz-row">
-      <div class="viz-label">Debug PostgreSQL race condition</div>
+      <div class="viz-label">claude — 15-prompt suite (v0.13.1)</div>
       <div class="viz-track-container">
-        <div class="viz-track"><div class="viz-fill" style="width: 19.3%;"></div></div>
-        <div class="viz-stats"><span>232/1200</span> 81%</div>
+        <div class="viz-track"><div class="viz-fill" style="width: 19.9%;"></div></div>
+        <div class="viz-stats"><span>119/599</span> 80%</div>
       </div>
     </div>
     <div class="viz-row">
-      <div class="viz-label">Explain git rebase vs merge</div>
+      <div class="viz-label">agent (cursor) — 15-prompt suite (v0.13.1)</div>
       <div class="viz-track-container">
-        <div class="viz-track"><div class="viz-fill" style="width: 41.5%;"></div></div>
-        <div class="viz-stats"><span>292/702</span> 58%</div>
+        <div class="viz-track"><div class="viz-fill" style="width: 21.9%;"></div></div>
+        <div class="viz-stats"><span>140/640</span> 78%</div>
       </div>
     </div>
     <div class="viz-row">
-      <div class="viz-label">Review PR for security</div>
+      <div class="viz-label">droid — 15-prompt suite (v0.13.1)</div>
       <div class="viz-track-container">
-        <div class="viz-track"><div class="viz-fill" style="width: 58.7%;"></div></div>
-        <div class="viz-stats"><span>398/678</span> 41%</div>
+        <div class="viz-track"><div class="viz-fill" style="width: 22.6%;"></div></div>
+        <div class="viz-stats"><span>136/601</span> 77%</div>
       </div>
     </div>
   </div>
@@ -320,12 +320,12 @@ body {
     <div class="bento-box">
       <div class="bento-icon">🧠</div>
       <div class="bento-title">Nomenclature Integrity</div>
-      <div class="bento-desc">Technical jargon is retained precisely. "Polymorphism" remains "polymorphism." TLDR not stupid. TLDR efficient.</div>
+      <div class="bento-desc">Technical jargon is retained precisely. "Polymorphism" remains "polymorphism." Compression never trades away precision.</div>
     </div>
     <div class="bento-box bento-large">
       <div class="bento-icon">🔬</div>
-      <div class="bento-title">Scientific Backing</div>
-      <div class="bento-desc">Based on the March 2026 paper <em>"Brevity Constraints Reverse Performance Hierarchies in Language Models"</em>. Forcing brevity improves accuracy by 26 percentage points on key benchmarks. Less word = more correct.</div>
+      <div class="bento-title">Research Motivation</div>
+      <div class="bento-desc">Motivated by the March 2026 paper <em>"Brevity Constraints Reverse Performance Hierarchies in Language Models"</em>, which reports accuracy gains of up to 26 percentage points under brevity constraints. That is the paper's result — TLDR's own bench measures style, not accuracy.</div>
     </div>
   </div>
 </section>
@@ -356,7 +356,7 @@ body {
 
 <footer class="footer">
   <div>Maintained by <a href="https://github.com/jqbit" target="_blank">jqbit</a>.</div>
-  <div>MIT License. Operational.</div>
+  <div><a href="https://github.com/jqbit/TLDR/blob/main/docs/HONEST-NUMBERS.md" target="_blank">Honest numbers</a> · MIT License.</div>
 </footer>
 
 <script>
@@ -368,8 +368,8 @@ document.addEventListener('mousemove', (e) => {
 
 // --- Marquee Population ---
 const items = [
-  { k: "TOKENS_SAVED", v: "75%" }, { k: "ACCURACY", v: "100%" },
-  { k: "LATENCY_DROP", v: "3x" }, { k: "SIGNAL", v: "HIGH" },
+  { k: "PROSE_TOKENS", v: "−60–75% (HISTORICAL)" }, { k: "PROMPT_SIZE", v: "~1.3 KB" },
+  { k: "ACCURACY_BENCH", v: "NOT MEASURED" }, { k: "SIGNAL", v: "HIGH" },
   { k: "PRICE", v: "$0.00" }, { k: "DEPENDENCIES", v: "NONE" }
 ];
 const track = document.getElementById('marqueeTrack');

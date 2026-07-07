@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import shutil
@@ -154,6 +155,67 @@ def verify_synced_files() -> None:
     print("Synced copies, TLDR.skill zip, and installer entrypoints OK")
 
 
+def verify_skills_lock() -> None:
+    section("Skills Lock")
+
+    lock = read_json(ROOT / "skills-lock.json")
+    ensure(
+        isinstance(lock, dict) and isinstance(lock.get("skills"), dict) and lock["skills"],
+        "skills-lock.json must contain a non-empty skills map",
+    )
+    for name, entry in lock["skills"].items():
+        ensure(
+            entry.get("source") == "jqbit/TLDR",
+            f"skills-lock.json: {name} source must be jqbit/TLDR (self-contained repo, no upstream pins)",
+        )
+        skill_path = ROOT / entry["skillPath"]
+        ensure(skill_path.exists(), f"skills-lock.json: {entry['skillPath']} missing")
+        actual = hashlib.sha256(skill_path.read_bytes()).hexdigest()
+        ensure(
+            actual == entry.get("computedHash"),
+            f"skills-lock.json hash mismatch for {name}: recorded {entry.get('computedHash')}, "
+            f"actual {actual}. If the edit to {entry['skillPath']} was intentional, "
+            f"update computedHash to the actual value.",
+        )
+        mirror = ROOT / "plugins" / "tldr" / entry["skillPath"]
+        if mirror.exists():
+            ensure(
+                mirror.read_bytes() == skill_path.read_bytes(),
+                f"Mirror out of sync: plugins/tldr/{entry['skillPath']} != {entry['skillPath']}",
+            )
+
+    print(f"skills-lock.json hashes verified ({len(lock['skills'])} skill(s))")
+
+
+def verify_hook_checksums() -> None:
+    section("Hook Checksums")
+
+    manifest = ROOT / "src" / "hooks" / "checksums.sha256"
+    ensure(manifest.exists(), "src/hooks/checksums.sha256 missing (hook integrity manifest)")
+
+    listed: dict[str, str] = {}
+    for line in manifest.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        parts = line.split(None, 1)
+        ensure(len(parts) == 2, f"malformed checksums.sha256 line: {line!r}")
+        digest, name = parts[0], parts[1].lstrip("*").strip()
+        listed[name] = digest.lower()
+
+    for name, want in listed.items():
+        target = ROOT / "src" / "hooks" / name
+        ensure(target.exists(), f"checksums.sha256 lists a missing file: {name}")
+        actual = hashlib.sha256(target.read_bytes()).hexdigest()
+        ensure(
+            actual == want,
+            f"checksums.sha256 is stale for {name}: recorded {want}, actual {actual}. "
+            f"Regenerate: cd src/hooks && sha256sum {' '.join(listed)} > checksums.sha256",
+        )
+
+    print(f"src/hooks/checksums.sha256 verified ({len(listed)} hook file(s))")
+
+
 def verify_manifests_and_syntax() -> None:
     section("Manifests And Syntax")
 
@@ -172,6 +234,7 @@ def verify_manifests_and_syntax() -> None:
     run(["node", "--check", "src/hooks/tldr-config.js"])
     run(["node", "--check", "src/hooks/tldr-activate.js"])
     run(["node", "--check", "src/hooks/tldr-mode-tracker.js"])
+    run(["node", "--check", "src/hooks/tldrcrew-model-overrides.js"])
     run(["node", "--check", "src/mcp-servers/tldr-shrink/spawn-options.js"])
     run(["node", "--check", "bin/install.js"])
     run(["node", "--check", "bin/lib/opencode-agent.js"])
@@ -274,7 +337,7 @@ def verify_hook_install_flow() -> None:
     ensure(shutil.which("node") is not None, "node is required for hook verification")
     ensure(shutil.which("bash") is not None, "bash is required for hook verification")
 
-    with tempfile.TemporaryDirectory(prefix="blunt-verify-") as temp_root:
+    with tempfile.TemporaryDirectory(prefix="tldr-verify-") as temp_root:
         temp_root_path = Path(temp_root)
         home = temp_root_path / "home"
         claude_dir = home / ".claude"
@@ -386,7 +449,7 @@ def verify_hook_install_flow() -> None:
         ensure(settings_after == existing_settings, "uninstall.sh did not restore non-TLDR settings")
         ensure(not (claude_dir / ".tldr-active").exists(), "uninstall.sh should remove flag file")
 
-    with tempfile.TemporaryDirectory(prefix="blunt-verify-fresh-") as temp_root:
+    with tempfile.TemporaryDirectory(prefix="tldr-verify-fresh-") as temp_root:
         home = Path(temp_root) / "home"
         claude_dir = home / ".claude"
         hook_env = {"HOME": shell_path(home), "CLAUDE_CONFIG_DIR": shell_path(claude_dir)}
@@ -405,6 +468,8 @@ def main() -> int:
     checks = [
         verify_skill_frontmatter_upload_compatibility,
         verify_synced_files,
+        verify_skills_lock,
+        verify_hook_checksums,
         verify_manifests_and_syntax,
         verify_powershell_static,
         verify_compress_fixtures,

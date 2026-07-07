@@ -1,3 +1,8 @@
+---
+description: Re-apply TLDR rules for this turn (verdict first, no filler)
+argument-hint: "[lite|full|ultra|wenyan|off]"
+---
+
 Re-apply TLDR rules for this turn.
 
 Default: 1 sentence.

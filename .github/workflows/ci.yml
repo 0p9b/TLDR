@@ -17,11 +17,11 @@ jobs:
       matrix:
         node-version: [20, 22, 24]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
         with:
           node-version: ${{ matrix.node-version }}
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
         with:
           python-version: "3.11"
       - name: Python gates
@@ -32,6 +32,8 @@ jobs:
           python3 tests/test_compress_safety.py
           python3 tests/test_hooks.py
           python3 tests/test_validate_inline.py
+          python3 tests/test_detect.py
+          python3 tests/test_mode_tracker.py
       - name: Installer tests
         run: node --test tests/installer/*.test.mjs
       - name: Standalone JS tests
@@ -41,6 +43,8 @@ jobs:
           node tests/test_repo_local_config.js
           node tests/test_tldr_init.js
           node tests/test_tldr_stats.js
+          node tests/test_tldrcrew_model_overrides.js
+          node tests/test_mode_tracker_stdin.js
       - name: HTML asset links
         run: |
           python3 - <<'PY'

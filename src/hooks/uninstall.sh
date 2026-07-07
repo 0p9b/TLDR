@@ -10,7 +10,7 @@ HOOKS_DIR="$CLAUDE_DIR/hooks"
 SETTINGS="$CLAUDE_DIR/settings.json"
 FLAG_FILE="$CLAUDE_DIR/.tldr-active"
 
-HOOK_FILES=("package.json" "tldr-config.js" "tldr-activate.js" "tldr-mode-tracker.js" "tldr-stats.js" "tldr-statusline.sh")
+HOOK_FILES=("package.json" "tldr-config.js" "tldr-activate.js" "tldr-mode-tracker.js" "tldr-stats.js" "tldr-statusline.sh" "tldrcrew-model-overrides.js")
 
 # Detect if TLDR is installed as a plugin (check plugin cache)
 PLUGIN_INSTALLED=0

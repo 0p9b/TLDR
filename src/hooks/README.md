@@ -105,6 +105,6 @@ node bin/install.js --uninstall
 ```
 
 Or manually:
-1. Remove the TLDR hook files from `$CLAUDE_CONFIG_DIR/hooks/` (default `~/.claude/hooks/`): `tldr-activate.js`, `tldr-mode-tracker.js`, `tldr-stats.js`, `tldr-config.js`, and `tldr-statusline.{sh,ps1}`.
+1. Remove the TLDR hook files from `$CLAUDE_CONFIG_DIR/hooks/` (default `~/.claude/hooks/`): `tldr-activate.js`, `tldr-mode-tracker.js`, `tldr-stats.js`, `tldr-config.js`, `tldrcrew-model-overrides.js`, and `tldr-statusline.{sh,ps1}`.
 2. Remove the SessionStart, UserPromptSubmit, and statusLine entries from `$CLAUDE_CONFIG_DIR/settings.json`.
 3. Delete `$CLAUDE_CONFIG_DIR/.tldr-active` (and `$CLAUDE_CONFIG_DIR/.tldr-statusline-suffix` if you ran `/tldr-stats`).

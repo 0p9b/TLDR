@@ -158,12 +158,17 @@ test('omits USD line when model is unknown', (tmp) => {
   assert.doesNotMatch(out, /Est\. saved \(USD\)/);
 });
 
-test('priceForModel matches by prefix across point releases', () => {
+test('priceForModel matches by prefix and distinguishes legacy vs current Opus', () => {
   const { priceForModel } = require(path.join(ROOT, 'src', 'hooks', 'tldr-stats.js'));
-  assert.strictEqual(priceForModel('claude-opus-4-7'), 75.00);
-  assert.strictEqual(priceForModel('claude-opus-4-20250101'), 75.00);
+  // Current Opus tier (4.5–4.8) is $25/M output; the default model is opus-4-8.
+  assert.strictEqual(priceForModel('claude-opus-4-8'), 25.00);
+  assert.strictEqual(priceForModel('claude-opus-4-7'), 25.00);
+  // Legacy Opus 4.0/4.1 tier is $75/M output — must match before the generic prefix.
+  assert.strictEqual(priceForModel('claude-opus-4-1-20250805'), 75.00);
+  assert.strictEqual(priceForModel('claude-opus-4-20250514'), 75.00);
   assert.strictEqual(priceForModel('claude-sonnet-4-7-20260315'), 15.00);
-  assert.strictEqual(priceForModel('claude-haiku-4-5'), 4.00);
+  assert.strictEqual(priceForModel('claude-sonnet-5'), 15.00);
+  assert.strictEqual(priceForModel('claude-haiku-4-5'), 5.00);
   assert.strictEqual(priceForModel('claude-3-5-sonnet-20241022'), 15.00);
   assert.strictEqual(priceForModel(null), null);
   assert.strictEqual(priceForModel('gpt-4'), null);

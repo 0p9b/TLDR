@@ -9,7 +9,7 @@ description: >
   Auto-triggers on token efficiency or when TLDR style is requested.
 ---
 
-Respond in TLDR style. All technical substance stays. Filler, preamble, hedging, and validation die.
+Respond in TLDR style. Keep all technical substance. Cut filler, preamble, hedging, and validation.
 
 ## Persistence
 
@@ -34,7 +34,7 @@ Default: **full**. Switch: `/tldr lite|full|ultra|wenyan|wenyan-lite|wenyan-ultr
 
 ## Intensity
 
-| Level | What change |
+| Level | What changes |
 |-------|------------|
 | **lite** | Drop filler/hedging. Sentences stay full. Professional but tight. |
 | **full** | Default. Drop articles, fragments OK, short synonyms. |

@@ -8,6 +8,7 @@ output is empty or identical to the input, and a backup-write that drops
 bytes is detected before the input is overwritten.
 """
 
+import os
 import sys
 import tempfile
 import unittest
@@ -67,7 +68,11 @@ class CompressSafetyTests(unittest.TestCase):
             self.assertFalse((Path(tmp) / "task.original.md").exists())
 
     def test_real_compression_writes_backup_and_target(self):
-        with tempfile.TemporaryDirectory() as tmp:
+        # Isolate the backup data dir to a temp location so the out-of-tree
+        # backup never lands in the developer's real home directory.
+        with tempfile.TemporaryDirectory() as tmp, \
+             tempfile.TemporaryDirectory() as data_home, \
+             mock.patch.dict(os.environ, {"XDG_DATA_HOME": data_home, "LOCALAPPDATA": data_home}):
             original = "# Heading\n\nThe quick brown fox jumps over the lazy dog.\n"
             compressed = "# Heading\n\nFox jump dog.\n"
             path = self._file_with(Path(tmp), original)
@@ -77,8 +82,71 @@ class CompressSafetyTests(unittest.TestCase):
                 ok = compress_mod.compress_file(path)
             self.assertTrue(ok)
             self.assertEqual(path.read_text(), compressed)
-            backup = Path(tmp) / "task.original.md"
+            # Backups now live OUTSIDE the source dir, under a platform-aware
+            # data dir with a hash-keyed filename.
+            backup = compress_mod.backup_path_for(path)
             self.assertEqual(backup.read_text(), original)
+            self.assertFalse((Path(tmp) / "task.original.md").exists())
+
+    def test_sensitive_filename_refused_before_read(self):
+        # A file that looks like it holds credentials must be refused before any
+        # bytes are read or shipped to the API.
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "credentials.md"
+            path.write_text("aws_secret_access_key = AKIAIOSFODNN7EXAMPLE\n")
+            with mock.patch.object(compress_mod, "call_claude") as call:
+                with self.assertRaises(ValueError):
+                    compress_mod.compress_file(path)
+            call.assert_not_called()
+            # File left untouched.
+            self.assertEqual(
+                path.read_text(), "aws_secret_access_key = AKIAIOSFODNN7EXAMPLE\n"
+            )
+
+    def test_dangling_symlink_backup_refused(self):
+        # A dangling symlink planted at the backup path: Path.exists() reports
+        # it as missing, so a naive write would follow it and create the victim
+        # file. The skill must refuse and never write through it.
+        with tempfile.TemporaryDirectory() as tmp, \
+             tempfile.TemporaryDirectory() as data_home, \
+             mock.patch.dict(os.environ, {"XDG_DATA_HOME": data_home, "LOCALAPPDATA": data_home}):
+            original = "# Heading\n\nProse that should compress.\n"
+            path = self._file_with(Path(tmp), original)
+            backup = compress_mod.backup_path_for(path)
+            backup.parent.mkdir(parents=True, exist_ok=True)
+            victim = Path(tmp) / "victim-must-not-be-created.txt"
+            backup.symlink_to(victim)
+            with mock.patch.object(
+                compress_mod, "call_claude", return_value="# Heading\n\nProse.\n"
+            ):
+                ok = compress_mod.compress_file(path)
+            self.assertFalse(ok)
+            # The symlink target must never have been written through.
+            self.assertFalse(victim.exists())
+            # Source file untouched.
+            self.assertEqual(path.read_text(), original)
+
+    def test_fix_pass_empty_output_restores_original(self):
+        # First compression validates as invalid; the fix pass returns an empty
+        # string. The empty fix output must restore the original and drop the
+        # backup instead of overwriting the input with junk.
+        with tempfile.TemporaryDirectory() as tmp, \
+             tempfile.TemporaryDirectory() as data_home, \
+             mock.patch.dict(os.environ, {"XDG_DATA_HOME": data_home, "LOCALAPPDATA": data_home}):
+            original = "# Heading\n\nRun `deploy.sh` — see https://example.com for details.\n"
+            first_pass = "# Heading\n\nRun. See details.\n"  # lossy; validation fails
+            path = self._file_with(Path(tmp), original)
+            with mock.patch.object(
+                compress_mod, "call_claude", side_effect=[first_pass, ""]
+            ), mock.patch.object(compress_mod, "validate") as v:
+                v.return_value = mock.Mock(
+                    is_valid=False, errors=["Inline code lost: deploy.sh"], warnings=[]
+                )
+                ok = compress_mod.compress_file(path)
+            self.assertFalse(ok)
+            # Original restored on disk; backup removed.
+            self.assertEqual(path.read_text(), original)
+            self.assertFalse(compress_mod.backup_path_for(path).exists())
 
 
 if __name__ == "__main__":

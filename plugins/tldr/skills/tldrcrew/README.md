@@ -32,6 +32,26 @@ Locate → fix → verify (most common):
 
 Parallel scout: spawn 2-3 `tldrcrew-investigator` calls in one message with different angles (defs, callers, tests). Aggregate in main.
 
+## Model overrides
+
+By default, `tldrcrew-reviewer` and `tldrcrew-investigator` pin `model: haiku` in their frontmatter; `tldrcrew-builder` has no `model:` line (uses the API session default). Set env vars in your shell before launching Claude Code to override per-agent:
+
+| Env var | Agent |
+|---|---|
+| `TLDRCREW_REVIEWER_MODEL` | `tldrcrew-reviewer` |
+| `TLDRCREW_BUILDER_MODEL` | `tldrcrew-builder` |
+| `TLDRCREW_INVESTIGATOR_MODEL` | `tldrcrew-investigator` |
+
+Example — run reviewer on sonnet, keep others on default:
+
+```sh
+export TLDRCREW_REVIEWER_MODEL=sonnet
+```
+
+Use the same model name strings you'd use in any Claude Code agent frontmatter (e.g. `haiku`, `sonnet`, `opus`).
+
+Overrides patch only the `model:` line in the installed agent's frontmatter; the prompt body is untouched and keeps receiving upstream updates. Plugin installs patch the plugin's `agents/` copies; standalone hook installs patch `$CLAUDE_CONFIG_DIR/agents/` copies when present. Unset or blank = no change. Values containing newlines or control characters are ignored. The patch persists in the installed file until the plugin is updated or reinstalled.
+
 ## See also
 
 - [`SKILL.md`](./SKILL.md) — full decision matrix and output contracts

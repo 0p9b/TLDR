@@ -1,0 +1,2 @@
+description = "Real session token usage + lifetime savings + USD estimate. Shareable line via --share."
+prompt = "/tldr-stats {{args}}"

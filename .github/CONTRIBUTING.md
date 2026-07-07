@@ -154,9 +154,11 @@ python evals/llm_run.py             # regenerates evals/snapshots/results.json
 python evals/measure.py             # reads snapshot, prints token deltas
 ```
 
-Snapshots are committed to git. Only regenerate when a `SKILL.md` or
-`evals/prompts/en.txt` changes. Numbers in `README.md` and any docs come from
-real runs — never invent or round.
+No eval snapshot is committed to git — generate your own with
+`evals/llm_run.py` before quoting numbers (see `evals/README.md` and
+`evals/snapshots/README.md` for why). Numbers in `README.md` and any docs
+come from real runs against this repo's skills — never invent, round, or
+relabel another project's data.
 
 ---
 
@@ -192,5 +194,4 @@ See [issues labeled `good first issue`](https://github.com/jqbit/TLDR/issues?q=l
 for starter tasks. Or grep `TODO` / `FIXME` in `src/hooks/`, `bin/`, `src/tools/` —
 each one is a real lead.
 
-TLDR like contribution. You bring rock, TLDR put rock in pile. Pile
-get bigger. Brain still big.
+Contributions welcome. Open a PR — small, focused changes merge fastest.

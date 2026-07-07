@@ -1,7 +1,8 @@
 # TLDR — opencode plugin
 
 Native opencode plugin. Mirrors the Claude Code hook architecture using
-opencode's `session.created` + `tui.prompt.append` lifecycle hooks.
+opencode's `event` dispatcher, `chat.message`, and
+`experimental.chat.system.transform` hooks.
 
 ## What this ships
 
@@ -19,28 +20,35 @@ to `tldr-config.cjs` because this directory is `"type": "module"`) into
 
 ## What it does
 
-- `session.created` → writes the configured default mode to
-  `~/.config/opencode/.tldr-active` via the same `safeWriteFlag` helper
-  Claude Code uses (O_NOFOLLOW, atomic temp+rename, 0600 perms, symlink
-  refusal, ownership check).
-- `tui.prompt.append` → flips the flag in response to `/tldr[ <level>]`,
-  `/tldr-commit`, `/tldr-review`, `/tldr-compress`, and natural
-  language ("turn on TLDR", "stop tldr", "normal mode"). When a
-  non-independent mode is active, appends a one-line reinforcement to keep
-  TLDR in the model's attention each turn.
+- `event` (`event.type === 'session.created'`) → writes the configured
+  default mode to `~/.config/opencode/.tldr-active` via the same
+  `safeWriteFlag` helper Claude Code uses (O_NOFOLLOW, atomic temp+rename,
+  0600 perms, symlink refusal, ownership check). Also asserted once at
+  plugin factory time so one-shot `opencode run` sessions are covered.
+- `chat.message` → flips the flag in response to `/tldr[ <level>]`,
+  `/tldr-commit`, `/tldr-review`, `/tldr-compress` (typed literally or
+  expanded by the TUI into the command template), and natural language
+  ("turn on TLDR", "stop tldr", "normal mode").
+- `experimental.chat.system.transform` → when a non-independent mode is
+  active, appends a one-line reinforcement to the outgoing system prompt to
+  keep TLDR in the model's attention each turn.
 
 ## What it does NOT do
 
 - **No statusline badge.** opencode's TUI does not expose a plugin-writable
   statusline. The flag file is at `~/.config/opencode/.tldr-active` if
   you want to surface mode in your shell prompt.
-- **No system-prompt injection from `session.created`.** opencode's docs
-  don't expose a return shape for that. The always-on TLDR ruleset comes
-  from `~/.config/opencode/AGENTS.md` (also written by the installer) so
-  the rules load even when the plugin runtime is broken.
+- **No module-loader `require()`.** opencode runs plugins inside a compiled
+  Bun binary where `require()` of on-disk files is rejected ("require()
+  async module is unsupported") and `import()` of a CJS file yields an
+  empty namespace — `tldr-config.cjs` is therefore evaluated as CommonJS by
+  hand (readFileSync + Function wrapper with a createRequire shim for node
+  built-ins). The always-on TLDR ruleset still comes from
+  `~/.config/opencode/AGENTS.md` (also written by the installer) so the
+  rules load even when the plugin runtime is broken.
 
 ## Why no separate npm package
 
 Plugin code reuses `tldr-config.js` from the main repo. Shipping as an
-in-repo plugin avoids a second release cadence and a name collision with
-the existing third-party `opencode-blunt` npm package.
+in-repo plugin avoids a second release cadence and an npm package-name
+collision.

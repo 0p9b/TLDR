@@ -61,8 +61,16 @@ function pathWithout(binNames) {
     .join(sep);
 }
 
+// Spawn the installer with process.execPath, never the bare string 'node':
+// the uninstall tests run with a PATH stripped of every dir containing a
+// `claude`/`gemini` binary (see pathWithout), and on dev boxes where node is
+// colocated with claude (e.g. ~/.local/bin) that also removes `node` from
+// PATH — the spawn then dies ENOENT with status:null, which slips past
+// assert.notEqual(status, 2) while the on-disk assertions fail downstream.
+// process.execPath is immune to PATH mangling (and to the symlink case where
+// the PATH entry for node is not dirname(process.execPath)).
 function runInstaller(args, configDir, extraEnv = {}) {
-  return spawnSync('node', [INSTALLER, ...args, '--config-dir', configDir, '--non-interactive', '--no-mcp-shrink'], {
+  return spawnSync(process.execPath, [INSTALLER, ...args, '--config-dir', configDir, '--non-interactive', '--no-mcp-shrink'], {
     env: { ...process.env, CLAUDE_CONFIG_DIR: configDir, NO_COLOR: '1', ...extraEnv },
     encoding: 'utf8',
   });
@@ -88,7 +96,7 @@ function getStatuslineCommand(settings) {
     : (settings.statusLine.command || '');
 }
 
-function bluntHookCommands(settings, event, marker) {
+function tldrHookCommands(settings, event, marker) {
   return (settings.hooks?.[event] || [])
     .flatMap(e => (Array.isArray(e?.hooks) ? e.hooks : []))
     .filter(h => h && typeof h.command === 'string' && h.command.includes(marker));
@@ -138,10 +146,10 @@ test('idempotent install does not duplicate hook entries (skipped without `claud
 
     const settings = JSON.parse(fs.readFileSync(path.join(dir, 'settings.json'), 'utf8'));
 
-    const sessStart = bluntHookCommands(settings, 'SessionStart', 'tldr-activate');
+    const sessStart = tldrHookCommands(settings, 'SessionStart', 'tldr-activate');
     assert.equal(sessStart.length, 1, `expected 1 SessionStart TLDR hook, got ${sessStart.length}`);
 
-    const ups = bluntHookCommands(settings, 'UserPromptSubmit', 'tldr-mode-tracker');
+    const ups = tldrHookCommands(settings, 'UserPromptSubmit', 'tldr-mode-tracker');
     assert.equal(ups.length, 1, `expected 1 UserPromptSubmit TLDR hook, got ${ups.length}`);
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
@@ -189,7 +197,7 @@ test('uninstall strips TLDR hooks but preserves user-authored ones (skipped with
       }
     }
     // User's pre-existing hook preserved.
-    const preservedUser = bluntHookCommands(settings, 'SessionStart', 'user-owned-hook').length > 0;
+    const preservedUser = tldrHookCommands(settings, 'SessionStart', 'user-owned-hook').length > 0;
     assert.ok(preservedUser, 'user-authored SessionStart hook was wiped during uninstall');
 
     // Statusline pointing at TLDR should be removed.
@@ -246,7 +254,7 @@ test('openclaw install writes skill folder + SOUL.md bootstrap', () => {
   const ws = path.join(dir, 'ws');
   fs.mkdirSync(ws);
   try {
-    const r = spawnSync('node', [INSTALLER, '--only', 'openclaw', '--non-interactive', '--no-mcp-shrink', '--config-dir', dir], {
+    const r = spawnSync(process.execPath, [INSTALLER, '--only', 'openclaw', '--non-interactive', '--no-mcp-shrink', '--config-dir', dir], {
       env: { ...process.env, OPENCLAW_WORKSPACE: ws, NO_COLOR: '1' },
       encoding: 'utf8',
     });
@@ -273,7 +281,7 @@ test('openclaw install writes skill folder + SOUL.md bootstrap', () => {
     const soulRaw = fs.readFileSync(soul, 'utf8');
     assert.match(soulRaw, /<!-- tldr-begin -->/, 'SOUL.md missing begin marker');
     assert.match(soulRaw, /<!-- tldr-end -->/, 'SOUL.md missing end marker');
-    assert.match(soulRaw, /Respond terse like smart TLDR/, 'SOUL.md missing sentinel');
+    assert.match(soulRaw, /Respond in TLDR style/, 'SOUL.md missing sentinel');
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }
@@ -286,8 +294,8 @@ test('openclaw install is idempotent: skill frontmatter not double-prepended, SO
   try {
     const env = { ...process.env, OPENCLAW_WORKSPACE: ws, NO_COLOR: '1' };
     const args = ['--only', 'openclaw', '--non-interactive', '--no-mcp-shrink', '--config-dir', dir];
-    spawnSync('node', [INSTALLER, ...args], { env, encoding: 'utf8' });
-    spawnSync('node', [INSTALLER, ...args], { env, encoding: 'utf8' });
+    spawnSync(process.execPath, [INSTALLER, ...args], { env, encoding: 'utf8' });
+    spawnSync(process.execPath, [INSTALLER, ...args], { env, encoding: 'utf8' });
 
     const skillRaw = fs.readFileSync(path.join(ws, 'skills', 'tldr', 'SKILL.md'), 'utf8');
     // version key should appear exactly once (idempotent merge).
@@ -311,7 +319,7 @@ test('openclaw install preserves user content in SOUL.md (append, not overwrite)
   const userContent = '# my workspace\n\nfoo bar baz\n';
   fs.writeFileSync(path.join(ws, 'SOUL.md'), userContent);
   try {
-    spawnSync('node', [INSTALLER, '--only', 'openclaw', '--non-interactive', '--no-mcp-shrink', '--config-dir', dir], {
+    spawnSync(process.execPath, [INSTALLER, '--only', 'openclaw', '--non-interactive', '--no-mcp-shrink', '--config-dir', dir], {
       env: { ...process.env, OPENCLAW_WORKSPACE: ws, NO_COLOR: '1' },
       encoding: 'utf8',
     });
@@ -332,11 +340,11 @@ test('openclaw uninstall removes skill folder + strips SOUL.md block, preserving
   fs.writeFileSync(path.join(ws, 'SOUL.md'), userContent);
   try {
     const env = { ...process.env, OPENCLAW_WORKSPACE: ws, NO_COLOR: '1' };
-    spawnSync('node', [INSTALLER, '--only', 'openclaw', '--non-interactive', '--no-mcp-shrink', '--config-dir', dir], { env, encoding: 'utf8' });
+    spawnSync(process.execPath, [INSTALLER, '--only', 'openclaw', '--non-interactive', '--no-mcp-shrink', '--config-dir', dir], { env, encoding: 'utf8' });
 
     // Strip claude/gemini from PATH so uninstall doesn't touch real plugins.
     const cleanPath = pathWithout(['claude', 'gemini']);
-    const r = spawnSync('node', [INSTALLER, '--uninstall', '--non-interactive', '--no-mcp-shrink', '--config-dir', dir], {
+    const r = spawnSync(process.execPath, [INSTALLER, '--uninstall', '--non-interactive', '--no-mcp-shrink', '--config-dir', dir], {
       env: { ...env, PATH: cleanPath },
       encoding: 'utf8',
     });
@@ -359,7 +367,7 @@ test('tldr-init.js --only openclaw routes through the same helper', () => {
   fs.mkdirSync(ws);
   try {
     const initScript = path.join(REPO_ROOT, 'src', 'tools', 'tldr-init.js');
-    const r = spawnSync('node', [initScript, dir, '--only', 'openclaw'], {
+    const r = spawnSync(process.execPath, [initScript, dir, '--only', 'openclaw'], {
       env: { ...process.env, OPENCLAW_WORKSPACE: ws, NO_COLOR: '1' },
       encoding: 'utf8',
     });
@@ -367,7 +375,7 @@ test('tldr-init.js --only openclaw routes through the same helper', () => {
     assert.ok(fs.existsSync(path.join(ws, 'skills', 'tldr', 'SKILL.md')), 'skill missing via init route');
     assert.ok(fs.existsSync(path.join(ws, 'SOUL.md')), 'SOUL.md missing via init route');
     const soulRaw = fs.readFileSync(path.join(ws, 'SOUL.md'), 'utf8');
-    assert.match(soulRaw, /Respond terse like smart TLDR/, 'sentinel missing via init route');
+    assert.match(soulRaw, /Respond in TLDR style/, 'sentinel missing via init route');
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }

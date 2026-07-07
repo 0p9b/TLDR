@@ -29,6 +29,9 @@ def count(text: str) -> int:
 
 
 def main() -> None:
+    if not SNAPSHOT.exists():
+        print(f"No snapshot at {SNAPSHOT}. Run `python evals/llm_run.py` first.")
+        return
     data = json.loads(SNAPSHOT.read_text())
     arms = data["arms"]
     meta = data.get("metadata", {})

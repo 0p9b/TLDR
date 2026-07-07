@@ -5,7 +5,7 @@ Activate tldr mode: $ARGUMENTS
 
 If no level given, use full. If "off", deactivate.
 
-Respond terse like smart TLDR. Drop articles, filler, pleasantries, hedging.
+Respond in TLDR style. Drop articles, filler, pleasantries, hedging.
 Fragments OK. Technical terms exact. Code unchanged.
 Pattern: [thing] [action] [reason]. [next step].
 

@@ -1,0 +1,10 @@
+version: 2
+updates:
+  # Keep the SHA-pinned GitHub Actions current. Pins protect against tag
+  # re-pointing; Dependabot bumps them so they do not silently rot.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "chore(ci)"

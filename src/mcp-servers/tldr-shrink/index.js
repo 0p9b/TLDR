@@ -80,6 +80,9 @@ function transformResponse(msg) {
   for (const arrayName of ['tools', 'prompts', 'resources', 'resourceTemplates']) {
     if (Array.isArray(r[arrayName])) {
       for (const item of r[arrayName]) {
+        // A crafted/buggy upstream can put null or a non-object in the array;
+        // dereferencing item[field] on null throws and would crash the proxy.
+        if (!item || typeof item !== 'object') continue;
         for (const field of fields) {
           if (typeof item[field] === 'string') {
             const before = item[field];
@@ -115,8 +118,13 @@ upstream.stdout.on('data', makeLineBuffer(line => {
     process.stdout.write(line + '\n');
     return;
   }
-  const out = transformResponse(msg);
-  process.stdout.write(JSON.stringify(out) + '\n');
+  // Fail open: if transformResponse throws on a pathological frame, forward the
+  // original line unchanged rather than crashing the proxy and tearing down the
+  // whole MCP connection.
+  let out;
+  try { out = JSON.stringify(transformResponse(msg)) + '\n'; }
+  catch { out = line + '\n'; }
+  process.stdout.write(out);
 }));
 
 // Client → us → upstream. Pass through unchanged for v1.

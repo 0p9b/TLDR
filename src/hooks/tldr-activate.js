@@ -15,6 +15,17 @@ const claudeDir = process.env.CLAUDE_CONFIG_DIR || path.join(os.homedir(), '.cla
 const flagPath = path.join(claudeDir, '.tldr-active');
 const settingsPath = path.join(claudeDir, 'settings.json');
 
+// Apply per-agent model overrides from env vars before emitting rules.
+// Best-effort: any error is swallowed so SessionStart is never blocked.
+// Plugin installs run this hook from <plugin_root>/src/hooks/ and keep agents
+// at <plugin_root>/agents/, so prefer CLAUDE_PLUGIN_ROOT when Claude Code sets
+// it. Standalone installs fall back to the parent of the hooks dir
+// ($CLAUDE_CONFIG_DIR), where agents/ may hold user-managed copies.
+try {
+  const { applyOverrides, resolvePluginRoot } = require('./tldrcrew-model-overrides');
+  applyOverrides(process.env.CLAUDE_PLUGIN_ROOT || resolvePluginRoot(__dirname));
+} catch (e) {}
+
 const mode = getDefaultMode();
 
 // "off" mode — skip activation entirely, don't write flag or emit rules
@@ -94,7 +105,7 @@ if (skillContent) {
   // This is the minimum viable ruleset — better than nothing.
   output =
     'TLDR MODE ACTIVE — level: ' + modeLabel + '\n\n' +
-    'Respond terse like smart TLDR. All technical substance stay. Only fluff die.\n\n' +
+    'Respond in TLDR style: verdict first, no filler. All technical substance stays.\n\n' +
     '## Persistence\n\n' +
     'ACTIVE EVERY RESPONSE. No revert after many turns. No filler drift. Still active if unsure. Off only: "stop tldr" / "normal mode".\n\n' +
     'Current level: **' + modeLabel + '**. Switch: `/tldr lite|full|ultra|wenyan`.\n\n' +

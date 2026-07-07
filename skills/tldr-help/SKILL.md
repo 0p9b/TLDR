@@ -12,7 +12,7 @@ Display this reference card when invoked. One-shot — do NOT change mode, write
 
 ## Modes
 
-| Mode | Trigger | What change |
+| Mode | Trigger | What changes |
 |------|---------|-------------|
 | **Lite** | `/tldr lite` | Drop filler. Keep sentence structure. |
 | **Full** | `/tldr` | Drop articles, filler, pleasantries, hedging. Fragments OK. Default. |

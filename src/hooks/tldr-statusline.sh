@@ -44,7 +44,14 @@ fi
 if [ "${TLDR_STATUSLINE_SAVINGS:-1}" != "0" ]; then
   SAVINGS_FILE="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/.tldr-statusline-suffix"
   if [ -f "$SAVINGS_FILE" ] && [ ! -L "$SAVINGS_FILE" ]; then
-    SAVINGS=$(head -c 64 "$SAVINGS_FILE" 2>/dev/null | tr -d '\000-\037')
-    [ -n "$SAVINGS" ] && printf ' \033[38;5;172m%s\033[0m' "$SAVINGS"
+    # Strip C0 controls AND 0x7f (DEL); then whitelist the whole string against
+    # the exact format the writer (tldr-stats.js) ever emits — "⛏ <num>[.<num>][k|M]".
+    # A blacklist alone leaves the C1 range (incl. single-byte CSI 0x9b) intact,
+    # so a planted suffix file could re-inject terminal control on every refresh.
+    # Do NOT byte-strip 0x80-0x9f — that would corrupt the legitimate ⛏ glyph.
+    SAVINGS=$(head -c 64 "$SAVINGS_FILE" 2>/dev/null | tr -d '\000-\037\177')
+    if printf '%s' "$SAVINGS" | LC_ALL=C.UTF-8 grep -qE '^⛏ [0-9]+(\.[0-9]+)?[kM]?$'; then
+      printf ' \033[38;5;172m%s\033[0m' "$SAVINGS"
+    fi
   fi
 fi

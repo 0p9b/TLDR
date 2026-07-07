@@ -41,11 +41,15 @@ if ($nodeMajor -lt 18) {
 }
 
 # If we're inside the repo clone, run the local installer directly.
-$here = Split-Path -Parent $MyInvocation.MyCommand.Path
-$local = Join-Path $here "bin/install.js"
-if (Test-Path $local) {
-  & node $local @Args
-  exit $LASTEXITCODE
+# $PSScriptRoot is null under `irm … | iex` (as is $MyInvocation.MyCommand.Path);
+# guard so the pipe form falls through to the npx delegation below instead of
+# crashing on `Split-Path -Parent $null`.
+if ($PSScriptRoot) {
+  $local = Join-Path $PSScriptRoot "bin/install.js"
+  if (Test-Path $local) {
+    & node $local @Args
+    exit $LASTEXITCODE
+  }
 }
 
 # Curl-pipe path: delegate to npx.

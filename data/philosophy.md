@@ -1,6 +1,8 @@
 # TLDR.md — Philosophy, Methodology, and ML Grounding
 
-> A communication-style system prompt that compresses coding-agent prose output by an average of **80 %** across 8 different agent harnesses (Claude Code, Codex, Gemini, Droid, Cursor, Pi, Hermes, OpenClaw) without persona collapse, character roleplay, or quality regression.
+> **Historical note:** the numbers on this page are from the v0.13-era prompt generation and its benchmark run. The current shipped `TLDR.md` (a tighter 1-sentence / 3-word-default profile) has **not** been rerun through the full suite — treat every figure here as historical. Answer *accuracy* under compression was not measured (the suite is style-focused). See [`docs/HONEST-NUMBERS.md`](../docs/HONEST-NUMBERS.md) for the honest cost/benefit picture.
+
+> A communication-style system prompt that, in the v0.13 benchmark run, compressed coding-agent prose output by an average of **~80 %** across 8 agent harnesses (Claude Code, Codex, Gemini, Droid, Cursor, Pi, Hermes, OpenClaw) while preserving technical content — without persona collapse or character roleplay.
 
 ---
 
@@ -250,7 +252,7 @@ The numbers below are from `bench/v1.13/comparison.md`, the canonical v0.13 benc
 
 **−80.0 %** is the aggregate prose-token reduction across all 8 agents and all 15 prompts. Concretely: where the no-TLDR.md baseline produced 25 726 prose tokens of output across the full bench, TLDR.md v0.13 produces 5 133 — about a fifth.
 
-For context: caveman's published average is ~65 % (range 22–87 %). TLDR.md lands at 80 % aggregate, with the per-agent low at −71 % (cursor-agent) and high at −96 % (gemini). We beat caveman's stated average by 15 percentage points.
+For context: caveman's published average is ~65 % (range 22–87 %). In the v0.13 run, TLDR.md landed at ~80 % aggregate, with the per-agent low at −71 % (cursor-agent) and high at −96 % (gemini) — measured on different prompt suites, so this is not a controlled head-to-head, and both figures are historical for their respective current prompts.
 
 ### 7.3 Cross-agent variance reduction
 

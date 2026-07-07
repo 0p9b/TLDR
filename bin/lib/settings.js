@@ -97,19 +97,38 @@ function writeSettings(p, obj) {
 // Required shape (per Claude Code docs):
 //   settings.hooks[event] = [{ hooks: [{ type:'command', command:'…', timeout?:n }, ...] }, ...]
 //   settings.hooks[event] = [{ matcher?:'…', hooks: [...] }, ...]   // also valid
-function validateHookFields(settings) {
+//
+// Preservation-biased: we only drop entries that are STRUCTURALLY hopeless
+// (non-object, missing hooks array, or a hook object with no string `type`) or
+// a known hook type missing its required field. Any object carrying an
+// unrecognized-but-nonempty `type` is KEPT — it may be a hook type valid in a
+// newer Claude Code than this installer knows about, and silently deleting a
+// user's working hook is worse than the theoretical Zod risk we guard against.
+// Every drop is reported via the optional `warn` callback rather than being
+// silent. This never mutates entries we recognize as foreign.
+function validateHookFields(settings, warn) {
   if (!settings || typeof settings !== 'object') return settings;
   if (!settings.hooks || typeof settings.hooks !== 'object') return settings;
+  const dropped = [];
   for (const ev of Object.keys(settings.hooks)) {
     const arr = settings.hooks[ev];
-    if (!Array.isArray(arr)) { delete settings.hooks[ev]; continue; }
+    if (!Array.isArray(arr)) { dropped.push(`${ev} (not an array)`); delete settings.hooks[ev]; continue; }
     settings.hooks[ev] = arr.filter(entry => {
-      if (!entry || typeof entry !== 'object') return false;
-      if (!Array.isArray(entry.hooks)) return false;
+      if (!entry || typeof entry !== 'object') { dropped.push(`${ev} entry (not an object)`); return false; }
+      if (!Array.isArray(entry.hooks)) { dropped.push(`${ev} entry (missing hooks array)`); return false; }
       entry.hooks = entry.hooks.filter(h => {
-        if (!h || typeof h !== 'object') return false;
+        if (!h || typeof h !== 'object') { dropped.push(`${ev} hook (not an object)`); return false; }
+        // Known-valid Claude Code hook types: validate their required field.
         if (h.type === 'command') return typeof h.command === 'string' && h.command.length > 0;
-        if (h.type === 'agent')   return typeof h.prompt === 'string' && h.prompt.length > 0;
+        if (h.type === 'prompt' || h.type === 'agent') return typeof h.prompt === 'string' && h.prompt.length > 0;
+        if (h.type === 'http') return typeof h.url === 'string' && h.url.length > 0;
+        if (h.type === 'mcp_tool') {
+          return typeof h.server === 'string' && h.server.length > 0
+              && typeof h.tool === 'string' && h.tool.length > 0;
+        }
+        // Unknown but typed hook: preserve. Only shapeless (no string type) is dropped.
+        if (typeof h.type === 'string' && h.type.length > 0) return true;
+        dropped.push(`${ev} hook (no type field)`);
         return false;
       });
       return entry.hooks.length > 0;
@@ -117,6 +136,9 @@ function validateHookFields(settings) {
     if (settings.hooks[ev].length === 0) delete settings.hooks[ev];
   }
   if (Object.keys(settings.hooks).length === 0) delete settings.hooks;
+  if (dropped.length && typeof warn === 'function') {
+    warn('settings.json: dropped malformed hook entries: ' + dropped.join('; '));
+  }
   return settings;
 }
 

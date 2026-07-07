@@ -11,7 +11,7 @@ $HooksDir = Join-Path $ClaudeDir "hooks"
 $Settings = Join-Path $ClaudeDir "settings.json"
 $FlagFile = Join-Path $ClaudeDir ".tldr-active"
 
-$HookFiles = @("package.json", "tldr-config.js", "tldr-activate.js", "tldr-mode-tracker.js", "tldr-stats.js", "tldr-statusline.sh", "tldr-statusline.ps1")
+$HookFiles = @("package.json", "tldr-config.js", "tldr-activate.js", "tldr-mode-tracker.js", "tldr-stats.js", "tldr-statusline.sh", "tldr-statusline.ps1", "tldrcrew-model-overrides.js")
 
 # Detect if TLDR is installed as a plugin
 $PluginInstalled = $false

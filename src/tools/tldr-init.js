@@ -17,8 +17,24 @@ try {
   ({ atomicWrite, resolveSafeTarget } = require(path.join(__dirname, '..', '..', 'bin', 'lib', 'safe-fs.js')));
 } catch (_) {
   atomicWrite = (dest, content, mode = 0o644) => {
-    fs.mkdirSync(path.dirname(dest), { recursive: true });
-    fs.writeFileSync(dest, content, { mode });
+    const dir = path.dirname(dest);
+    fs.mkdirSync(dir, { recursive: true });
+    // Write into a fresh unpredictable 0700 temp dir, then rename over dest.
+    // mkdtempSync (not a predictable .pid-Date name) means an attacker can't
+    // pre-plant a symlink at the temp path to be followed by the write; the
+    // rename replaces any symlink planted at dest rather than clobbering its
+    // target. Matches bin/lib/safe-fs.js semantics.
+    const tmpDir = fs.mkdtempSync(path.join(dir, '.tldr-init-'));
+    const tmp = path.join(tmpDir, 'rule');
+    try {
+      fs.writeFileSync(tmp, content, { mode });
+      fs.renameSync(tmp, dest);
+    } catch (e) {
+      try { fs.unlinkSync(tmp); } catch (_) {}
+      throw e;
+    } finally {
+      try { fs.rmdirSync(tmpDir); } catch (_) {}
+    }
   };
   resolveSafeTarget = (target) => {
     try { return fs.realpathSync(target); }
@@ -28,7 +44,7 @@ try {
 
 // Embedded so the tool works standalone (npx-style) without the src/rules/ dir.
 // Mirrors src/rules/tldr-activate.md verbatim — keep these in sync.
-const RULE_BODY = `Respond terse like smart TLDR. Verdict first. No filler. All technical substance stays.
+const RULE_BODY = `Respond in TLDR style: verdict first, no filler. All technical substance stays.
 
 Rules:
 - 1 sentence default. 3-word target. 6-word hard max unless correctness requires more.
@@ -45,7 +61,10 @@ Auto-Clarity: drop TLDR for security warnings, irreversible actions, ambiguity r
 Boundaries: code/commits/PRs written normal.
 `;
 
-const SENTINEL = 'Respond terse like smart TLDR';
+const SENTINEL = 'Respond in TLDR style';
+// Sentinel written by installs that pre-date the persona-register cleanup.
+// Detection-only: matched to keep re-runs idempotent, never written or emitted.
+const LEGACY_SENTINEL = 'Respond terse like smart TLDR';
 
 // OpenClaw is a global workspace tool (not per-repo) and needs two write
 // targets — a skill folder + a SOUL.md bootstrap block. The shared helper
@@ -108,7 +127,7 @@ function processAgent(agent, targetDir, ruleBody, opts) {
   }
 
   const existing = fs.readFileSync(fullPath, 'utf8');
-  if (existing.includes(SENTINEL)) {
+  if (existing.includes(SENTINEL) || existing.includes(LEGACY_SENTINEL)) {
     return { status: 'skipped-already-installed', label: '=' };
   }
 
@@ -220,4 +239,4 @@ function main() {
 
 if (require.main === module) main();
 
-module.exports = { processAgent, loadRuleBody, AGENTS, SENTINEL, RULE_BODY };
+module.exports = { processAgent, loadRuleBody, AGENTS, SENTINEL, LEGACY_SENTINEL, RULE_BODY };

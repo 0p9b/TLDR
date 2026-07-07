@@ -58,7 +58,7 @@ Terse, high-signal responses for AI coding agents — less filler, same accuracy
 </tr>
 </table>
 
-**Same fix. ~60–75% fewer prose tokens in benchmarks** — tools, code, and safety unchanged. Reproduce: [`bench/v0.14-bench.sh`](bench/v0.14-bench.sh) · writeup: [`data/benchmarks.md`](data/benchmarks.md).
+**Same fix. ~60–75% fewer prose tokens in historical benchmarks** (earlier prompt generations; the current prompt has not been rerun) — tools, code, and safety unchanged. Reproduce: [`bench/v0.14-bench.sh`](bench/v0.14-bench.sh) · writeup: [`data/benchmarks.md`](data/benchmarks.md) · honest cost/benefit: [`docs/HONEST-NUMBERS.md`](docs/HONEST-NUMBERS.md).
 
 ## The prompt — `TLDR.md`
 
@@ -67,7 +67,7 @@ Terse, high-signal responses for AI coding agents — less filler, same accuracy
 | File | Bytes |
 |------|------:|
 | [`TLDR.md`](TLDR.md) | 1,336 |
-| [`commands/tldr.md`](commands/tldr.md) | 1,145 |
+| [`commands/tldr.md`](commands/tldr.md) | 1,274 |
 
 **Current defaults (prompt):**
 - default: 1 sentence

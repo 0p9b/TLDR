@@ -10,7 +10,8 @@ const { execFileSync } = require('child_process');
 
 const ROOT = path.resolve(__dirname, '..');
 const INIT = path.join(ROOT, 'src', 'tools', 'tldr-init.js');
-const SENTINEL = /Respond terse like smart TLDR/;
+const SENTINEL = /Respond in TLDR style/;
+const LEGACY = /Respond terse like smart TLDR/;
 const FILE_AGENTS = 6; // cursor, windsurf, cline, copilot, opencode, agents (openclaw is separate)
 
 let passed = 0;
@@ -40,11 +41,11 @@ test('greenfield: creates all rule files with proper frontmatter', (tmp) => {
   const windsurf = fs.readFileSync(path.join(tmp, '.windsurf/rules/tldr.md'), 'utf8');
   assert.match(windsurf, /trigger: always_on/);
   const cline = fs.readFileSync(path.join(tmp, '.clinerules/tldr.md'), 'utf8');
-  assert.match(cline, /^Respond terse/);
+  assert.match(cline, /^Respond in TLDR style/);
   const copilot = fs.readFileSync(path.join(tmp, '.github/copilot-instructions.md'), 'utf8');
-  assert.match(copilot, /Respond terse/);
+  assert.match(copilot, /Respond in TLDR style/);
   const opencode = fs.readFileSync(path.join(tmp, '.opencode/AGENTS.md'), 'utf8');
-  assert.match(opencode, /Respond terse/);
+  assert.match(opencode, /Respond in TLDR style/);
   const agents = fs.readFileSync(path.join(tmp, 'AGENTS.md'), 'utf8');
   assert.match(agents, SENTINEL);
 });
@@ -81,7 +82,7 @@ test('--force overwrites existing rule files', (tmp) => {
   execFileSync(process.execPath, [INIT, tmp, '--force'], { encoding: 'utf8' });
   const after = fs.readFileSync(path.join(dir, 'tldr.mdc'), 'utf8');
   assert.match(after, /alwaysApply: true/);
-  assert.match(after, /Respond terse/);
+  assert.match(after, /Respond in TLDR style/);
 });
 
 test('--dry-run: announces but writes nothing', (tmp) => {
@@ -107,7 +108,17 @@ test('detects sentinel and skips files that already have TLDR content', (tmp) =>
   const dir = path.join(tmp, '.clinerules');
   fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(path.join(dir, 'tldr.md'),
+    '# Existing\n\nRespond in TLDR style. Hello.\n');
+  const out = execFileSync(process.execPath, [INIT, tmp, '--only', 'cline'], { encoding: 'utf8' });
+  assert.match(out, /skipped-already-installed/);
+});
+
+test('detects legacy sentinel from pre-cleanup installs and skips', (tmp) => {
+  const dir = path.join(tmp, '.clinerules');
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(path.join(dir, 'tldr.md'),
     '# Existing\n\nRespond terse like smart TLDR. Hello.\n');
+  assert.match('Respond terse like smart TLDR', LEGACY);
   const out = execFileSync(process.execPath, [INIT, tmp, '--only', 'cline'], { encoding: 'utf8' });
   assert.match(out, /skipped-already-installed/);
 });
