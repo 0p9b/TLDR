@@ -113,6 +113,51 @@ test('bare -- (POSIX end-of-options) is accepted and ignored', () => {
   assert.equal(r.status, 0);
 });
 
+// ── FIX9: --only with a separators-only value must error, not mean "all" ──────
+test('FIX9: --only with a comma-only value exits 2', () => {
+  const r = run('--only', ',', '--non-interactive');
+  assert.equal(r.status, 2);
+  assert.match(r.stderr, /--only requires at least one agent id/);
+});
+
+test('FIX9: --only with repeated separators exits 2', () => {
+  const r = run('--only', ',,,', '--non-interactive');
+  assert.equal(r.status, 2);
+  assert.match(r.stderr, /--only requires at least one agent id/);
+});
+
+test('FIX9: --only with a whitespace-only value exits 2', () => {
+  const r = run('--only', '   ', '--non-interactive');
+  assert.equal(r.status, 2);
+  assert.match(r.stderr, /--only requires at least one agent id/);
+});
+
+// ── FIX7: explicit --with-*/--no-* toggles beat --all/--minimal, any order ────
+// Observed via the dry-run plan: `--only claude` runs installClaude regardless
+// of detection, and it prints "installing hooks (--with-hooks)" iff hooks are ON.
+function hooksState(...flags) {
+  const r = run('--dry-run', '--only', 'claude', '--non-interactive', ...flags,
+    '--config-dir', `/tmp/__cm_fix7_${Math.random().toString(36).slice(2)}`);
+  assert.equal(r.status, 0, `unexpected exit: ${r.stderr}`);
+  return /installing hooks/.test(r.stdout) ? 'on' : 'off';
+}
+
+test('FIX7: --all then --no-hooks yields hooks OFF', () => {
+  assert.equal(hooksState('--all', '--no-hooks'), 'off');
+});
+
+test('FIX7: --no-hooks then --all (reversed) still yields hooks OFF', () => {
+  assert.equal(hooksState('--no-hooks', '--all'), 'off');
+});
+
+test('FIX7: --all alone yields hooks ON (control)', () => {
+  assert.equal(hooksState('--all'), 'on');
+});
+
+test('FIX7: --minimal then --with-hooks yields hooks ON', () => {
+  assert.equal(hooksState('--minimal', '--with-hooks'), 'on');
+});
+
 test('--help discloses --config-dir scope', () => {
   const r = run('--help');
   assert.equal(r.status, 0);

@@ -62,17 +62,22 @@ function parseArgs(argv) {
     only: [], uninstall: false, nonInteractive: false,
     configDir: null, help: false,
   };
+  // Records the explicit VALUE of any --with-*/--no-* toggle seen in the loop.
+  // Applied AFTER --all/--minimal so an explicit toggle always wins, regardless
+  // of flag order (e.g. `--all --no-hooks` and `--no-hooks --all` both mean
+  // hooks OFF). --all/--minimal only set DEFAULTS.
+  const explicitToggle = {};
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     switch (a) {
       case '--dry-run': opts.dryRun = true; break;
       case '--force': opts.force = true; break;
       case '--skip-skills': opts.skipSkills = true; break;
-      case '--with-hooks': opts.withHooks = true; break;
-      case '--no-hooks': opts.withHooks = false; break;
-      case '--with-init': opts.withInit = true; break;
-      case '--with-mcp-shrink': opts.withMcpShrink = true; break;
-      case '--no-mcp-shrink': opts.withMcpShrink = false; break;
+      case '--with-hooks': opts.withHooks = true; explicitToggle.withHooks = true; break;
+      case '--no-hooks': opts.withHooks = false; explicitToggle.withHooks = false; break;
+      case '--with-init': opts.withInit = true; explicitToggle.withInit = true; break;
+      case '--with-mcp-shrink': opts.withMcpShrink = true; explicitToggle.withMcpShrink = true; break;
+      case '--no-mcp-shrink': opts.withMcpShrink = false; explicitToggle.withMcpShrink = false; break;
       case '--all': opts.all = true; break;
       case '--minimal': opts.minimal = true; break;
       case '--list': opts.listOnly = true; break;
@@ -90,7 +95,11 @@ function parseArgs(argv) {
         // Accept a comma-separated list (`--only claude,codex,opencode`) as
         // well as repeated flags, so a single-line install can name several
         // agents at once.
-        for (const one of v.split(',').map(s => s.trim()).filter(Boolean)) {
+        const ids = v.split(',').map(s => s.trim()).filter(Boolean);
+        // A separators-only value (`--only ,` / `--only '   '`) trims to an
+        // empty list; treat it as an error rather than silently meaning "all".
+        if (ids.length === 0) die('error: --only requires at least one agent id');
+        for (const one of ids) {
           opts.only.push(one === 'aider' ? 'aider-desk' : one);
         }
         break;
@@ -106,8 +115,11 @@ function parseArgs(argv) {
     }
   }
   if (opts.all && opts.minimal) die('error: --all and --minimal are mutually exclusive');
+  // --all/--minimal only set DEFAULTS for the extra toggles…
   if (opts.all) { opts.withHooks = true; opts.withInit = true; opts.withMcpShrink = true; }
   if (opts.minimal) { opts.withHooks = false; opts.withInit = false; opts.withMcpShrink = false; }
+  // …then any EXPLICIT --with-*/--no-* toggle wins, regardless of order.
+  for (const k of Object.keys(explicitToggle)) opts[k] = explicitToggle[k];
   if (opts.withHooks === 'auto') opts.withHooks = true;
   // tldr-shrink is opt-in by default. --all still enables it explicitly.
   // Validate --only ids against the provider matrix. PROVIDERS is defined later
@@ -528,52 +540,116 @@ function copyDirRecursive(src, dest) {
 // marker/sentinel constants are TLDR-generic (values `<!-- tldr-begin -->` …).
 function writeFencedRuleset(agentsMd, repoRoot, opts, note) {
   const ruleBody = fs.readFileSync(path.join(repoRoot, 'src', 'rules', 'tldr-activate.md'), 'utf8').trimEnd() + '\n';
-  const fencedBlock = `${OPENCODE_AGENTS_MD_BEGIN}\n${ruleBody}${OPENCODE_AGENTS_MD_END}\n`;
-  if (fs.existsSync(agentsMd)) {
-    const existing = fs.readFileSync(agentsMd, 'utf8');
-    const alreadyFenced = existing.includes(OPENCODE_AGENTS_MD_BEGIN) && existing.includes(OPENCODE_AGENTS_MD_END);
-    const alreadyByLegacySentinel = !alreadyFenced && existing.includes(OPENCODE_AGENTS_MD_SENTINEL);
-    if (alreadyFenced) {
-      note(`  ${agentsMd} already contains TLDR ruleset`);
-    } else if (alreadyByLegacySentinel) {
-      note(`  ${agentsMd} contains a legacy (un-fenced) TLDR block — leaving as-is`);
-      note('  re-run with --force to replace it with a fenced block');
-      if (opts.force) {
-        fs.writeFileSync(agentsMd, fencedBlock, { mode: 0o644 });
-        process.stdout.write(`  rewrote ${agentsMd} with fenced TLDR block\n`);
-      }
-    } else {
-      const sep = existing.endsWith('\n\n') ? '' : (existing.endsWith('\n') ? '\n' : '\n\n');
-      fs.writeFileSync(agentsMd, existing + sep + fencedBlock, { mode: 0o644 });
-      process.stdout.write(`  appended TLDR ruleset to ${agentsMd}\n`);
-    }
-  } else {
-    fs.mkdirSync(path.dirname(agentsMd), { recursive: true });
-    fs.writeFileSync(agentsMd, fencedBlock, { mode: 0o644 });
+  // blockCore has NO trailing newline: the newline after the END marker belongs
+  // to the surrounding file so an in-place replace can be byte-idempotent.
+  const blockCore = `${OPENCODE_AGENTS_MD_BEGIN}\n${ruleBody}${OPENCODE_AGENTS_MD_END}`;
+  const fencedBlock = blockCore + '\n';
+  // atomicWrite (temp file + rename) replaces a planted symlink with a real
+  // file instead of writing THROUGH it to an out-of-tree target.
+  if (!fs.existsSync(agentsMd)) {
+    atomicWrite(agentsMd, fencedBlock, 0o644);
     process.stdout.write(`  installed: ${agentsMd}\n`);
+    return;
   }
+  const existing = fs.readFileSync(agentsMd, 'utf8');
+  const begin = existing.indexOf(OPENCODE_AGENTS_MD_BEGIN);
+  const end = existing.indexOf(OPENCODE_AGENTS_MD_END);
+  const wellFormed = begin !== -1 && end !== -1 && end > begin;
+  if (wellFormed) {
+    // UPSERT: replace the existing block's content with the current ruleset,
+    // preserving user text above and below. Byte-identical ⇒ no-op (idempotent),
+    // so an upgrade refreshes a stale ruleset instead of leaving it behind.
+    const next = existing.slice(0, begin) + blockCore + existing.slice(end + OPENCODE_AGENTS_MD_END.length);
+    if (next === existing) {
+      note(`  ${agentsMd} already contains the current TLDR ruleset`);
+    } else {
+      atomicWrite(agentsMd, next, 0o644);
+      process.stdout.write(`  refreshed TLDR ruleset in ${agentsMd}\n`);
+    }
+    return;
+  }
+  // No well-formed block. Legacy unfenced sentinel handling — only when there is
+  // no stray begin/end marker to confuse it.
+  const hasStrayMarker = begin !== -1 || end !== -1;
+  if (!hasStrayMarker && existing.includes(OPENCODE_AGENTS_MD_SENTINEL)) {
+    note(`  ${agentsMd} contains a legacy (un-fenced) TLDR block — leaving as-is`);
+    note('  re-run with --force to replace it with a fenced block');
+    if (opts.force) {
+      atomicWrite(agentsMd, fencedBlock, 0o644);
+      process.stdout.write(`  rewrote ${agentsMd} with fenced TLDR block\n`);
+    }
+    return;
+  }
+  // Malformed markers (end-before-begin, orphan begin/end) or plain user text:
+  // append a fresh, well-formed block rather than skipping. Preserves user text.
+  const sep = existing.endsWith('\n\n') ? '' : (existing.endsWith('\n') ? '\n' : '\n\n');
+  atomicWrite(agentsMd, existing + sep + fencedBlock, 0o644);
+  process.stdout.write(`  appended TLDR ruleset to ${agentsMd}\n`);
 }
 
-// Remove the fenced TLDR block from an AGENTS.md-style file, preserving user
+// Strip EVERY well-formed fenced block from `body`, matching each END to its
+// NEAREST PRECEDING BEGIN. This is the data-loss-safe core: an orphan BEGIN with
+// no following END, or an END with no preceding BEGIN, is left in place as a
+// stray marker — surrounding user text is NEVER removed. Blank lines at each cut
+// seam are collapsed to a single blank line (matching the old single-block
+// behavior); user text elsewhere is untouched. Returns { text, removed }.
+function stripFencedBlocks(body, beginMark, endMark) {
+  const segments = []; // surviving text between/around removed blocks
+  let cursor = 0;      // start of the not-yet-emitted region
+  let searchFrom = 0;  // where to look for the next END (past processed region)
+  let removed = false;
+  while (true) {
+    const endPos = body.indexOf(endMark, searchFrom);
+    if (endPos === -1) break;
+    const beginPos = body.lastIndexOf(beginMark, endPos);
+    if (beginPos === -1 || beginPos < searchFrom) {
+      // END with no matching BEGIN in the unprocessed region — leave it, skip on.
+      searchFrom = endPos + endMark.length;
+      continue;
+    }
+    segments.push(body.slice(cursor, beginPos));
+    cursor = endPos + endMark.length;
+    searchFrom = cursor;
+    removed = true;
+  }
+  segments.push(body.slice(cursor));
+  // Join, collapsing blank lines only at the cut seams (between segments).
+  let text = '';
+  for (let i = 0; i < segments.length; i++) {
+    let seg = segments[i];
+    if (i > 0) seg = seg.replace(/^\n+/, '\n');                 // leading, at a cut
+    if (i < segments.length - 1) seg = seg.replace(/\n+$/, '\n'); // trailing, at a cut
+    text += seg;
+  }
+  return { text, removed };
+}
+
+// Strip every fenced [beginMark..endMark] block from a file (nearest-preceding
+// pairing), preserving user content. Deletes the file if only whitespace
+// survives. Symlink-safe via atomicWrite. Returns true if it touched the file.
+function stripFencedFile(filePath, beginMark, endMark, opts, note) {
+  if (!fs.existsSync(filePath)) return false;
+  const body = fs.readFileSync(filePath, 'utf8');
+  const { text, removed } = stripFencedBlocks(body, beginMark, endMark);
+  if (!removed) return false;
+  let next = text.trimEnd();
+  next = next ? next + '\n' : '';
+  if (!opts.dryRun) {
+    if (next === '') { try { fs.unlinkSync(filePath); } catch (_) {} }
+    else atomicWrite(filePath, next, 0o644);
+  }
+  note(next === '' ? `  removed ${filePath}` : `  stripped TLDR block from ${filePath}`);
+  return true;
+}
+
+// Remove the fenced TLDR block(s) from an AGENTS.md-style file, preserving user
 // content above and below. Deletes the file if nothing else survives. Falls
 // back to legacy unfenced-sentinel handling. Returns true if it touched a file.
 function stripFencedRuleset(agentsMd, opts, note) {
+  if (stripFencedFile(agentsMd, OPENCODE_AGENTS_MD_BEGIN, OPENCODE_AGENTS_MD_END, opts, note)) return true;
+  // No well-formed fenced block — check the legacy unfenced sentinel.
   if (!fs.existsSync(agentsMd)) return false;
   const body = fs.readFileSync(agentsMd, 'utf8');
-  const begin = body.indexOf(OPENCODE_AGENTS_MD_BEGIN);
-  const end = body.indexOf(OPENCODE_AGENTS_MD_END);
-  if (begin !== -1 && end !== -1 && end > begin) {
-    const before = body.slice(0, begin).replace(/\n+$/, '\n');
-    const after = body.slice(end + OPENCODE_AGENTS_MD_END.length).replace(/^\n+/, '\n');
-    let next = (before + after).trimEnd();
-    next = next ? next + '\n' : '';
-    if (!opts.dryRun) {
-      if (next === '') { try { fs.unlinkSync(agentsMd); } catch (_) {} }
-      else fs.writeFileSync(agentsMd, next, { mode: 0o644 });
-    }
-    note(next === '' ? `  removed ${agentsMd}` : `  stripped TLDR block from ${agentsMd}`);
-    return true;
-  }
   if (body.includes(OPENCODE_AGENTS_MD_SENTINEL)) {
     if (body.trim() === '' || body.trim().startsWith(OPENCODE_AGENTS_MD_SENTINEL)) {
       if (!opts.dryRun) { try { fs.unlinkSync(agentsMd); } catch (_) {} }
@@ -904,8 +980,9 @@ function installHermes(ctx) {
     if (r.action === 'unchanged') {
       note(`  ${soul} already contains the current TLDR ruleset`);
     } else {
-      fs.mkdirSync(path.dirname(soul), { recursive: true });
-      fs.writeFileSync(soul, r.text, { mode: 0o644 });
+      // atomicWrite (temp + rename) replaces a planted symlink with a real file
+      // instead of following it and writing THROUGH to an out-of-tree target.
+      atomicWrite(soul, r.text, 0o644);
       process.stdout.write(`  ${r.action}: ${soul}\n`);
     }
     results.installed.push('hermes');
@@ -931,110 +1008,126 @@ async function installHooks(ctx) {
     return 'ok';
   }
 
-  fs.mkdirSync(hooksDir, { recursive: true });
+  // All file + settings writes below can throw ENOENT/EACCES/EROFS on a
+  // read-only or otherwise unwritable config dir. Wrap them so we return a
+  // clean failure message (recorded by the caller) instead of dumping a raw
+  // stack trace and aborting the whole multi-agent run.
+  let settings;
+  try {
+    fs.mkdirSync(hooksDir, { recursive: true });
 
-  // Copy or download each hook file. Local-clone-first for offline installs.
-  // Downloaded files (the rare detached-script / curl fallback) are verified
-  // against the SHA-256 manifest published alongside them
-  // (src/hooks/checksums.sha256); a mismatch aborts before the file is wired
-  // into settings.json. Local copies are trusted — they come from the same
-  // clone as this script.
-  let checksums; // undefined = not yet loaded; null = unavailable
-  let warnedNoChecksums = false;
-  for (const f of HOOK_FILES) {
-    const dest = path.join(hooksDir, f);
-    if (sourceDir && fs.existsSync(path.join(sourceDir, f))) {
-      fs.copyFileSync(path.join(sourceDir, f), dest);
-    } else {
-      try { await downloadTo(`${HOOKS_REMOTE}/${f}`, dest); }
-      catch (e) { return `download ${f} failed: ${e.message}`; }
-      if (checksums === undefined) checksums = await loadRemoteHookChecksums();
-      if (checksums) {
-        const want = checksums.get(f);
-        const got = sha256File(dest);
-        if (!want || want !== got) {
-          try { fs.unlinkSync(dest); } catch (_) {}
-          return `integrity check failed for ${f} (expected ${want || '<not in manifest>'}, got ${got}) — ` +
-                 `refusing to install a hook that does not match the published manifest`;
+    // Copy or download each hook file. Local-clone-first for offline installs.
+    // Downloaded files (the rare detached-script / curl fallback) are verified
+    // against the SHA-256 manifest published alongside them
+    // (src/hooks/checksums.sha256); a mismatch aborts before the file is wired
+    // into settings.json. Local copies are trusted — they come from the same
+    // clone as this script.
+    let checksums; // undefined = not yet loaded; null = unavailable
+    let warnedNoChecksums = false;
+    for (const f of HOOK_FILES) {
+      const dest = path.join(hooksDir, f);
+      if (sourceDir && fs.existsSync(path.join(sourceDir, f))) {
+        fs.copyFileSync(path.join(sourceDir, f), dest);
+      } else {
+        try { await downloadTo(`${HOOKS_REMOTE}/${f}`, dest); }
+        catch (e) { return `download ${f} failed: ${e.message}`; }
+        if (checksums === undefined) checksums = await loadRemoteHookChecksums();
+        if (checksums) {
+          const want = checksums.get(f);
+          const got = sha256File(dest);
+          if (!want || want !== got) {
+            try { fs.unlinkSync(dest); } catch (_) {}
+            return `integrity check failed for ${f} (expected ${want || '<not in manifest>'}, got ${got}) — ` +
+                   `refusing to install a hook that does not match the published manifest`;
+          }
+        } else if (!warnedNoChecksums) {
+          warnedNoChecksums = true;
+          warn('  note: integrity manifest unavailable — downloaded hooks installed unverified.');
         }
-      } else if (!warnedNoChecksums) {
-        warnedNoChecksums = true;
-        warn('  note: integrity manifest unavailable — downloaded hooks installed unverified.');
+      }
+      process.stdout.write(`  installed: ${dest}\n`);
+    }
+
+    // chmod statusline (no-op on Windows)
+    try { fs.chmodSync(path.join(hooksDir, 'tldr-statusline.sh'), 0o755); } catch (_) {}
+
+    // Merge into settings.json
+    settings = SETTINGS.readSettings(settingsPath);
+    if (settings === null) {
+      warn('  settings.json unparseable; will not touch it. Edit manually then re-run.');
+      return 'settings.json unparseable';
+    }
+    // A valid-JSON but non-object root (array / bare string / number) can't
+    // carry a hooks map. Leave it untouched rather than crash the run.
+    if (Array.isArray(settings) || typeof settings !== 'object') {
+      warn('  settings.json is not a JSON object; leaving it untouched.');
+      return 'settings.json is not a JSON object';
+    }
+    // Backup once, preserved across reinstalls. Without the !fs.existsSync(bak)
+    // guard, the second install would overwrite the only known-good copy with
+    // the already-merged file, destroying recovery.
+    const bak = settingsPath + '.bak';
+    if (fs.existsSync(settingsPath) && !fs.existsSync(bak)) {
+      // COPYFILE_EXCL: refuse a pre-existing destination (incl. a planted
+      // symlink) instead of following it and clobbering the link target.
+      try { fs.copyFileSync(settingsPath, bak, fs.constants.COPYFILE_EXCL); } catch (_) {}
+    }
+
+    const node = absoluteNodePath();
+    const activate = path.join(hooksDir, 'tldr-activate.js');
+    const tracker  = path.join(hooksDir, 'tldr-mode-tracker.js');
+    const statusline = path.join(hooksDir, 'tldr-statusline.sh');
+
+    // Migrate any legacy bare-`node` invocations of our managed scripts.
+    SETTINGS.rewriteLegacyManagedHookCommands(settings, node);
+
+    SETTINGS.addCommandHook(settings, 'SessionStart', {
+      command: `"${node}" "${activate}"`,
+      marker: 'tldr-activate',
+      timeout: 5,
+      statusMessage: 'Loading tldr mode...',
+    });
+
+    SETTINGS.addCommandHook(settings, 'UserPromptSubmit', {
+      command: `"${node}" "${tracker}"`,
+      marker: 'tldr-mode-tracker',
+      timeout: 5,
+      statusMessage: 'Tracking tldr mode...',
+    });
+
+    // Statusline — set if absent or already pointing at our script.
+    // Windows: prefer pwsh (PowerShell 7+, cross-platform), fall back to
+    // powershell.exe (Windows PowerShell 5.1, ships with every Windows install).
+    // Use -ExecutionPolicy Bypass so users without RemoteSigned policy can run.
+    const psHost = IS_WIN && hasCmd('pwsh') ? 'pwsh' : (IS_WIN ? 'powershell' : null);
+    const slCmd = IS_WIN
+      ? `${psHost} -NoProfile -ExecutionPolicy Bypass -File "${path.join(hooksDir, 'tldr-statusline.ps1')}"`
+      : `bash "${statusline}"`;
+    if (!settings.statusLine) {
+      settings.statusLine = { type: 'command', command: slCmd };
+      process.stdout.write('  statusline badge configured.\n');
+    } else {
+      const existing = typeof settings.statusLine === 'string'
+        ? settings.statusLine
+        : (settings.statusLine.command || '');
+      if (existing.includes(statusline) || existing.includes('tldr-statusline')) {
+        process.stdout.write('  statusline badge already configured.\n');
+      } else {
+        process.stdout.write('  NOTE: existing statusline detected — TLDR badge NOT added.\n');
+        process.stdout.write('        See src/hooks/README.md to add the badge to your existing statusline.\n');
       }
     }
-    process.stdout.write(`  installed: ${dest}\n`);
+
+    // Defensive validation before write — Claude Code Zod will discard the
+    // entire settings.json if any single hook is malformed (#249-class footgun).
+    SETTINGS.validateHookFields(settings);
+    SETTINGS.writeSettings(settingsPath, settings);
+    process.stdout.write(`  hooks wired in ${settingsPath}\n`);
+    return 'ok';
+  } catch (e) {
+    warn('  hook install failed: ' + ((e && e.message) || e));
+    return `hook install failed: ${(e && e.message) || 'unknown error'}`;
   }
-
-  // chmod statusline (no-op on Windows)
-  try { fs.chmodSync(path.join(hooksDir, 'tldr-statusline.sh'), 0o755); } catch (_) {}
-
-  // Merge into settings.json
-  let settings = SETTINGS.readSettings(settingsPath);
-  if (settings === null) {
-    warn('  settings.json unparseable; will not touch it. Edit manually then re-run.');
-    return 'settings.json unparseable';
-  }
-  // Backup once, preserved across reinstalls. Without the !fs.existsSync(bak)
-  // guard, the second install would overwrite the only known-good copy with
-  // the already-merged file, destroying recovery.
-  const bak = settingsPath + '.bak';
-  if (fs.existsSync(settingsPath) && !fs.existsSync(bak)) {
-    // COPYFILE_EXCL: refuse a pre-existing destination (incl. a planted
-    // symlink) instead of following it and clobbering the link target.
-    try { fs.copyFileSync(settingsPath, bak, fs.constants.COPYFILE_EXCL); } catch (_) {}
-  }
-
-  const node = absoluteNodePath();
-  const activate = path.join(hooksDir, 'tldr-activate.js');
-  const tracker  = path.join(hooksDir, 'tldr-mode-tracker.js');
-  const statusline = path.join(hooksDir, 'tldr-statusline.sh');
-
-  // Migrate any legacy bare-`node` invocations of our managed scripts.
-  SETTINGS.rewriteLegacyManagedHookCommands(settings, node);
-
-  SETTINGS.addCommandHook(settings, 'SessionStart', {
-    command: `"${node}" "${activate}"`,
-    marker: 'tldr-activate',
-    timeout: 5,
-    statusMessage: 'Loading tldr mode...',
-  });
-
-  SETTINGS.addCommandHook(settings, 'UserPromptSubmit', {
-    command: `"${node}" "${tracker}"`,
-    marker: 'tldr-mode-tracker',
-    timeout: 5,
-    statusMessage: 'Tracking tldr mode...',
-  });
-
-  // Statusline — set if absent or already pointing at our script.
-  // Windows: prefer pwsh (PowerShell 7+, cross-platform), fall back to
-  // powershell.exe (Windows PowerShell 5.1, ships with every Windows install).
-  // Use -ExecutionPolicy Bypass so users without RemoteSigned policy can run.
-  const psHost = IS_WIN && hasCmd('pwsh') ? 'pwsh' : (IS_WIN ? 'powershell' : null);
-  const slCmd = IS_WIN
-    ? `${psHost} -NoProfile -ExecutionPolicy Bypass -File "${path.join(hooksDir, 'tldr-statusline.ps1')}"`
-    : `bash "${statusline}"`;
-  if (!settings.statusLine) {
-    settings.statusLine = { type: 'command', command: slCmd };
-    process.stdout.write('  statusline badge configured.\n');
-  } else {
-    const existing = typeof settings.statusLine === 'string'
-      ? settings.statusLine
-      : (settings.statusLine.command || '');
-    if (existing.includes(statusline) || existing.includes('tldr-statusline')) {
-      process.stdout.write('  statusline badge already configured.\n');
-    } else {
-      process.stdout.write('  NOTE: existing statusline detected — TLDR badge NOT added.\n');
-      process.stdout.write('        See src/hooks/README.md to add the badge to your existing statusline.\n');
-    }
-  }
-
-  // Defensive validation before write — Claude Code Zod will discard the
-  // entire settings.json if any single hook is malformed (#249-class footgun).
-  SETTINGS.validateHookFields(settings);
-  SETTINGS.writeSettings(settingsPath, settings);
-  process.stdout.write(`  hooks wired in ${settingsPath}\n`);
-  return 'ok';
 }
 
 // ── MCP shrink wiring ─────────────────────────────────────────────────────
@@ -1235,6 +1328,22 @@ function uninstall(ctx) {
       note('  claude plugin not installed — skipping');
     }
 
+    // Remove the plugin marketplace we registered at install time
+    // (`claude plugin marketplace add jqbit/TLDR` → named "tldr"). Idempotent:
+    // probe `marketplace list` first so a machine that never had it stays quiet;
+    // on --dry-run always print the intent.
+    if (opts.dryRun) {
+      runSpawn('claude', ['plugin', 'marketplace', 'remove', 'tldr'], null, true);
+    } else {
+      const mkProbe = captureSpawn('claude', ['plugin', 'marketplace', 'list']);
+      if (mkProbe.status === 0 && /\btldr\b/i.test(mkProbe.stdout || '')) {
+        const rm = runSpawn('claude', ['plugin', 'marketplace', 'remove', 'tldr'], null, false);
+        if ((rm.status || 0) === 0) ok('  removed claude plugin marketplace');
+      } else {
+        note('  claude plugin marketplace not present — skipping');
+      }
+    }
+
     // tldr-shrink MCP — only run if `claude mcp` subcommand exists. Tolerate
     // non-zero exit (server may have never been registered).
     const mcpHelp = captureSpawn('claude', ['mcp', '--help']);
@@ -1297,38 +1406,12 @@ function uninstall(ctx) {
       const p = path.join(ocDir, 'skills', name);
       if (fs.existsSync(p) && !opts.dryRun) { try { fs.rmSync(p, { recursive: true, force: true }); } catch (_) {} }
     }
-    // AGENTS.md — strip the fenced TLDR block (preserves user content
-    // above and below). If the file is empty after the strip, remove it.
-    // Falls back to legacy unfenced-sentinel handling for installs that
-    // pre-date the marker fence.
+    // AGENTS.md — strip the fenced TLDR block(s), preserving user content above
+    // and below, via the shared nearest-preceding-BEGIN stripper (data-loss-safe
+    // on orphan/duplicate markers). Falls back to legacy unfenced-sentinel
+    // handling for installs that pre-date the marker fence.
     const ocAgentsMd = path.join(ocDir, 'AGENTS.md');
-    if (fs.existsSync(ocAgentsMd)) {
-      const body = fs.readFileSync(ocAgentsMd, 'utf8');
-      const begin = body.indexOf(OPENCODE_AGENTS_MD_BEGIN);
-      const end = body.indexOf(OPENCODE_AGENTS_MD_END);
-      if (begin !== -1 && end !== -1 && end > begin) {
-        const before = body.slice(0, begin).replace(/\n+$/, '\n');
-        const after = body.slice(end + OPENCODE_AGENTS_MD_END.length).replace(/^\n+/, '\n');
-        let next = (before + after).trimEnd();
-        next = next ? next + '\n' : '';
-        if (!opts.dryRun) {
-          if (next === '') {
-            try { fs.unlinkSync(ocAgentsMd); } catch (_) {}
-          } else {
-            fs.writeFileSync(ocAgentsMd, next, { mode: 0o644 });
-          }
-        }
-        note(next === '' ? `  removed ${ocAgentsMd}` : `  stripped TLDR block from ${ocAgentsMd}`);
-      } else if (body.includes(OPENCODE_AGENTS_MD_SENTINEL)) {
-        // Legacy install (no marker fence). Remove only if the file is ours.
-        if (body.trim() === '' || body.trim().startsWith(OPENCODE_AGENTS_MD_SENTINEL)) {
-          if (!opts.dryRun) { try { fs.unlinkSync(ocAgentsMd); } catch (_) {} }
-          note(`  removed ${ocAgentsMd}`);
-        } else {
-          note(`  left ${ocAgentsMd} in place (legacy mixed content — strip TLDR block manually)`);
-        }
-      }
-    }
+    stripFencedRuleset(ocAgentsMd, opts, note);
     // opencode flag file
     const ocFlag = path.join(ocDir, '.tldr-active');
     if (fs.existsSync(ocFlag) && !opts.dryRun) { try { fs.unlinkSync(ocFlag); } catch (_) {} }
@@ -1347,26 +1430,13 @@ function uninstall(ctx) {
     if (r.touched) ok('  pruned TLDR entries from OpenClaw workspace');
   }
 
-  // Hermes native install — strip the TLDR marker block from SOUL.md, preserving
-  // any user-authored content above and below. Probed by SOUL.md existence; if
-  // absent (or it holds no marker block), skip silently.
+  // Hermes native install — strip the TLDR marker block(s) from SOUL.md,
+  // preserving any user-authored content above and below, via the shared
+  // nearest-preceding-BEGIN stripper (data-loss-safe on orphan/duplicate
+  // markers). Probed by SOUL.md existence; if absent (or no marker block), the
+  // stripper is a no-op.
   const hermesSoul = hermesSoulPath();
-  if (fs.existsSync(hermesSoul)) {
-    const body = fs.readFileSync(hermesSoul, 'utf8');
-    const begin = body.indexOf(HERMES_MARK_BEGIN);
-    const end = body.indexOf(HERMES_MARK_END);
-    if (begin !== -1 && end !== -1 && end > begin) {
-      const before = body.slice(0, begin).replace(/\n+$/, '\n');
-      const after = body.slice(end + HERMES_MARK_END.length).replace(/^\n+/, '\n');
-      let next = (before + after).trimEnd();
-      next = next ? next + '\n' : '';
-      if (!opts.dryRun) {
-        if (next === '') { try { fs.unlinkSync(hermesSoul); } catch (_) {} }
-        else fs.writeFileSync(hermesSoul, next, { mode: 0o644 });
-      }
-      note(next === '' ? `  removed ${hermesSoul}` : `  stripped TLDR block from ${hermesSoul}`);
-    }
-  }
+  stripFencedFile(hermesSoul, HERMES_MARK_BEGIN, HERMES_MARK_END, opts, note);
 
   // Flag file
   const flag = path.join(configDir, '.tldr-active');

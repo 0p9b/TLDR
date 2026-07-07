@@ -22,12 +22,22 @@ const os = require('os');
 const path = require('path');
 const { atomicWrite } = require('./safe-fs');
 
+// A plain, non-array object. Guards every mutation helper below so a
+// settings.json whose root (or `hooks`) is a bare string/number/array never
+// throws a TypeError that would abort the whole installer run.
+function isPlainObject(v) {
+  return v !== null && typeof v === 'object' && !Array.isArray(v);
+}
+
 // ── stripJsonComments ──────────────────────────────────────────────────────
 // Hand-rolled state machine. Tracks string state + backslash escape so a
 // comment-looking sequence inside a quoted string is left alone. Removes
 // trailing commas in a final pass — JSONC tolerates those, JSON.parse does not.
 function stripJsonComments(src) {
   if (typeof src !== 'string') return src;
+  // Strip a leading UTF-8 BOM (U+FEFF) — JSON.parse rejects it, but an editor
+  // may have written one into a perfectly valid settings.json.
+  if (src.charCodeAt(0) === 0xFEFF) src = src.slice(1);
   let out = '';
   let i = 0;
   const n = src.length;
@@ -104,6 +114,9 @@ function readSettings(p) {
     return null;
   }
   if (!raw.trim()) return {};
+  // Strip a leading UTF-8 BOM before parsing — a BOM-prefixed but otherwise
+  // valid settings.json must parse, not be treated as unrecoverable garbage.
+  if (raw.charCodeAt(0) === 0xFEFF) raw = raw.slice(1);
   try { return JSON.parse(raw); } catch (_) { /* fall through to JSONC */ }
   try { return JSON.parse(stripJsonComments(raw)); }
   catch (e) {
@@ -136,8 +149,8 @@ function writeSettings(p, obj) {
 // Every drop is reported via the optional `warn` callback rather than being
 // silent. This never mutates entries we recognize as foreign.
 function validateHookFields(settings, warn) {
-  if (!settings || typeof settings !== 'object') return settings;
-  if (!settings.hooks || typeof settings.hooks !== 'object') return settings;
+  if (!isPlainObject(settings)) return settings;
+  if (!isPlainObject(settings.hooks)) return settings;
   const dropped = [];
   for (const ev of Object.keys(settings.hooks)) {
     const arr = settings.hooks[ev];
@@ -186,7 +199,10 @@ function hasTldrHook(settings, event, marker = 'tldr') {
 // shorter substring (e.g. the script basename) when the full command path
 // might rotate across reinstalls.
 function addCommandHook(settings, event, opts) {
-  if (!settings.hooks) settings.hooks = {};
+  // Defensive: a non-plain-object root can't carry a hooks map — bail rather
+  // than throw a TypeError that would abort the run.
+  if (!isPlainObject(settings)) return false;
+  if (!isPlainObject(settings.hooks)) settings.hooks = {};
   if (!Array.isArray(settings.hooks[event])) settings.hooks[event] = [];
   const marker = opts.marker || opts.command;
   if (hasTldrHook(settings, event, marker)) return false;
@@ -203,9 +219,9 @@ function addCommandHook(settings, event, opts) {
 // shapes) — those get dropped by validateHookFields first so we never call
 // .length / .filter on a non-array.
 function removeTldrHooks(settings, marker = 'tldr') {
-  if (!settings || !settings.hooks) return 0;
+  if (!isPlainObject(settings) || !isPlainObject(settings.hooks)) return 0;
   validateHookFields(settings);
-  if (!settings.hooks) return 0; // validate may have deleted the whole tree
+  if (!isPlainObject(settings.hooks)) return 0; // validate may have deleted the whole tree
   let removed = 0;
   for (const ev of Object.keys(settings.hooks)) {
     if (!Array.isArray(settings.hooks[ev])) { delete settings.hooks[ev]; continue; }
@@ -234,10 +250,11 @@ const MANAGED_HOOK_BASENAMES = new Set([
   'tldr-statusline.sh',
 ]);
 function rewriteLegacyManagedHookCommands(settings, absoluteNode) {
-  if (!settings || !settings.hooks || !absoluteNode) return 0;
+  if (!isPlainObject(settings) || !isPlainObject(settings.hooks) || !absoluteNode) return 0;
   let rewritten = 0;
   const reBare = /^node\s+("([^"]+)"|'([^']+)'|(\S+))\s*$/;
   for (const ev of Object.keys(settings.hooks)) {
+    if (!Array.isArray(settings.hooks[ev])) continue;
     for (const entry of settings.hooks[ev]) {
       if (!entry || !Array.isArray(entry.hooks)) continue;
       for (const h of entry.hooks) {

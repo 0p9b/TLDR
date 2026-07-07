@@ -184,3 +184,61 @@ test('claudeConfigDir honors CLAUDE_CONFIG_DIR env', () => {
   try { assert.equal(SETTINGS.claudeConfigDir(), '/tmp/__cm_test_cfg'); }
   finally { if (orig === undefined) delete process.env.CLAUDE_CONFIG_DIR; else process.env.CLAUDE_CONFIG_DIR = orig; }
 });
+
+// ── FIX4: non-object / non-array-hooks roots must never throw ────────────────
+// A valid-JSON but non-object root (or non-array hooks) previously threw an
+// uncaught TypeError in these helpers, aborting the whole multi-agent run.
+
+test('FIX4: addCommandHook returns false (no throw) on a non-plain-object root', () => {
+  for (const bad of ['just a string', 42, [1, 2, 3], null]) {
+    let out;
+    assert.doesNotThrow(() => { out = SETTINGS.addCommandHook(bad, 'SessionStart', { command: 'x', marker: 'tldr' }); },
+      `addCommandHook threw on ${JSON.stringify(bad)}`);
+    assert.equal(out, false);
+  }
+});
+
+test('FIX4: addCommandHook coerces a non-array hooks map before pushing', () => {
+  const s = { hooks: 'oops' };            // pre-fix: settings.hooks[event]=[] threw
+  let out;
+  assert.doesNotThrow(() => { out = SETTINGS.addCommandHook(s, 'SessionStart', { command: 'c', marker: 'tldr' }); });
+  assert.equal(out, true);
+  assert.equal(s.hooks.SessionStart[0].hooks[0].command, 'c');
+});
+
+test('FIX4: validateHookFields tolerates array / primitive roots without throwing', () => {
+  for (const bad of [[1, 2, 3], 'str', 7]) {
+    assert.doesNotThrow(() => SETTINGS.validateHookFields(bad), `validateHookFields threw on ${JSON.stringify(bad)}`);
+  }
+});
+
+test('FIX4: rewriteLegacyManagedHookCommands tolerates a non-array hooks[event]', () => {
+  const s = { hooks: { SessionStart: 'not-an-array' } };  // pre-fix: for..of threw
+  let n;
+  assert.doesNotThrow(() => { n = SETTINGS.rewriteLegacyManagedHookCommands(s, '/usr/bin/node'); });
+  assert.equal(n, 0);
+});
+
+test('FIX4: rewriteLegacyManagedHookCommands returns 0 on non-object roots', () => {
+  for (const bad of ['str', 9, [1], null]) {
+    assert.doesNotThrow(() => SETTINGS.rewriteLegacyManagedHookCommands(bad, '/usr/bin/node'));
+    assert.equal(SETTINGS.rewriteLegacyManagedHookCommands(bad, '/usr/bin/node'), 0);
+  }
+});
+
+// ── FIX5: a leading UTF-8 BOM must not make valid JSON "unparseable" ─────────
+test('FIX5: readSettings parses a BOM-prefixed valid settings.json', () => {
+  const p = tmpFile('s.json', '﻿{"theme":"dark","hooks":{}}');
+  assert.deepEqual(SETTINGS.readSettings(p), { theme: 'dark', hooks: {} });
+});
+
+test('FIX5: readSettings parses a BOM-prefixed JSONC settings.json', () => {
+  const p = tmpFile('s.json', '﻿{ "theme": "dark", /* c */ }');
+  assert.deepEqual(SETTINGS.readSettings(p), { theme: 'dark' });
+});
+
+test('FIX5: stripJsonComments strips a leading BOM', () => {
+  const out = SETTINGS.stripJsonComments('﻿{"a":1}');
+  assert.doesNotThrow(() => JSON.parse(out));
+  assert.deepEqual(JSON.parse(out), { a: 1 });
+});
