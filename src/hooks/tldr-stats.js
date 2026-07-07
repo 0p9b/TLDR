@@ -40,8 +40,12 @@ const MODEL_OUTPUT_PRICE_PER_M = [
 
 function priceForModel(model) {
   if (!model) return null;
+  // Match on a dash-anchored prefix (exact id, or id followed by a dated suffix)
+  // so a specific tier like 'claude-opus-4-1' matches 'claude-opus-4-1' and
+  // 'claude-opus-4-1-20250805' but NOT a hypothetical 'claude-opus-4-15'; the
+  // generic 'claude-opus-4' still catches 'claude-opus-4-8' via the '-' boundary.
   for (const [prefix, price] of MODEL_OUTPUT_PRICE_PER_M) {
-    if (model.startsWith(prefix)) return price;
+    if (model === prefix || model.startsWith(prefix + '-')) return price;
   }
   return null;
 }

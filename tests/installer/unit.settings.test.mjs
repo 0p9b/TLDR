@@ -39,6 +39,17 @@ test('stripJsonComments strips trailing commas', () => {
   assert.doesNotThrow(() => JSON.parse(out));
 });
 
+test('stripJsonComments preserves ,} / ,] inside string VALUES (no data corruption)', () => {
+  // A string value whose content is a comma before }/] must survive — the old
+  // global trailing-comma regex silently deleted those commas and wrote the
+  // corrupted value back to the user's settings.json.
+  const src = '{"note":"TODO: fix,}","cmd":"grep [a,]","arr":[1,2,],}';
+  const parsed = JSON.parse(SETTINGS.stripJsonComments(src));
+  assert.equal(parsed.note, 'TODO: fix,}');   // comma preserved inside the string
+  assert.equal(parsed.cmd, 'grep [a,]');       // comma preserved inside the string
+  assert.deepEqual(parsed.arr, [1, 2]);        // structural trailing comma removed
+});
+
 test('readSettings handles plain JSON', () => {
   const p = tmpFile('s.json', '{"theme":"dark"}');
   assert.deepEqual(SETTINGS.readSettings(p), { theme: 'dark' });

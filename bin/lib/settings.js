@@ -57,9 +57,38 @@ function stripJsonComments(src) {
     if (c === '/' && next === '*') { inBlock = true; i += 2; continue; }
     out += c; i++;
   }
-  // Trailing-comma sweep — only outside strings, but stripping happened above
-  // so a regex over the comment-free output is safe.
-  return out.replace(/,(\s*[}\]])/g, '$1');
+  // Trailing-comma sweep — string-aware. A plain regex over `out` would also
+  // match commas inside string VALUES (e.g. "TODO: fix,}"), silently corrupting
+  // user data that is then written back to disk. Walk char-by-char instead.
+  return stripTrailingCommas(out);
+}
+
+// Remove commas that sit (across whitespace) immediately before a closing } or
+// ], but only OUTSIDE string literals. Comments are already gone by this point.
+function stripTrailingCommas(s) {
+  let out = '';
+  let i = 0;
+  const n = s.length;
+  let inString = false;
+  let q = '';
+  while (i < n) {
+    const c = s[i];
+    if (inString) {
+      out += c;
+      if (c === '\\' && i + 1 < n) { out += s[i + 1]; i += 2; continue; }
+      if (c === q) inString = false;
+      i++; continue;
+    }
+    if (c === '"' || c === "'") { inString = true; q = c; out += c; i++; continue; }
+    if (c === ',') {
+      let j = i + 1;
+      while (j < n && /\s/.test(s[j])) j++;
+      if (j < n && (s[j] === '}' || s[j] === ']')) { i++; continue; } // drop trailing comma
+      out += c; i++; continue;
+    }
+    out += c; i++;
+  }
+  return out;
 }
 
 // ── readSettings ───────────────────────────────────────────────────────────
