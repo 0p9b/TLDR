@@ -53,7 +53,9 @@ If you want to install for one agent (or want to know exactly what command runs 
 | **Gemini CLI** | `gemini extensions install https://github.com/jqbit/TLDR` | Yes |
 | **opencode** | `node bin/install.js --only opencode` *(or `npx -y github:jqbit/TLDR -- --only opencode`)* | Yes (plugin + AGENTS.md) |
 | **OpenClaw** | `npx -y github:jqbit/TLDR -- --only openclaw` | Yes (workspace skill + SOUL.md) |
-| **Codex CLI** | `npx skills add jqbit/TLDR -a codex` | Per-session: `/tldr` |
+| **Codex CLI** | `node bin/install.js --only codex` *(or `npx -y github:jqbit/TLDR -- --only codex`)* | Yes (global `~/.codex/AGENTS.md` + skill) |
+| **Pi Coding Agent** | `node bin/install.js --only pi` *(or `npx -y github:jqbit/TLDR -- --only pi`)* | Yes (global `~/.pi/agent/AGENTS.md` + skill) |
+| **Grok Build CLI** | `node bin/install.js --only grok` *(or `npx -y github:jqbit/TLDR -- --only grok`)* | Yes (global `~/.grok/AGENTS.md` + skill) |
 | **Cursor** | `npx skills add jqbit/TLDR -a cursor` | Per-session by default; `--with-init` for an always-on rule file |
 | **Windsurf** | `npx skills add jqbit/TLDR -a windsurf` | Per-session by default; `--with-init` for an always-on rule file |
 | **Cline** | `npx skills add jqbit/TLDR -a cline` | Per-session by default; `--with-init` for an always-on rule file |

@@ -87,7 +87,12 @@ function parseArgs(argv) {
       case '--only': {
         const v = argv[++i];
         if (!v) die('error: --only requires an argument');
-        opts.only.push(v === 'aider' ? 'aider-desk' : v);
+        // Accept a comma-separated list (`--only claude,codex,opencode`) as
+        // well as repeated flags, so a single-line install can name several
+        // agents at once.
+        for (const one of v.split(',').map(s => s.trim()).filter(Boolean)) {
+          opts.only.push(one === 'aider' ? 'aider-desk' : one);
+        }
         break;
       }
       case '--config-dir': {
@@ -175,7 +180,9 @@ const PROVIDERS = [
   { id: 'opencode',   label: 'opencode',            mech: 'native opencode plugin',        detect: 'command:opencode' },
   { id: 'openclaw',   label: 'OpenClaw',            mech: 'workspace skill + SOUL.md',     detect: 'command:openclaw||dir:$HOME/.openclaw/workspace' },
   { id: 'hermes',     label: 'Hermes Agent',        mech: 'native hermes SOUL.md merge',   detect: 'command:hermes' },
-  { id: 'codex',      label: 'Codex CLI',           mech: 'npx skills add (codex)',        detect: 'command:codex',           profile: 'codex' },
+  { id: 'codex',      label: 'Codex CLI',           mech: 'native AGENTS.md + skill',       detect: 'command:codex',           native: { dir: '$HOME/.codex',    rules: 'AGENTS.md', skills: 'skills' } },
+  { id: 'pi',         label: 'Pi Coding Agent',     mech: 'native AGENTS.md + skill',       detect: 'command:pi',              native: { dir: '$HOME/.pi/agent', rules: 'AGENTS.md', skills: 'skills' } },
+  { id: 'grok',       label: 'Grok Build CLI',      mech: 'native AGENTS.md + skill',       detect: 'command:grok',            native: { dir: '$HOME/.grok',     rules: 'AGENTS.md', skills: 'skills' } },
 
   // IDE / VS Code-family — extension probes are precise. Cursor/Windsurf also
   // ship CLI binaries; we drop the dir fallback because the dir lingers after
@@ -463,7 +470,13 @@ function installViaSkills(ctx, prov) {
   // and our installer happily reports success. See issue #370.
   // We've already decided which agent to install for via auto-detect / --only;
   // making the user re-select 7 skills inside skills CLI would be redundant.
-  const args = ['-y', 'skills', 'add', REPO, '-a', prov.profile, '--yes', '--all'];
+  //
+  // NOTE: `--all` expands to `--skill '*' --agent '*'`, which OVERRIDES `-a
+  // <profile>` and fans the install out to every agent the skills CLI knows
+  // (~50), into the shared ~/.agents store — not what a scoped, per-agent
+  // install wants. Use `-s '*'` (all TLDR skills) + `-a <profile>` (this agent
+  // only) + `-g` (user-global, not the CWD project store) instead.
+  const args = ['-y', 'skills', 'add', REPO, '-a', prov.profile, '-s', '*', '-g', '--yes'];
   const r = runSpawn('npx', args, null, opts.dryRun);
   if ((r.status || 0) === 0) results.installed.push(prov.id);
   else results.failed.push([prov.id, `npx skills add (${prov.profile}) failed`]);
@@ -506,6 +519,121 @@ function copyDirRecursive(src, dest) {
   }
 }
 
+// ── Shared AGENTS.md ruleset writer / stripper ────────────────────────────
+// Write the fenced TLDR ruleset (src/rules/tldr-activate.md) into an agent's
+// global AGENTS.md-style rules file. Preserves user content above and below the
+// begin/end fence, is idempotent on the markers, and recognizes the legacy
+// unfenced sentinel. Shared by installOpencode and installNativeAgentsMd
+// (codex/pi/grok) so every AGENTS.md-convention agent uses one code path. The
+// marker/sentinel constants are TLDR-generic (values `<!-- tldr-begin -->` …).
+function writeFencedRuleset(agentsMd, repoRoot, opts, note) {
+  const ruleBody = fs.readFileSync(path.join(repoRoot, 'src', 'rules', 'tldr-activate.md'), 'utf8').trimEnd() + '\n';
+  const fencedBlock = `${OPENCODE_AGENTS_MD_BEGIN}\n${ruleBody}${OPENCODE_AGENTS_MD_END}\n`;
+  if (fs.existsSync(agentsMd)) {
+    const existing = fs.readFileSync(agentsMd, 'utf8');
+    const alreadyFenced = existing.includes(OPENCODE_AGENTS_MD_BEGIN) && existing.includes(OPENCODE_AGENTS_MD_END);
+    const alreadyByLegacySentinel = !alreadyFenced && existing.includes(OPENCODE_AGENTS_MD_SENTINEL);
+    if (alreadyFenced) {
+      note(`  ${agentsMd} already contains TLDR ruleset`);
+    } else if (alreadyByLegacySentinel) {
+      note(`  ${agentsMd} contains a legacy (un-fenced) TLDR block — leaving as-is`);
+      note('  re-run with --force to replace it with a fenced block');
+      if (opts.force) {
+        fs.writeFileSync(agentsMd, fencedBlock, { mode: 0o644 });
+        process.stdout.write(`  rewrote ${agentsMd} with fenced TLDR block\n`);
+      }
+    } else {
+      const sep = existing.endsWith('\n\n') ? '' : (existing.endsWith('\n') ? '\n' : '\n\n');
+      fs.writeFileSync(agentsMd, existing + sep + fencedBlock, { mode: 0o644 });
+      process.stdout.write(`  appended TLDR ruleset to ${agentsMd}\n`);
+    }
+  } else {
+    fs.mkdirSync(path.dirname(agentsMd), { recursive: true });
+    fs.writeFileSync(agentsMd, fencedBlock, { mode: 0o644 });
+    process.stdout.write(`  installed: ${agentsMd}\n`);
+  }
+}
+
+// Remove the fenced TLDR block from an AGENTS.md-style file, preserving user
+// content above and below. Deletes the file if nothing else survives. Falls
+// back to legacy unfenced-sentinel handling. Returns true if it touched a file.
+function stripFencedRuleset(agentsMd, opts, note) {
+  if (!fs.existsSync(agentsMd)) return false;
+  const body = fs.readFileSync(agentsMd, 'utf8');
+  const begin = body.indexOf(OPENCODE_AGENTS_MD_BEGIN);
+  const end = body.indexOf(OPENCODE_AGENTS_MD_END);
+  if (begin !== -1 && end !== -1 && end > begin) {
+    const before = body.slice(0, begin).replace(/\n+$/, '\n');
+    const after = body.slice(end + OPENCODE_AGENTS_MD_END.length).replace(/^\n+/, '\n');
+    let next = (before + after).trimEnd();
+    next = next ? next + '\n' : '';
+    if (!opts.dryRun) {
+      if (next === '') { try { fs.unlinkSync(agentsMd); } catch (_) {} }
+      else fs.writeFileSync(agentsMd, next, { mode: 0o644 });
+    }
+    note(next === '' ? `  removed ${agentsMd}` : `  stripped TLDR block from ${agentsMd}`);
+    return true;
+  }
+  if (body.includes(OPENCODE_AGENTS_MD_SENTINEL)) {
+    if (body.trim() === '' || body.trim().startsWith(OPENCODE_AGENTS_MD_SENTINEL)) {
+      if (!opts.dryRun) { try { fs.unlinkSync(agentsMd); } catch (_) {} }
+      note(`  removed ${agentsMd}`);
+    } else {
+      note(`  left ${agentsMd} in place (legacy mixed content — strip TLDR block manually)`);
+    }
+    return true;
+  }
+  return false;
+}
+
+// ── Generic native install for AGENTS.md-convention agents ────────────────
+// For agents that auto-load a global AGENTS.md and auto-discover skills from a
+// directory. Writes the fenced ruleset into <dir>/<rules> and drops skills/tldr/
+// into <dir>/<skills>/tldr/. Driven by a provider's `native` config. Used by
+// codex (~/.codex), pi (~/.pi/agent), grok (~/.grok). Needs a local repo clone.
+function installNativeAgentsMd(ctx, prov) {
+  const { say, note, warn, opts, repoRoot, results } = ctx;
+  results.detected++;
+  say(`→ ${prov.label} detected`);
+  const n = prov.native;
+  const dir = expandHome(n.dir);
+  const rulesFile = path.join(dir, n.rules || 'AGENTS.md');
+  const skillDest = path.join(dir, n.skills || 'skills', 'tldr');
+
+  if (!repoRoot) {
+    warn(`  ${prov.label} native install requires a local clone of the TLDR repo.`);
+    note('  Re-run from a clone: git clone https://github.com/' + REPO + ' && cd TLDR && node bin/install.js --only ' + prov.id);
+    results.failed.push([prov.id, 'native install requires local repo clone']);
+    process.stdout.write('\n');
+    return;
+  }
+  if (opts.dryRun) {
+    note(`  would write fenced TLDR ruleset to ${rulesFile}`);
+    note(`  would copy skills/tldr/ into ${skillDest}/`);
+    results.installed.push(prov.id);
+    process.stdout.write('\n');
+    return;
+  }
+  try {
+    fs.mkdirSync(dir, { recursive: true });
+    const skillSrc = path.join(repoRoot, 'skills', 'tldr');
+    if (fs.existsSync(skillSrc)) {
+      if (fs.existsSync(skillDest) && !opts.force) {
+        note(`  skipped ${skillDest}/ (exists; --force to overwrite)`);
+      } else {
+        copyDirRecursive(skillSrc, skillDest);
+        process.stdout.write(`  installed: ${skillDest}/\n`);
+      }
+    }
+    writeFencedRuleset(rulesFile, repoRoot, opts, note);
+    results.installed.push(prov.id);
+  } catch (e) {
+    warn(`  ${prov.label} install failed: ` + (e && e.message || e));
+    results.failed.push([prov.id, (e && e.message) || 'unknown error']);
+  }
+  process.stdout.write('\n');
+}
+
 function installOpencode(ctx) {
   const { say, note, warn, opts, repoRoot, results } = ctx;
   results.detected++;
@@ -524,7 +652,13 @@ function installOpencode(ctx) {
   const commandsDir = path.join(dir, 'commands');
   const agentsDir   = path.join(dir, 'agents');
   const skillsDir   = path.join(dir, 'skills');
-  const opencodeJson = path.join(dir, 'opencode.json');
+  // opencode reads EITHER opencode.json OR opencode.jsonc. Patch whichever the
+  // user already has so we never create a second, competing config file that
+  // shadows theirs. Prefer an existing .jsonc; otherwise use/create .json.
+  const opencodeJsonc  = path.join(dir, 'opencode.jsonc');
+  const opencodeJsonP  = path.join(dir, 'opencode.json');
+  const opencodeJson = (fs.existsSync(opencodeJsonc) && !fs.existsSync(opencodeJsonP))
+    ? opencodeJsonc : opencodeJsonP;
   const agentsMd     = path.join(dir, 'AGENTS.md');
 
   if (opts.dryRun) {
@@ -598,38 +732,9 @@ function installOpencode(ctx) {
       process.stdout.write(`  installed: ${dest}/\n`);
     }
 
-    // 5. AGENTS.md — Tier-3 always-on ruleset. Wrapped in begin/end markers so
-    //    a later --uninstall can strip our block cleanly even if the user has
-    //    authored content above AND below it. Idempotency check uses the begin
-    //    marker (the legacy sentinel still matches old installs).
-    const ruleBody = fs.readFileSync(path.join(repoRoot, 'src', 'rules', 'tldr-activate.md'), 'utf8').trimEnd() + '\n';
-    const fencedBlock = `${OPENCODE_AGENTS_MD_BEGIN}\n${ruleBody}${OPENCODE_AGENTS_MD_END}\n`;
-    if (fs.existsSync(agentsMd)) {
-      const existing = fs.readFileSync(agentsMd, 'utf8');
-      const alreadyFenced = existing.includes(OPENCODE_AGENTS_MD_BEGIN)
-        && existing.includes(OPENCODE_AGENTS_MD_END);
-      const alreadyByLegacySentinel = !alreadyFenced && existing.includes(OPENCODE_AGENTS_MD_SENTINEL);
-      if (alreadyFenced) {
-        note(`  ${agentsMd} already contains TLDR ruleset`);
-      } else if (alreadyByLegacySentinel) {
-        note(`  ${agentsMd} contains a legacy (un-fenced) TLDR block — leaving as-is`);
-        note('  re-run with --force to replace it with a fenced block');
-        if (opts.force) {
-          // Replace the entire file with a clean fenced version. The legacy
-          // path didn't fence, so we can't isolate the block — full rewrite is
-          // the only safe option under --force.
-          fs.writeFileSync(agentsMd, fencedBlock, { mode: 0o644 });
-          process.stdout.write(`  rewrote ${agentsMd} with fenced TLDR block\n`);
-        }
-      } else {
-        const sep = existing.endsWith('\n\n') ? '' : (existing.endsWith('\n') ? '\n' : '\n\n');
-        fs.writeFileSync(agentsMd, existing + sep + fencedBlock, { mode: 0o644 });
-        process.stdout.write(`  appended TLDR ruleset to ${agentsMd}\n`);
-      }
-    } else {
-      fs.writeFileSync(agentsMd, fencedBlock, { mode: 0o644 });
-      process.stdout.write(`  installed: ${agentsMd}\n`);
-    }
+    // 5. AGENTS.md — Tier-3 always-on ruleset (fenced so --uninstall can strip
+    //    it cleanly even amid user content above/below). Shared writer.
+    writeFencedRuleset(agentsMd, repoRoot, opts, note);
 
     // 6. opencode.json — add plugin entry; optional tldr-shrink MCP.
     let cfg = SETTINGS.readSettings(opencodeJson);
@@ -1261,6 +1366,21 @@ function uninstall(ctx) {
   const flag = path.join(configDir, '.tldr-active');
   if (fs.existsSync(flag) && !opts.dryRun) { try { fs.unlinkSync(flag); } catch (_) {} }
 
+  // Native AGENTS.md-convention installs (codex/pi/grok) — strip the fenced
+  // TLDR block from each agent's rules file and remove its skills/tldr/ dir.
+  for (const prov of PROVIDERS.filter(p => p.native)) {
+    const ndir = expandHome(prov.native.dir);
+    const rulesFile = path.join(ndir, prov.native.rules || 'AGENTS.md');
+    const skillDir = path.join(ndir, prov.native.skills || 'skills', 'tldr');
+    let touched = stripFencedRuleset(rulesFile, opts, note);
+    if (fs.existsSync(skillDir)) {
+      if (!opts.dryRun) { try { fs.rmSync(skillDir, { recursive: true, force: true }); } catch (_) {} }
+      note(`  removed ${skillDir}`);
+      touched = true;
+    }
+    if (touched) ok(`  pruned TLDR entries for ${prov.label}`);
+  }
+
   process.stdout.write('\n');
   ok('uninstall done.');
   ok('npx-skills installs (Cursor/Windsurf/etc.) — remove via your IDE\'s skill manager');
@@ -1423,6 +1543,7 @@ async function main() {
     if (prov.id === 'opencode') { installOpencode(ctx); continue; }
     if (prov.id === 'openclaw') { installOpenclaw(ctx); continue; }
     if (prov.id === 'hermes')   { installHermes(ctx); continue; }
+    if (prov.native)            { installNativeAgentsMd(ctx, prov); continue; }
     if (prov.profile)           { installViaSkills(ctx, prov); continue; }
   }
 
