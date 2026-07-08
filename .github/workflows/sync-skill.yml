@@ -27,20 +27,25 @@ jobs:
       - name: Sync Claude plugin mirrors and dist zip
         run: |
           set -euo pipefail
-          mkdir -p plugins/tldr/skills/tldr plugins/tldr/skills/tldr-compress plugins/tldr/skills/tldrcrew plugins/tldr/agents dist
-          rsync -a --delete skills/tldr/ plugins/tldr/skills/tldr/
-          rsync -a --delete skills/tldr-compress/ plugins/tldr/skills/tldr-compress/
-          rsync -a --delete skills/tldrcrew/ plugins/tldr/skills/tldrcrew/
+          mkdir -p plugins/tldr/agents dist
+          for s in tldr tldr-compress tldrcrew tldr-commit tldr-review tldr-stats tldr-help; do
+            mkdir -p "plugins/tldr/skills/$s"
+            rsync -a --delete "skills/$s/" "plugins/tldr/skills/$s/"
+          done
           cp agents/tldrcrew-*.md plugins/tldr/agents/
           python3 - <<'PY'
           from pathlib import Path
-          from zipfile import ZipFile, ZIP_DEFLATED
+          from zipfile import ZipFile, ZipInfo, ZIP_DEFLATED
           root = Path('skills/tldr')
           out = Path('dist/tldr.skill')
+          # Deterministic (fixed mtime): identical inputs -> identical bytes, so
+          # the sync job stops pushing no-op "Bin 2912 -> 2912 bytes" commits.
           with ZipFile(out, 'w', ZIP_DEFLATED) as z:
               for p in sorted(root.rglob('*')):
                   if p.is_file():
-                      z.write(p, Path('tldr') / p.relative_to(root))
+                      zi = ZipInfo(str(Path('tldr') / p.relative_to(root)), date_time=(1980, 1, 1, 0, 0, 0))
+                      zi.external_attr = 0o644 << 16
+                      z.writestr(zi, p.read_bytes())
           PY
           python3 tests/verify_repo.py
       - name: Commit synced artifacts
@@ -51,6 +56,6 @@ jobs:
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add plugins/tldr/skills/tldr plugins/tldr/skills/tldr-compress plugins/tldr/skills/tldrcrew plugins/tldr/agents dist/tldr.skill
+          git add plugins/tldr/skills plugins/tldr/agents dist/tldr.skill
           git commit -m "chore: sync skill mirrors [skip ci]"
           git push

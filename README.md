@@ -62,11 +62,11 @@ Terse, high-signal responses for AI coding agents — less filler, same accuracy
 
 ## The prompt — `TLDR.md`
 
-[`TLDR.md`](TLDR.md) is the active prompt (1,683 bytes). It changes **prose style only** — not tools, reasoning, or safety.
+[`TLDR.md`](TLDR.md) is the active prompt (1,892 bytes). It changes **prose style only** — not tools, reasoning, or safety.
 
 | File | Bytes |
 |------|------:|
-| [`TLDR.md`](TLDR.md) | 1,683 |
+| [`TLDR.md`](TLDR.md) | 1,892 |
 | [`commands/tldr.md`](commands/tldr.md) | 1,274 |
 
 **Current defaults (prompt):**

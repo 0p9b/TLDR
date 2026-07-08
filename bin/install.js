@@ -29,7 +29,15 @@ const { atomicWrite, createSecureTempDir, safeRmdir } = require('./lib/safe-fs')
 const { findFencedBlocks, stripFencedBlocks, upsertFencedBlock } = require('./lib/fenced');
 
 const REPO = 'ZeroPointNineBar/TLDR';
-const RAW_BASE = `https://raw.githubusercontent.com/${REPO}/main`;
+// Pin remote fetches to an IMMUTABLE release tag, never the moving `main`. A
+// push to main must never silently change what a `curl|bash` / npx install
+// downloads and executes — and, crucially, the integrity manifest
+// (checksums.sha256) is fetched from this SAME ref, so a repo push cannot
+// rewrite a hook and its recorded checksum in lockstep. RELEASE PROCESS: bump
+// PINNED_REF only AFTER regenerating src/hooks/checksums.sha256 so the tag and
+// the manifest stay coherent. Override with TLDR_REF for branch testing.
+const PINNED_REF = process.env.TLDR_REF || 'v0.20.0';
+const RAW_BASE = `https://raw.githubusercontent.com/${REPO}/${PINNED_REF}`;
 const HOOKS_REMOTE = `${RAW_BASE}/src/hooks`;
 const INIT_SCRIPT_URL = `${RAW_BASE}/src/tools/tldr-init.js`;
 // Scoped package name, owner-controlled. A bare unscoped name ('tldr-shrink')
@@ -430,8 +438,10 @@ async function installClaude(ctx) {
   } else {
     const r1 = runSpawn('claude', ['plugin', 'marketplace', 'add', REPO], null, opts.dryRun);
     const r2 = runSpawn('claude', ['plugin', 'install', 'tldr@tldr'], null, opts.dryRun);
-    if ((r1.status || 0) === 0 && (r2.status || 0) === 0) results.installed.push('claude');
-    else results.failed.push(['claude', 'claude plugin install failed']);
+    // Strict === 0: a spawn that never launched (ENOENT) yields status null, which
+    // `(status || 0) === 0` wrongly coerced to success and reported "installed".
+    if (r1.status === 0 && r2.status === 0) results.installed.push('claude');
+    else results.failed.push(['claude', 'claude plugin install failed (CLI missing or errored)']);
   }
 
   if (opts.withHooks) {
