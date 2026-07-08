@@ -160,7 +160,7 @@ function installOpenclaw({ workspace, repoRoot, dryRun = false, force = false, l
   const skillBody = loadSkillBody(repoRoot);
   if (!skillBody) {
     log.warn('  openclaw install requires the TLDR repo on disk (skills/tldr/SKILL.md missing).');
-    log.note('  Re-run from a clone or via `npx -y github:jqbit/TLDR -- --only openclaw`.');
+    log.note('  Re-run from a clone or via `npx -y github:ZeroPointNineBar/TLDR -- --only openclaw`.');
     return { ok: false, reason: 'repo not available' };
   }
   const snippet = loadBootstrapSnippet(repoRoot);

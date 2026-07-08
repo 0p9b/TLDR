@@ -9,9 +9,9 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/jqbit/TLDR/stargazers"><img src="https://img.shields.io/github/stars/jqbit/TLDR?style=flat&color=yellow" alt="Stars"></a>
-  <a href="https://github.com/jqbit/TLDR/commits/main"><img src="https://img.shields.io/github/last-commit/jqbit/TLDR?style=flat" alt="Last Commit"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/github/license/jqbit/TLDR?style=flat" alt="License"></a>
+  <a href="https://github.com/ZeroPointNineBar/TLDR/stargazers"><img src="https://img.shields.io/github/stars/ZeroPointNineBar/TLDR?style=flat&color=yellow" alt="Stars"></a>
+  <a href="https://github.com/ZeroPointNineBar/TLDR/commits/main"><img src="https://img.shields.io/github/last-commit/ZeroPointNineBar/TLDR?style=flat" alt="Last Commit"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/ZeroPointNineBar/TLDR?style=flat" alt="License"></a>
   <img src="https://img.shields.io/badge/works%20with-30%2B%20agents-2c2a26?style=flat" alt="30+ agents" />
 </p>
 
@@ -81,16 +81,16 @@ Terse, high-signal responses for AI coding agents — less filler, same accuracy
 No Node required. Writes `TLDR.md` to seven standard agent paths and installs `/tldr` where supported.
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/jqbit/TLDR/main/install.sh | bash -s --
+curl -fsSL https://raw.githubusercontent.com/ZeroPointNineBar/TLDR/main/install.sh | bash -s --
 ```
 
 Optional Hermes merge into `~/.hermes/SOUL.md`:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/jqbit/TLDR/main/install.sh | bash -s -- --with-hermes
+curl -fsSL https://raw.githubusercontent.com/ZeroPointNineBar/TLDR/main/install.sh | bash -s -- --with-hermes
 ```
 
-Preview: `curl -fsSL https://raw.githubusercontent.com/jqbit/TLDR/main/install.sh`
+Preview: `curl -fsSL https://raw.githubusercontent.com/ZeroPointNineBar/TLDR/main/install.sh`
 
 Manual paths and copy/paste commands: [`data/agent-locations.md`](data/agent-locations.md).
 
@@ -99,13 +99,13 @@ Manual paths and copy/paste commands: [`data/agent-locations.md`](data/agent-loc
 Node ≥18. Auto-detects agents, installs the right plugin/extension/skills/hooks per agent.
 
 ```bash
-npx -y github:jqbit/TLDR
+npx -y github:ZeroPointNineBar/TLDR
 ```
 
 From a clone:
 
 ```bash
-git clone https://github.com/jqbit/TLDR.git && cd TLDR
+git clone https://github.com/ZeroPointNineBar/TLDR.git && cd TLDR
 node bin/install.js          # detected agents
 node bin/install.js --all    # hooks + per-repo init + optional extras
 node bin/install.js --list   # agent matrix

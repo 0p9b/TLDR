@@ -2,7 +2,7 @@
 
 These hooks are **bundled with the TLDR plugin** and activate automatically when the plugin is installed. No manual setup required.
 
-If you installed TLDR standalone (without the plugin), the unified Node installer at `bin/install.js` wires them into your `settings.json` for you — run `node bin/install.js --only claude` from a clone, or `npx -y github:jqbit/TLDR -- --only claude` for the curl-pipe path.
+If you installed TLDR standalone (without the plugin), the unified Node installer at `bin/install.js` wires them into your `settings.json` for you — run `node bin/install.js --only claude` from a clone, or `npx -y github:ZeroPointNineBar/TLDR -- --only claude` for the curl-pipe path.
 
 ## What's Included
 
@@ -99,7 +99,7 @@ If installed via plugin: disable the plugin — hooks deactivate automatically.
 
 If installed via the standalone Node installer:
 ```bash
-npx -y github:jqbit/TLDR -- --uninstall
+npx -y github:ZeroPointNineBar/TLDR -- --uninstall
 # or, from a clone:
 node bin/install.js --uninstall
 ```

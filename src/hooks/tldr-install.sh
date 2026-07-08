@@ -2,7 +2,7 @@
 # TLDR — one-command hook installer for Claude Code
 # Installs: SessionStart hook (auto-load rules) + UserPromptSubmit hook (mode tracking)
 # Usage: bash src/hooks/install.sh
-#   or:  bash <(curl -s https://raw.githubusercontent.com/jqbit/TLDR/main/src/hooks/install.sh)
+#   or:  bash <(curl -s https://raw.githubusercontent.com/ZeroPointNineBar/TLDR/main/src/hooks/install.sh)
 #   or:  bash src/hooks/install.sh --force   (re-install over existing hooks)
 set -e
 
@@ -35,7 +35,7 @@ fi
 CLAUDE_DIR="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
 HOOKS_DIR="$CLAUDE_DIR/hooks"
 SETTINGS="$CLAUDE_DIR/settings.json"
-REPO_URL="https://raw.githubusercontent.com/jqbit/TLDR/main/src/hooks"
+REPO_URL="https://raw.githubusercontent.com/ZeroPointNineBar/TLDR/main/src/hooks"
 
 HOOK_FILES=("package.json" "tldr-config.js" "tldr-activate.js" "tldr-mode-tracker.js" "tldr-stats.js" "tldr-statusline.sh" "tldrcrew-model-overrides.js")
 

@@ -191,7 +191,7 @@ test('--share prints single-line tweetable summary', (tmp) => {
     env: { ...process.env, CLAUDE_CONFIG_DIR: claudeDir },
   });
   assert.strictEqual(out.split('\n').filter(Boolean).length, 1);
-  assert.match(out, /^🦉 Saved 650 output tokens \(~\$0\.009[78]\) across 1 turns this session — github\.com\/jqbit\/TLDR$/m);
+  assert.match(out, /^🦉 Saved 650 output tokens \(~\$0\.009[78]\) across 1 turns this session — github\.com\/ZeroPointNineBar\/TLDR$/m);
 });
 
 test('--share works with no benchmark ratio (lite mode)', (tmp) => {
@@ -204,7 +204,7 @@ test('--share works with no benchmark ratio (lite mode)', (tmp) => {
     encoding: 'utf8',
     env: { ...process.env, CLAUDE_CONFIG_DIR: claudeDir },
   });
-  assert.match(out, /^🦉 1 turns, 200 output tokens this session — github\.com\/jqbit\/TLDR$/m);
+  assert.match(out, /^🦉 1 turns, 200 output tokens this session — github\.com\/ZeroPointNineBar\/TLDR$/m);
 });
 
 test('appends to lifetime history on each run', (tmp) => {

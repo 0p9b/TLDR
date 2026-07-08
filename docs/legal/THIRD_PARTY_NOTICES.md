@@ -14,7 +14,7 @@ TLDR reuses and adapts installer, skill, compression, benchmarking, and integrat
 ## blunt
 
 - Project: `blunt`
-- Author: jqbit
+- Author: ZeroPointNineBar
 - Source: private fork
 - License: MIT
 

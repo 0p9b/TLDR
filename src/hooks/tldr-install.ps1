@@ -3,7 +3,7 @@
 # Usage: powershell -ExecutionPolicy Bypass -File src\hooks\install.ps1
 #   or:  powershell -ExecutionPolicy Bypass -File src\hooks\install.ps1 -Force
 #   or (remote, no -Force support via pipe):
-#        irm https://raw.githubusercontent.com/jqbit/TLDR/main/src/hooks/install.ps1 | iex
+#        irm https://raw.githubusercontent.com/ZeroPointNineBar/TLDR/main/src/hooks/install.ps1 | iex
 #   Note: irm ... | iex cannot pass -Force. For force reinstall, save the file and run with -File.
 param(
     [switch]$Force
@@ -22,7 +22,7 @@ if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
 $ClaudeDir = if ($env:CLAUDE_CONFIG_DIR) { $env:CLAUDE_CONFIG_DIR } else { Join-Path $env:USERPROFILE ".claude" }
 $HooksDir = Join-Path $ClaudeDir "hooks"
 $Settings = Join-Path $ClaudeDir "settings.json"
-$RepoUrl = "https://raw.githubusercontent.com/jqbit/TLDR/main/src/hooks"
+$RepoUrl = "https://raw.githubusercontent.com/ZeroPointNineBar/TLDR/main/src/hooks"
 
 $HookFiles = @("package.json", "tldr-config.js", "tldr-activate.js", "tldr-mode-tracker.js", "tldr-stats.js", "tldr-statusline.sh", "tldr-statusline.ps1", "tldrcrew-model-overrides.js")
 

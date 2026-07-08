@@ -22,7 +22,7 @@ Canonical hero art (transparent PNG, README width 120px): skeptical owl in the t
 | Title | `TLDR` |
 | Tagline | centered strong |
 | Proof | bench script + `data/benchmarks.md` |
-| Install | `install.sh` + `npx github:jqbit/TLDR` |
+| Install | `install.sh` + `npx github:ZeroPointNineBar/TLDR` |
 
 ## Optional upgrades
 

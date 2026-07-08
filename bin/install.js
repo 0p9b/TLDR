@@ -8,7 +8,7 @@
 //
 // Distribution:
 //   Local clone: node bin/install.js [flags]
-//   curl|bash:   delegated from install-full.sh shim → npx -y github:jqbit/TLDR -- [flags]
+//   curl|bash:   delegated from install-full.sh shim → npx -y github:ZeroPointNineBar/TLDR -- [flags]
 //   Windows:     pwsh install.ps1 [flags] → same npx delegation
 //
 // Pure stdlib, zero npm runtime deps.
@@ -27,18 +27,18 @@ const OPENCLAW = require('./lib/openclaw');
 const { stripOpencodeAgentTools } = require('./lib/opencode-agent');
 const { atomicWrite, createSecureTempDir, safeRmdir } = require('./lib/safe-fs');
 
-const REPO = 'jqbit/TLDR';
+const REPO = 'ZeroPointNineBar/TLDR';
 const RAW_BASE = `https://raw.githubusercontent.com/${REPO}/main`;
 const HOOKS_REMOTE = `${RAW_BASE}/src/hooks`;
 const INIT_SCRIPT_URL = `${RAW_BASE}/src/tools/tldr-init.js`;
 // Scoped package name, owner-controlled. A bare unscoped name ('tldr-shrink')
 // is a dependency-confusion vector: it is not published, so `npx -y tldr-shrink`
 // would resolve to whatever an attacker publishes under that name and execute
-// it as an auto-started MCP server. Names under the @jqbit scope cannot be
+// it as an auto-started MCP server. Names under the @zeropointninebar scope cannot be
 // squatted by anyone who does not own the scope, which closes that hole. Until
 // the package is published, the npm-view probe below skips registration
 // cleanly rather than fetching anything.
-const MCP_SHRINK_PKG = '@jqbit/tldr-shrink';
+const MCP_SHRINK_PKG = '@zeropointninebar/tldr-shrink';
 // Hook files to copy. Statusline ships in both .sh (macOS/Linux) and .ps1
 // (Windows) flavors — copy both regardless of host OS so a roaming
 // $CLAUDE_CONFIG_DIR (e.g. dotfiles repo) keeps working across platforms.
@@ -1329,7 +1329,7 @@ function uninstall(ctx) {
     }
 
     // Remove the plugin marketplace we registered at install time
-    // (`claude plugin marketplace add jqbit/TLDR` → named "tldr"). Idempotent:
+    // (`claude plugin marketplace add ZeroPointNineBar/TLDR` → named "tldr"). Idempotent:
     // probe `marketplace list` first so a machine that never had it stays quiet;
     // on --dry-run always print the intent.
     if (opts.dryRun) {
@@ -1503,7 +1503,7 @@ function printHelp() {
   process.stdout.write(`tldr installer — detects your agents and installs TLDR for each one.
 
 USAGE
-  npx -y github:jqbit/TLDR -- [flags]
+  npx -y github:ZeroPointNineBar/TLDR -- [flags]
   node bin/install.js [flags]
   bash install-full.sh [flags]         # shim → npx
   pwsh install.ps1 [flags]             # shim → npx
@@ -1534,10 +1534,10 @@ FLAGS
   -h, --help            Show this help.
 
 EXAMPLES
-  npx -y github:jqbit/TLDR                        # default install
-  npx -y github:jqbit/TLDR -- --all               # all the trimmings
-  npx -y github:jqbit/TLDR -- --only claude --no-mcp-shrink
-  npx -y github:jqbit/TLDR -- --uninstall
+  npx -y github:ZeroPointNineBar/TLDR                        # default install
+  npx -y github:ZeroPointNineBar/TLDR -- --all               # all the trimmings
+  npx -y github:ZeroPointNineBar/TLDR -- --only claude --no-mcp-shrink
+  npx -y github:ZeroPointNineBar/TLDR -- --uninstall
 
   Issues: https://github.com/${REPO}/issues
 `);

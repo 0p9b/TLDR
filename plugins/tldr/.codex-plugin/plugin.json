@@ -3,11 +3,11 @@
   "version": "0.1.0",
   "description": "Ultra-compressed communication mode. Cut filler. Keep technical accuracy.",
   "author": {
-    "name": "jqbit",
-    "url": "https://github.com/jqbit"
+    "name": "ZeroPointNineBar",
+    "url": "https://github.com/ZeroPointNineBar"
   },
-  "homepage": "https://github.com/jqbit/TLDR",
-  "repository": "https://github.com/jqbit/TLDR",
+  "homepage": "https://github.com/ZeroPointNineBar/TLDR",
+  "repository": "https://github.com/ZeroPointNineBar/TLDR",
   "license": "MIT",
   "keywords": [
     "productivity",
@@ -20,14 +20,14 @@
     "displayName": "TLDR",
     "shortDescription": "Talk like TLDR. Cut filler. Keep technical accuracy.",
     "longDescription": "Ultra-compressed communication mode for Codex. Use fewer words. Keep exact technical substance.",
-    "developerName": "jqbit",
+    "developerName": "ZeroPointNineBar",
     "category": "Productivity",
     "capabilities": [
       "Write"
     ],
-    "websiteURL": "https://github.com/jqbit/TLDR",
-    "privacyPolicyURL": "https://github.com/jqbit/TLDR/blob/main/README.md",
-    "termsOfServiceURL": "https://github.com/jqbit/TLDR/blob/main/LICENSE",
+    "websiteURL": "https://github.com/ZeroPointNineBar/TLDR",
+    "privacyPolicyURL": "https://github.com/ZeroPointNineBar/TLDR/blob/main/README.md",
+    "termsOfServiceURL": "https://github.com/ZeroPointNineBar/TLDR/blob/main/LICENSE",
     "defaultPrompt": [
       "Use tldr mode. Cut filler. Keep technical accuracy."
     ],

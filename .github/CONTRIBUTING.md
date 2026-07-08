@@ -190,7 +190,7 @@ A handful of invariants that have bitten us before. Keep them.
 
 ## Ideas
 
-See [issues labeled `good first issue`](https://github.com/jqbit/TLDR/issues?q=label%3A%22good+first+issue%22)
+See [issues labeled `good first issue`](https://github.com/ZeroPointNineBar/TLDR/issues?q=label%3A%22good+first+issue%22)
 for starter tasks. Or grep `TODO` / `FIXME` in `src/hooks/`, `bin/`, `src/tools/` —
 each one is a real lead.
 

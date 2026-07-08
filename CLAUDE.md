@@ -4,7 +4,7 @@
 
 TLDR makes AI coding agents answer in compressed, verdict-first prose while preserving tool use, code, paths, safety, and technical accuracy.
 
-Public repo: `https://github.com/jqbit/TLDR`
+Public repo: `https://github.com/ZeroPointNineBar/TLDR`
 
 Tagline: **Verdict first. Filler never.**
 
@@ -40,14 +40,14 @@ TLDR/
 | Path | Purpose |
 |---|---|
 | `bash install.sh` | prompt-only local/global copier |
-| `npx -y github:jqbit/TLDR -- --all` | full multi-agent installer |
+| `npx -y github:ZeroPointNineBar/TLDR -- --all` | full multi-agent installer |
 | `bash install-full.sh -- --all` | shell shim to full installer |
 | `pwsh install.ps1 -- --all` | PowerShell shim to full installer |
 | `node bin/install.js --list` | provider matrix |
 
 Supported full-installer providers include Claude, Gemini, Codex, Pi Coding Agent, Grok Build CLI, Cursor, Windsurf, Cline, Continue, Kilo, Roo, Augment, opencode, OpenClaw, Hermes Agent, Copilot, Aider Desk, Amp, Bob, Crush, Devin, Droid/Factory, ForgeCode, Goose, iFlow, Kiro, Mistral, OpenHands, Qwen, Rovo Dev, Tabnine, Trae, Warp, Replit, Junie, Qoder, and Antigravity (37 total; `node bin/install.js --list`).
 
-Native (no-npx, self-contained) providers install a fenced always-on TLDR ruleset into the agent's global instruction file plus an auto-discovered `skills/tldr/`: Claude (plugin + hooks), opencode (`~/.config/opencode/AGENTS.md` + plugin), Hermes (`~/.hermes/SOUL.md`), OpenClaw (workspace `SOUL.md`), **Codex** (`~/.codex/AGENTS.md`), **Pi** (`~/.pi/agent/AGENTS.md`), **Grok** (`~/.grok/AGENTS.md`), and **Antigravity** (`~/.gemini/config/AGENTS.md`). **Cursor** installs a native skill to `~/.cursor/skills/tldr/` but `cursor-agent` has no global rules file, so its always-on activates per-session (`/tldr`) or per-repo via `--with-init`. The remaining agents install via `npx skills add jqbit/TLDR -a <profile> -s '*' -g` (scoped to that agent, user-global).
+Native (no-npx, self-contained) providers install a fenced always-on TLDR ruleset into the agent's global instruction file plus an auto-discovered `skills/tldr/`: Claude (plugin + hooks), opencode (`~/.config/opencode/AGENTS.md` + plugin), Hermes (`~/.hermes/SOUL.md`), OpenClaw (workspace `SOUL.md`), **Codex** (`~/.codex/AGENTS.md`), **Pi** (`~/.pi/agent/AGENTS.md`), **Grok** (`~/.grok/AGENTS.md`), and **Antigravity** (`~/.gemini/config/AGENTS.md`). **Cursor** installs a native skill to `~/.cursor/skills/tldr/` but `cursor-agent` has no global rules file, so its always-on activates per-session (`/tldr`) or per-repo via `--with-init`. The remaining agents install via `npx skills add ZeroPointNineBar/TLDR -a <profile> -s '*' -g` (scoped to that agent, user-global).
 
 Native provider config is data-driven: a provider gets a `native: { dir, rules, skills }` entry (set `rules: null` for a skill-only agent like cursor) and `installNativeAgentsMd` / the uninstall loop handle it — no new code per agent.
 

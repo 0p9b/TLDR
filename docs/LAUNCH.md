@@ -34,11 +34,11 @@ Prioritize places where developer-tool users already ask for agent workflow impr
 
 ### Short post
 
-> Built TLDR: a tiny prompt + installer that makes AI coding agents answer verdict-first instead of filler-first. Works with Claude Code, Codex, Gemini, Cursor, opencode, and 30+ agents. Prompt is 1.3KB. Benchmarks show ~60–75% fewer prose tokens. Verdict first. Filler never. https://github.com/jqbit/TLDR
+> Built TLDR: a tiny prompt + installer that makes AI coding agents answer verdict-first instead of filler-first. Works with Claude Code, Codex, Gemini, Cursor, opencode, and 30+ agents. Prompt is 1.3KB. Benchmarks show ~60–75% fewer prose tokens. Verdict first. Filler never. https://github.com/ZeroPointNineBar/TLDR
 
 ### Technical post
 
-> TLDR is a repo-local/system prompt and multi-agent installer for terse AI-agent output. It does not change tools, code, reasoning, or safety behavior — only prose shape. The prompt is 1,336 bytes; `/tldr` re-applies rules mid-session; the full installer wires Claude hooks, opencode plugin support, Gemini/Codex/Cursor/etc. Benchmarks and methodology are in-repo. https://github.com/jqbit/TLDR
+> TLDR is a repo-local/system prompt and multi-agent installer for terse AI-agent output. It does not change tools, code, reasoning, or safety behavior — only prose shape. The prompt is 1,336 bytes; `/tldr` re-applies rules mid-session; the full installer wires Claude hooks, opencode plugin support, Gemini/Codex/Cursor/etc. Benchmarks and methodology are in-repo. https://github.com/ZeroPointNineBar/TLDR
 
 ### Show HN title
 
@@ -63,7 +63,7 @@ Record a 20–30s terminal clip:
 claude "Explain why this React component rerenders"
 
 # after TLDR install / activation
-npx -y github:jqbit/TLDR -- --all
+npx -y github:ZeroPointNineBar/TLDR -- --all
 claude "/tldr ultra"
 claude "Explain why this React component rerenders"
 ```

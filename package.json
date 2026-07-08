@@ -3,14 +3,14 @@
   "version": "0.20.0",
   "description": "TLDR installer \u2014 detects your AI coding agents and installs TLDR (verdict-first style enforcer) for each one.",
   "license": "MIT",
-  "author": "jqbit",
-  "homepage": "https://github.com/jqbit/TLDR",
+  "author": "ZeroPointNineBar",
+  "homepage": "https://github.com/ZeroPointNineBar/TLDR",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/jqbit/TLDR.git"
+    "url": "git+https://github.com/ZeroPointNineBar/TLDR.git"
   },
   "bugs": {
-    "url": "https://github.com/jqbit/TLDR/issues"
+    "url": "https://github.com/ZeroPointNineBar/TLDR/issues"
   },
   "bin": {
     "tldr": "./bin/install.js"

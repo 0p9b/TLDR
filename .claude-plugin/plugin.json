@@ -2,8 +2,8 @@
   "name": "tldr",
   "description": "Verdict-first communication mode. Cuts output tokens while keeping full technical accuracy.",
   "author": {
-    "name": "jqbit",
-    "url": "https://github.com/jqbit"
+    "name": "ZeroPointNineBar",
+    "url": "https://github.com/ZeroPointNineBar"
   },
   "hooks": {
     "SessionStart": [

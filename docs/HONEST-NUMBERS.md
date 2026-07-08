@@ -93,7 +93,7 @@ you are paying to use it.**
 > Either way, TLDR replies are faster to read. That part is free.
 
 Found a workload where these numbers are wrong?
-[Open an issue](https://github.com/jqbit/TLDR/issues) with your A/B and it
+[Open an issue](https://github.com/ZeroPointNineBar/TLDR/issues) with your A/B and it
 goes on this page.
 
 ---

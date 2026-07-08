@@ -9,14 +9,14 @@ Usage:
 Examples:
   install.sh
   install.sh --with-hermes
-  curl -fsSL https://raw.githubusercontent.com/jqbit/TLDR/main/install.sh | bash -s -- --with-hermes
+  curl -fsSL https://raw.githubusercontent.com/ZeroPointNineBar/TLDR/main/install.sh | bash -s -- --with-hermes
 
 Behavior:
   - Installs TLDR.md to the 8 standard coding-agent locations (claude, gemini,
     codex, opencode, factory, pi, grok, and a repo-root AGENTS.md).
   - Overwrites an existing rules file (a timestamped .bak is kept first). For a
     NON-destructive, per-agent native install of all 37 supported agents, use
-    the full installer instead: `npx -y github:jqbit/TLDR -- --all`.
+    the full installer instead: `npx -y github:ZeroPointNineBar/TLDR -- --all`.
   - Also installs /tldr command to supported agents' command dirs (claude, opencode, factory, cursor).
   - --with-hermes updates ~/.hermes/SOUL.md too.
   - If SOUL.md already exists, --with-hermes preserves it and appends or updates
@@ -56,7 +56,7 @@ while [ "$#" -gt 0 ]; do
   shift
  done
 
-RAW_BASE="https://raw.githubusercontent.com/jqbit/TLDR/main"
+RAW_BASE="https://raw.githubusercontent.com/ZeroPointNineBar/TLDR/main"
 if [ -f "${BASH_SOURCE[0]:-}" ]; then
   SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd || true)"
   LOCAL_PROMPT="${SCRIPT_DIR}/${PROMPT_NAME}"

@@ -18,19 +18,19 @@ TLDR.md should be dropped at these paths for all supported coding-agent CLIs.
 ## One-line install
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/jqbit/TLDR/main/install.sh | bash -s --
+curl -fsSL https://raw.githubusercontent.com/ZeroPointNineBar/TLDR/main/install.sh | bash -s --
 ```
 
 Hermes install:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/jqbit/TLDR/main/install.sh | bash -s -- --with-hermes
+curl -fsSL https://raw.githubusercontent.com/ZeroPointNineBar/TLDR/main/install.sh | bash -s -- --with-hermes
 ```
 
 ## Manual install
 
 ```bash
-TLDR_URL=https://raw.githubusercontent.com/jqbit/TLDR/main/TLDR.md
+TLDR_URL=https://raw.githubusercontent.com/ZeroPointNineBar/TLDR/main/TLDR.md
 
 for d in ~/.claude/CLAUDE.md ~/.gemini/AGENTS.md ~/.codex/AGENTS.md \
          ~/AGENTS.md ~/.config/opencode/AGENTS.md \
