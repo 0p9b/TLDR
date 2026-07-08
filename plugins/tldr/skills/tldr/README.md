@@ -12,7 +12,7 @@ Compress every model response to tldr-style prose. Drops articles, filler, pleas
 |-------|-------------|
 | `lite` | Drop filler/hedging. Sentences stay full. |
 | `full` / `/tldr` | Default. Drop articles, fragments OK, short synonyms. |
-| `ultra` | Bare fragments. Abbreviations (DB, auth, fn). Arrows for causality. |
+| `ultra` | Bare fragments. Strip conjunctions when unambiguous; one word when one word suffices. No invented abbreviations (cfg/impl/req/res/fn) or causal arrows — both save zero tokens under o200k/cl100k. Code, API names, errors verbatim. |
 | `wenyan-lite` | Classical Chinese register, light compression. |
 | `wenyan-full` / `wenyan` | Maximum 文言文. |
 | `wenyan-ultra` | Extreme classical compression. |
@@ -40,7 +40,7 @@ TLDR:
 > New object ref each render. Inline object prop = new ref = re-render. Wrap in `useMemo`.
 
 Ultra:
-> Inline obj prop → new ref → re-render. `useMemo`.
+> Inline obj prop, new ref, re-render. `useMemo`.
 
 ## See also
 

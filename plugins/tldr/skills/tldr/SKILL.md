@@ -38,18 +38,20 @@ Default: **full**. Switch: `/tldr lite|full|ultra|wenyan|wenyan-lite|wenyan-ultr
 |-------|------------|
 | **lite** | Drop filler/hedging. Sentences stay full. Professional but tight. |
 | **full** | Default. Drop articles, fragments OK, short synonyms. |
-| **ultra** | Bare fragments. Abbreviations (DB, auth, fn). Arrows for causality. |
+| **ultra** | Bare fragments. Strip conjunctions when cause-then-effect stays unambiguous. One word when one word suffices; state each fact once. NO invented prose abbreviations (cfg/impl/req/res/fn/auth) and NO causal arrows (X → Y) — both save zero tokens (abbrev and full word are 1 token each under o200k/cl100k; an arrow only adds a token that juxtaposition avoids). Standard acronyms (DB/API/HTTP) still fine. Code, API names, error strings: verbatim. |
 | **wenyan-lite** | Classical Chinese register, light compression. |
 | **wenyan-full** / **wenyan** | Maximum 文言文. 80-90% character reduction. |
 | **wenyan-ultra** | Extreme classical compression. |
 
 Example — "Why React component re-render?"
 - full: "New object ref each render. Inline object prop = new ref = re-render. Wrap in `useMemo`."
-- ultra: "Inline obj prop → new ref → re-render. `useMemo`."
+- ultra: "Inline obj prop, new ref, re-render. `useMemo`."
 
 Example — "Explain database connection pooling."
 - full: "Pool reuse open DB connections. No new connection per request. Skip handshake overhead."
-- ultra: "Pool = reuse DB conn. Skip handshake → fast under load."
+- ultra: "Pool reuse open DB connections. No per-request handshake."
+
+> Ultra note: invented abbreviations (cfg/impl/req/res/fn/auth) and causal arrows (→) are banned because they save zero tokens — under both cl100k_base and o200k_base each abbreviation and its full word tokenize to 1 token, and an arrow costs a token that plain juxtaposition avoids (reproduce with `bench/tokenize.js`; rationale from origin project caveman, `docs/HONEST-NUMBERS.md`). Ultra's real savings come from dropping words, not respelling them.
 
 ## Auto-Clarity
 
