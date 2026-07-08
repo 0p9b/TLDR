@@ -26,6 +26,7 @@ const SETTINGS = require('./lib/settings');
 const OPENCLAW = require('./lib/openclaw');
 const { stripOpencodeAgentTools } = require('./lib/opencode-agent');
 const { atomicWrite, createSecureTempDir, safeRmdir } = require('./lib/safe-fs');
+const { findFencedBlocks, stripFencedBlocks, upsertFencedBlock } = require('./lib/fenced');
 
 const REPO = 'ZeroPointNineBar/TLDR';
 const RAW_BASE = `https://raw.githubusercontent.com/${REPO}/main`;
@@ -552,14 +553,13 @@ function writeFencedRuleset(agentsMd, repoRoot, opts, note) {
     return;
   }
   const existing = fs.readFileSync(agentsMd, 'utf8');
-  const begin = existing.indexOf(OPENCODE_AGENTS_MD_BEGIN);
-  const end = existing.indexOf(OPENCODE_AGENTS_MD_END);
-  const wellFormed = begin !== -1 && end !== -1 && end > begin;
-  if (wellFormed) {
-    // UPSERT: replace the existing block's content with the current ruleset,
-    // preserving user text above and below. Byte-identical ⇒ no-op (idempotent),
-    // so an upgrade refreshes a stale ruleset instead of leaving it behind.
-    const next = existing.slice(0, begin) + blockCore + existing.slice(end + OPENCODE_AGENTS_MD_END.length);
+  const blocks = findFencedBlocks(existing, OPENCODE_AGENTS_MD_BEGIN, OPENCODE_AGENTS_MD_END);
+  if (blocks.length > 0) {
+    // UPSERT via nearest-preceding pairing: replace the LAST well-formed block,
+    // drop earlier duplicates, and preserve ALL surrounding user text — including
+    // an orphan BEGIN above the block. Byte-identical ⇒ no-op (idempotent), so an
+    // upgrade refreshes a stale ruleset instead of leaving it behind.
+    const next = upsertFencedBlock(existing, OPENCODE_AGENTS_MD_BEGIN, OPENCODE_AGENTS_MD_END, ruleBody);
     if (next === existing) {
       note(`  ${agentsMd} already contains the current TLDR ruleset`);
     } else {
@@ -570,7 +570,7 @@ function writeFencedRuleset(agentsMd, repoRoot, opts, note) {
   }
   // No well-formed block. Legacy unfenced sentinel handling — only when there is
   // no stray begin/end marker to confuse it.
-  const hasStrayMarker = begin !== -1 || end !== -1;
+  const hasStrayMarker = existing.includes(OPENCODE_AGENTS_MD_BEGIN) || existing.includes(OPENCODE_AGENTS_MD_END);
   if (!hasStrayMarker && existing.includes(OPENCODE_AGENTS_MD_SENTINEL)) {
     note(`  ${agentsMd} contains a legacy (un-fenced) TLDR block — leaving as-is`);
     note('  re-run with --force to replace it with a fenced block');
@@ -581,48 +581,14 @@ function writeFencedRuleset(agentsMd, repoRoot, opts, note) {
     return;
   }
   // Malformed markers (end-before-begin, orphan begin/end) or plain user text:
-  // append a fresh, well-formed block rather than skipping. Preserves user text.
-  const sep = existing.endsWith('\n\n') ? '' : (existing.endsWith('\n') ? '\n' : '\n\n');
-  atomicWrite(agentsMd, existing + sep + fencedBlock, 0o644);
+  // append a fresh, well-formed block rather than skipping. upsertFencedBlock
+  // appends when it finds no well-formed block, leaving stray markers intact.
+  atomicWrite(agentsMd, upsertFencedBlock(existing, OPENCODE_AGENTS_MD_BEGIN, OPENCODE_AGENTS_MD_END, ruleBody), 0o644);
   process.stdout.write(`  appended TLDR ruleset to ${agentsMd}\n`);
 }
 
-// Strip EVERY well-formed fenced block from `body`, matching each END to its
-// NEAREST PRECEDING BEGIN. This is the data-loss-safe core: an orphan BEGIN with
-// no following END, or an END with no preceding BEGIN, is left in place as a
-// stray marker — surrounding user text is NEVER removed. Blank lines at each cut
-// seam are collapsed to a single blank line (matching the old single-block
-// behavior); user text elsewhere is untouched. Returns { text, removed }.
-function stripFencedBlocks(body, beginMark, endMark) {
-  const segments = []; // surviving text between/around removed blocks
-  let cursor = 0;      // start of the not-yet-emitted region
-  let searchFrom = 0;  // where to look for the next END (past processed region)
-  let removed = false;
-  while (true) {
-    const endPos = body.indexOf(endMark, searchFrom);
-    if (endPos === -1) break;
-    const beginPos = body.lastIndexOf(beginMark, endPos);
-    if (beginPos === -1 || beginPos < searchFrom) {
-      // END with no matching BEGIN in the unprocessed region — leave it, skip on.
-      searchFrom = endPos + endMark.length;
-      continue;
-    }
-    segments.push(body.slice(cursor, beginPos));
-    cursor = endPos + endMark.length;
-    searchFrom = cursor;
-    removed = true;
-  }
-  segments.push(body.slice(cursor));
-  // Join, collapsing blank lines only at the cut seams (between segments).
-  let text = '';
-  for (let i = 0; i < segments.length; i++) {
-    let seg = segments[i];
-    if (i > 0) seg = seg.replace(/^\n+/, '\n');                 // leading, at a cut
-    if (i < segments.length - 1) seg = seg.replace(/\n+$/, '\n'); // trailing, at a cut
-    text += seg;
-  }
-  return { text, removed };
-}
+// stripFencedBlocks / findFencedBlocks / upsertFencedBlock now live in
+// bin/lib/fenced.js (one data-loss-safe implementation, shared with openclaw.js).
 
 // Strip every fenced [beginMark..endMark] block from a file (nearest-preceding
 // pairing), preserving user content. Deletes the file if only whitespace

@@ -25,6 +25,8 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const { atomicWrite } = require('./safe-fs');
+const { stripFencedBlocks } = require('./fenced');
 
 const SKILL_NAME = 'tldr';
 const SKILL_VERSION = '1.0.0';
@@ -128,21 +130,20 @@ function appendBootstrapToSoul(soulPath, snippet) {
   } else {
     next = snippet;
   }
-  fs.writeFileSync(soulPath, next, { mode: 0o644 });
+  // atomicWrite (temp + rename) replaces a planted symlink with a real file
+  // instead of writing THROUGH it to an out-of-tree target.
+  atomicWrite(soulPath, next, 0o644);
   return { changed: true };
 }
 
 function stripBootstrapFromSoul(soulPath) {
   const existing = readIfExists(soulPath);
   if (!existing) return { changed: false, reason: 'no SOUL.md' };
-  const begin = existing.indexOf(MARK_BEGIN);
-  const end = existing.indexOf(MARK_END);
-  if (begin === -1 || end === -1 || end <= begin) return { changed: false, reason: 'no marker block' };
-  const before = existing.slice(0, begin);
-  const after = existing.slice(end + MARK_END.length);
-  // Collapse adjacent blank lines around the cut so we don't leave a triple
-  // newline scar from `\n\n<begin>...\n<end>\n\n`.
-  let next = (before.replace(/\n+$/, '\n') + after.replace(/^\n+/, '\n')).trimEnd();
+  // Nearest-preceding pairing (shared engine): an orphan MARK_BEGIN above the
+  // real block no longer causes the slice to eat the user's SOUL.md content.
+  const { text, removed } = stripFencedBlocks(existing, MARK_BEGIN, MARK_END);
+  if (!removed) return { changed: false, reason: 'no marker block' };
+  let next = text.trimEnd();
   next = next ? next + '\n' : '';
   if (next === '') {
     // SOUL.md only contained our block — remove the file so OpenClaw doesn't
@@ -150,7 +151,7 @@ function stripBootstrapFromSoul(soulPath) {
     try { fs.unlinkSync(soulPath); } catch (_) {}
     return { changed: true, removed: true };
   }
-  fs.writeFileSync(soulPath, next, { mode: 0o644 });
+  atomicWrite(soulPath, next, 0o644);
   return { changed: true };
 }
 
@@ -186,7 +187,7 @@ function installOpenclaw({ workspace, repoRoot, dryRun = false, force = false, l
 
   fs.mkdirSync(skillDir, { recursive: true });
   const merged = mergeOpenclawFrontmatter(skillBody);
-  fs.writeFileSync(skillFile, merged, { mode: 0o644 });
+  atomicWrite(skillFile, merged, 0o644);
   log.write(`  installed: ${skillFile}\n`);
 
   const soul = appendBootstrapToSoul(soulFile, snippet);

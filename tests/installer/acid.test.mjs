@@ -209,6 +209,39 @@ test('FIX3: reinstall refreshes a stale fenced block; identical is a no-op', () 
   }
 });
 
+// ── FIX3b (WRITE path — the gap FIX1 left on the install side) ───────────────
+// writeFencedRuleset's UPSERT must match each END to its NEAREST PRECEDING
+// BEGIN, exactly as stripFencedBlocks does. The pre-fix code paired via
+// existing.indexOf(BEGIN)/indexOf(END), so an orphan BEGIN above a real block
+// makes install slice from the FIRST begin to the real end — deleting the
+// user's text (and the real block's own begin) in between. FAILS pre-fix.
+test('FIX3b: install preserves user text after an orphan BEGIN marker (write path)', () => {
+  const home = freshHome();
+  try {
+    const agents = codexAgents(home);
+    fs.mkdirSync(path.dirname(agents), { recursive: true });
+    // Orphan BEGIN (literal user text, no END) sitting above real content.
+    fs.writeFileSync(agents, `TOP LINE\n${BEGIN}\nORPHAN USER BODY\n`);
+
+    // Install #1: orphan has no END, so a fresh block is appended (2 BEGINs).
+    assert.notEqual(run(['--only', 'codex'], home).status, 2);
+    let s = fs.readFileSync(agents, 'utf8');
+    assert.ok(s.includes('ORPHAN USER BODY'), 'user text lost on first install');
+    assert.equal(countOf(s, BEGIN), 2, 'expected an appended block beside the orphan');
+
+    // Install #2: pre-fix upsert pairs orphan-BEGIN with the real END and
+    // deletes everything between — including ORPHAN USER BODY.
+    assert.notEqual(run(['--only', 'codex'], home).status, 2);
+    s = fs.readFileSync(agents, 'utf8');
+    assert.ok(s.includes('ORPHAN USER BODY'),
+      'reinstall destroyed user text between an orphan BEGIN and the real block');
+    assert.ok(s.includes('TOP LINE'), 'leading user text lost');
+    assert.equal(countOf(s, END), 1, 'ruleset block malformed after reinstall');
+  } finally {
+    fs.rmSync(home, { recursive: true, force: true });
+  }
+});
+
 // ── FIX4 (install level) ─────────────────────────────────────────────────────
 for (const [label, contents] of [
   ['a JSON array', '[1, 2, 3]\n'],
