@@ -149,5 +149,68 @@ class CompressSafetyTests(unittest.TestCase):
             self.assertFalse(compress_mod.backup_path_for(path).exists())
 
 
+class FrontmatterPreservationTests(unittest.TestCase):
+    """YAML frontmatter must survive compression byte-for-byte (parity with caveman)."""
+
+    FRONTMATTER = "---\nname: x\n---\n"
+    BODY = "The quick brown fox jumps over the lazy dog and keeps running.\n"
+
+    def _file_with(self, dirpath: Path, text: str) -> Path:
+        path = dirpath / "task.md"
+        path.write_text(text)
+        return path
+
+    def test_frontmatter_preserved_verbatim_on_compress(self):
+        with tempfile.TemporaryDirectory() as tmp, \
+             tempfile.TemporaryDirectory() as data_home, \
+             mock.patch.dict(os.environ, {"XDG_DATA_HOME": data_home, "LOCALAPPDATA": data_home}):
+            original = self.FRONTMATTER + self.BODY
+            compressed_body = "Fox jump dog.\n"
+            path = self._file_with(Path(tmp), original)
+            # Stub the LLM offline: it only ever sees the BODY, and returns a
+            # compressed body — the frontmatter must be re-prepended verbatim.
+            with mock.patch.object(
+                compress_mod, "call_claude", return_value=compressed_body
+            ) as call, mock.patch.object(compress_mod, "validate") as v:
+                v.return_value = mock.Mock(is_valid=True, errors=[], warnings=[])
+                ok = compress_mod.compress_file(path)
+            self.assertTrue(ok)
+            result = path.read_text()
+            # Header is byte-identical and still leads the file.
+            self.assertTrue(result.startswith(self.FRONTMATTER))
+            self.assertEqual(result, self.FRONTMATTER + compressed_body)
+            # The LLM was handed the body ONLY, never the frontmatter.
+            (sent_prompt,), _ = call.call_args
+            self.assertNotIn("name: x", sent_prompt)
+            self.assertIn(self.BODY.strip(), sent_prompt)
+
+    def test_frontmatter_noop_on_identical_body(self):
+        # When the compressed BODY matches the input body, the no-op guard must
+        # trigger even though the whole-file bytes differ from the body alone.
+        with tempfile.TemporaryDirectory() as tmp, \
+             tempfile.TemporaryDirectory() as data_home, \
+             mock.patch.dict(os.environ, {"XDG_DATA_HOME": data_home, "LOCALAPPDATA": data_home}):
+            original = self.FRONTMATTER + self.BODY
+            path = self._file_with(Path(tmp), original)
+            with mock.patch.object(
+                compress_mod, "call_claude", return_value=self.BODY
+            ):
+                ok = compress_mod.compress_file(path)
+            self.assertFalse(ok)
+            self.assertEqual(path.read_text(), original)
+            self.assertFalse(compress_mod.backup_path_for(path).exists())
+
+    def test_frontmatter_only_body_empty_refused(self):
+        # A file that is nothing but frontmatter has an empty body — refuse
+        # before calling the LLM.
+        with tempfile.TemporaryDirectory() as tmp:
+            path = self._file_with(Path(tmp), self.FRONTMATTER)
+            with mock.patch.object(compress_mod, "call_claude") as call:
+                ok = compress_mod.compress_file(path)
+            self.assertFalse(ok)
+            call.assert_not_called()
+            self.assertEqual(path.read_text(), self.FRONTMATTER)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -74,6 +74,10 @@ process.stdin.on('end', () => {
     if (prompt.startsWith('/tldr')) {
       const parts = prompt.split(/\s+/);
       const cmd = parts[0]; // /tldr, /tldr-commit, /tldr-review, etc.
+      // Marketplace installs namespace slash commands as "/tldr:tldr <arg>"
+      // (e.g. "/tldr:tldr ultra"). Strip the "/tldr:" prefix once so the
+      // bare-mode branch matches it exactly like the standalone "/tldr" form.
+      const cmd0 = cmd.replace(/^\/tldr:/, '/');
       const arg = parts[1] || '';
 
       let mode = null;
@@ -84,8 +88,8 @@ process.stdin.on('end', () => {
         mode = 'review';
       } else if (cmd === '/tldr-compress' || cmd === '/tldr:tldr-compress') {
         mode = 'compress';
-      } else if (cmd === '/tldr') {
-        // Bare /tldr → activate at configured default
+      } else if (cmd0 === '/tldr') {
+        // Bare /tldr (or namespaced /tldr:tldr) → activate at configured default
         if (!arg) {
           mode = getDefaultMode();
         } else if (arg === 'off' || arg === 'stop' || arg === 'disable') {

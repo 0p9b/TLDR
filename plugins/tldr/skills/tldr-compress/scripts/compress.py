@@ -10,6 +10,7 @@ import hashlib
 import os
 import re
 import secrets
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -18,6 +19,27 @@ from typing import List
 OUTER_FENCE_REGEX = re.compile(
     r"\A\s*(`{3,}|~{3,})[^\n]*\n(.*)\n\1\s*\Z", re.DOTALL
 )
+
+# YAML frontmatter: starts at file start with --- on its own line, ends with --- on its own line.
+# Captures the entire block (including delimiters and trailing newline) and the body after.
+FRONTMATTER_REGEX = re.compile(
+    r"\A(---\r?\n.*?\r?\n---\r?\n)(.*)", re.DOTALL
+)
+
+
+def split_frontmatter(text: str):
+    """Split YAML frontmatter from body. Returns (frontmatter, body).
+
+    Memory files (and many other markdown docs) start with a YAML frontmatter
+    block delimited by `---` lines. The compression LLM has a habit of stripping
+    or rewriting these despite preserve-structure rules in the prompt — so we
+    surgically remove the frontmatter before compression and prepend it back
+    verbatim to the output. Files without frontmatter pass through unchanged.
+    """
+    m = FRONTMATTER_REGEX.match(text)
+    if m:
+        return m.group(1), m.group(2)
+    return "", text
 
 # Filenames and paths that almost certainly hold secrets or PII. Compressing
 # them ships raw bytes to the Anthropic API — a third-party data boundary that
@@ -138,14 +160,20 @@ def call_claude(prompt: str) -> str:
             return strip_llm_wrapper(msg.content[0].text.strip())
         except ImportError:
             pass  # anthropic not installed, fall back to CLI
-    # Fallback: use claude CLI (handles desktop auth)
+    # Fallback: use claude CLI (handles desktop auth).
+    # Resolve the binary via shutil.which so Windows .cmd/.bat shims (e.g.
+    # %APPDATA%\npm\claude.CMD) work without shell=True. On POSIX, shutil.which
+    # returns the same absolute path as the implicit lookup, so this is a no-op
+    # there. Falls back to bare "claude" if not found on PATH so subprocess
+    # raises a clear FileNotFoundError.
+    claude_bin = shutil.which("claude") or "claude"
     try:
         result = subprocess.run(
             # Disable agentic tools: the CLI must only transform the piped
             # text, never read/write files, run commands, or reach the network.
             # This blunts prompt-injection payloads hidden in the file body.
             [
-                "claude",
+                claude_bin,
                 "--print",
                 "--disallowedTools",
                 "Bash Read Write Edit WebFetch WebSearch Glob Grep Task",
@@ -154,6 +182,11 @@ def call_claude(prompt: str) -> str:
             text=True,
             capture_output=True,
             check=True,
+            # Pin UTF-8 decoding with errors="replace": on Windows the CLI
+            # subprocess decoding otherwise defaults to the system codepage and
+            # crashes on UTF-8 output before validation can report.
+            encoding="utf-8",
+            errors="replace",
         )
         return strip_llm_wrapper(result.stdout.strip())
     except subprocess.CalledProcessError as e:
@@ -285,20 +318,36 @@ def compress_file(filepath: Path) -> bool:
         print("Aborting to prevent data loss. Remove or rename it if you want to proceed.")
         return False
 
-    # Step 1: Compress
-    print("Compressing with Claude...")
-    compressed = call_claude(build_compress_prompt(original_text))
+    # Split YAML frontmatter off before compression. Claude tends to strip or
+    # rewrite frontmatter despite preserve-structure rules; we keep it verbatim
+    # by removing it from the input and re-prepending it to the output.
+    frontmatter, body = split_frontmatter(original_text)
+    if frontmatter:
+        print(f"Detected YAML frontmatter ({len(frontmatter)} chars) — preserving verbatim")
 
-    if compressed is None or not compressed.strip():
+    if not body.strip():
+        print("❌ Refusing to compress: body is empty after frontmatter removal.")
+        return False
+
+    # Step 1: Compress (body only, frontmatter excluded)
+    print("Compressing with Claude...")
+    compressed_body = call_claude(build_compress_prompt(body))
+
+    if compressed_body is None or not compressed_body.strip():
         print("❌ Compression aborted: Claude returned an empty response.")
         print("   Original file is untouched (no backup created).")
         return False
 
-    if compressed.strip() == original_text.strip():
+    # Compare the BODY (not the whole file) — frontmatter is preserved verbatim
+    # and would never change, so identity must be judged on the compressible part.
+    if compressed_body.strip() == body.strip():
         print("❌ Compression aborted: output is identical to input.")
         print("   Likely causes: Claude refused, returned the prompt verbatim, or the file is")
         print("   already in TLDR form. Original file is untouched (no backup created).")
         return False
+
+    # Reassemble: frontmatter (verbatim) + compressed body
+    compressed = frontmatter + compressed_body
 
     # Save original as a backup created ATOMICALLY with O_CREAT|O_EXCL|
     # O_NOFOLLOW: the open fails if the path already exists (including a

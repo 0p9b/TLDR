@@ -59,12 +59,13 @@ if (INDEPENDENT_MODES.has(mode)) {
 const modeLabel = mode === 'wenyan' ? 'wenyan-full' : mode;
 
 // Read SKILL.md — the single source of truth for TLDR behavior.
-// Plugin installs: __dirname = <plugin_root>/hooks/, SKILL.md at <plugin_root>/skills/tldr/SKILL.md
+// Plugin installs: __dirname = <plugin_root>/src/hooks/, SKILL.md at <plugin_root>/skills/tldr/SKILL.md
+//   — so climb TWO levels (src/hooks → src → <plugin_root>) then into skills/tldr/.
 // Standalone installs: __dirname = $CLAUDE_CONFIG_DIR/hooks/, SKILL.md won't exist — falls back to hardcoded rules.
 let skillContent = '';
 try {
   skillContent = fs.readFileSync(
-    path.join(__dirname, '..', 'skills', 'tldr', 'SKILL.md'), 'utf8'
+    path.join(__dirname, '..', '..', 'skills', 'tldr', 'SKILL.md'), 'utf8'
   );
 } catch (e) { /* standalone install — will use fallback below */ }
 
@@ -86,8 +87,10 @@ if (skillContent) {
       return acc;
     }
 
-    // Example lines start with "- level:" — keep only lines matching active level
-    const exampleMatch = line.match(/^- (\S+?):\s/);
+    // Example lines start with "- level:" — keep only lines matching active level.
+    // Restrict to actual intensity tokens so unrelated rule bullets like
+    // "- Default: 1 sentence." are NOT mistaken for a level and dropped.
+    const exampleMatch = line.match(/^- (lite|full|ultra|wenyan(?:-lite|-full|-ultra)?):\s/);
     if (exampleMatch) {
       if (exampleMatch[1] === modeLabel) {
         acc.push(line);
@@ -110,6 +113,9 @@ if (skillContent) {
     'ACTIVE EVERY RESPONSE. No revert after many turns. No filler drift. Still active if unsure. Off only: "stop tldr" / "normal mode".\n\n' +
     'Current level: **' + modeLabel + '**. Switch: `/tldr lite|full|ultra|wenyan`.\n\n' +
     '## Rules\n\n' +
+    'Default: 1 sentence.\n' +
+    'Default target: 3 words.\n' +
+    'Default maximum: 6 words.\n\n' +
     'Drop: articles (a/an/the), filler (just/really/basically/actually/simply), pleasantries (sure/certainly/of course/happy to), hedging. ' +
     'Fragments OK. Short synonyms (big not extensive, fix not "implement a solution for"). Technical terms exact. Code blocks unchanged. Errors quoted exact.\n\n' +
     'Pattern: `[thing] [action] [reason]. [next step].`\n\n' +

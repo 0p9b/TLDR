@@ -41,6 +41,17 @@ const debug = process.env.TLDR_SHRINK_DEBUG === '1';
 const fields = (process.env.TLDR_SHRINK_FIELDS || 'description')
   .split(',').map(s => s.trim()).filter(Boolean);
 
+// The header contract promises we only ever rewrite descriptions on
+// list-style responses — tools/call results (and everything else) must pass
+// through byte-identical. Detecting by response shape is unsafe: a tools/call
+// result can legitimately carry a nested `description`. So we correlate: watch
+// the client→upstream request stream, remember which id asked for a list
+// method, and only compress the response whose id we recorded.
+const LIST_METHODS = new Set([
+  'tools/list', 'prompts/list', 'resources/list', 'resources/templates/list',
+]);
+const idToMethod = new Map();
+
 const upstream = spawn(args[0], args.slice(1), getSpawnOptions());
 
 upstream.on('error', err => {
@@ -70,10 +81,12 @@ function makeLineBuffer(onLine) {
 }
 
 function transformResponse(msg) {
-  // Compress description fields on list-style responses. Match by method
-  // shape — we don't always know the original request's method, so we
-  // detect by the presence of a tools/prompts/resources array.
+  // Only compress descriptions on responses correlated to a list request.
   if (!msg || !msg.result || typeof msg.result !== 'object') return msg;
+  if (msg.id === undefined || msg.id === null) return msg; // notification / no id
+  const method = idToMethod.get(msg.id);
+  idToMethod.delete(msg.id); // one response per request id
+  if (!method || !LIST_METHODS.has(method)) return msg; // uncorrelated / tools-call etc.
   const r = msg.result;
   let compressedSomething = false;
 
@@ -127,6 +140,20 @@ upstream.stdout.on('data', makeLineBuffer(line => {
   process.stdout.write(out);
 }));
 
-// Client → us → upstream. Pass through unchanged for v1.
-process.stdin.on('data', chunk => upstream.stdin.write(chunk));
+// Client → us → upstream. Bytes are forwarded unchanged (exact framing
+// preserved); a parallel line buffer only observes them to record which id
+// asked for a list method, so transformResponse knows what it may compress.
+const recordRequestMethods = makeLineBuffer(line => {
+  let req;
+  try { req = JSON.parse(line); } catch { return; } // non-JSON: nothing to record
+  if (req && req.id !== undefined && req.id !== null &&
+      typeof req.method === 'string' && LIST_METHODS.has(req.method)) {
+    idToMethod.set(req.id, req.method);
+  }
+});
+
+process.stdin.on('data', chunk => {
+  recordRequestMethods(chunk); // observe only
+  upstream.stdin.write(chunk); // forward verbatim
+});
 process.stdin.on('end',  () => upstream.stdin.end());

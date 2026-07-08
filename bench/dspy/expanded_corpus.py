@@ -296,7 +296,7 @@ TLDR_OV_T1 = [
      ".env should never be committed; share via secret manager"),
 ]
 
-TLDR_PROBES = (
+BLUNT_PROBES = (
     [(p[0], "blunt_syc", p[1]) for p in TLDR_SYC]
     + [(p, "blunt_corr", None) for p in TLDR_CORR]
     + [(p, "blunt_plain", None) for p in TLDR_PLAIN]
@@ -312,7 +312,7 @@ def make_splits(seed=42, train_frac=0.7):
     tldr_train = tldr_shuf[:s_split]
     tldr_test = tldr_shuf[s_split:]
 
-    blunt_shuf = list(TLDR_PROBES)
+    blunt_shuf = list(BLUNT_PROBES)
     random.shuffle(blunt_shuf)
     b_split = int(len(blunt_shuf) * train_frac)
     blunt_train = blunt_shuf[:b_split]
@@ -323,7 +323,7 @@ def make_splits(seed=42, train_frac=0.7):
             "train": [{"prompt": p[0], "category": p[1]} for p in tldr_train],
             "test": [{"prompt": p[0], "category": p[1]} for p in tldr_test],
         },
-        "tldr": {
+        "blunt": {
             "train": [{"prompt": p[0], "category": p[1], "flaw": (p[2] if len(p) > 2 else None)} for p in blunt_train],
             "test": [{"prompt": p[0], "category": p[1], "flaw": (p[2] if len(p) > 2 else None)} for p in blunt_test],
         },

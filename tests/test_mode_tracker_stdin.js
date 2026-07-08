@@ -108,5 +108,28 @@ test('normal stdin (valid JSON + clean EOF) still exits 0', () => {
   }
 });
 
+// Marketplace-namespaced bare-mode: "/tldr:tldr ultra" must write the flag.
+// Before the cmd0 normalization it was a silent no-op (cmd === '/tldr' failed).
+test('"/tldr:tldr ultra" writes ultra to the flag file', () => {
+  const tmpConfig = fs.mkdtempSync(path.join(os.tmpdir(), 'tldr-tracker-stdin-'));
+  try {
+    const res = spawnSync(process.execPath, [HOOK_PATH], {
+      input: JSON.stringify({ prompt: '/tldr:tldr ultra' }),
+      env: { ...process.env, CLAUDE_CONFIG_DIR: tmpConfig },
+      stdio: ['pipe', 'ignore', 'pipe'],
+      encoding: 'utf8',
+    });
+    assert.strictEqual(
+      res.status,
+      CLEAN_EXIT,
+      `expected clean exit, got status=${res.status}\nstderr: ${(res.stderr || '').trim()}`
+    );
+    const flag = fs.readFileSync(path.join(tmpConfig, '.tldr-active'), 'utf8');
+    assert.strictEqual(flag, 'ultra', `expected flag 'ultra', got '${flag}'`);
+  } finally {
+    fs.rmSync(tmpConfig, { recursive: true, force: true });
+  }
+});
+
 console.log(`\n${passed} passed, ${failed} failed, ${skipped} skipped`);
 process.exit(failed === 0 ? 0 : 1);
