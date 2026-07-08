@@ -41,6 +41,28 @@ function freshTmpDir() {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'tldr-freshinstall-'));
 }
 
+// SAFETY: a module-level throwaway HOME is the sandbox root for EVERY installer
+// spawn in this file so no test — especially a full `--uninstall`, which
+// resolves native providers via HOME (~/.codex, ~/.grok, ~/.pi/agent,
+// ~/.gemini/config), hermes via HERMES_HOME, opencode via XDG_CONFIG_HOME, and
+// openclaw via OPENCLAW_WORKSPACE — can ever mutate the developer's real config
+// dirs. Callers override only the root they assert on (CLAUDE_CONFIG_DIR for the
+// claude tests, OPENCLAW_WORKSPACE for the openclaw tests); every other root
+// stays redirected under SANDBOX_HOME.
+const SANDBOX_HOME = fs.mkdtempSync(path.join(os.tmpdir(), 'tldr-freshinstall-sandbox-'));
+function sandboxEnv(overrides = {}) {
+  return {
+    ...process.env,
+    HOME: SANDBOX_HOME,
+    XDG_CONFIG_HOME: path.join(SANDBOX_HOME, '.config'),
+    HERMES_HOME: path.join(SANDBOX_HOME, '.hermes'),
+    OPENCLAW_WORKSPACE: path.join(SANDBOX_HOME, '.openclaw', 'workspace'),
+    CLAUDE_CONFIG_DIR: path.join(SANDBOX_HOME, '.claude'),
+    NO_COLOR: '1',
+    ...overrides,
+  };
+}
+
 function pathWithout(binNames) {
   // Walk every PATH entry; drop any that contains one of the named binaries.
   // Cross-platform: works on macOS/Linux (`:` sep) and Windows (`;` sep).
@@ -71,7 +93,7 @@ function pathWithout(binNames) {
 // the PATH entry for node is not dirname(process.execPath)).
 function runInstaller(args, configDir, extraEnv = {}) {
   return spawnSync(process.execPath, [INSTALLER, ...args, '--config-dir', configDir, '--non-interactive', '--no-mcp-shrink'], {
-    env: { ...process.env, CLAUDE_CONFIG_DIR: configDir, NO_COLOR: '1', ...extraEnv },
+    env: sandboxEnv({ CLAUDE_CONFIG_DIR: configDir, ...extraEnv }),
     encoding: 'utf8',
   });
 }
@@ -255,7 +277,7 @@ test('openclaw install writes skill folder + SOUL.md bootstrap', () => {
   fs.mkdirSync(ws);
   try {
     const r = spawnSync(process.execPath, [INSTALLER, '--only', 'openclaw', '--non-interactive', '--no-mcp-shrink', '--config-dir', dir], {
-      env: { ...process.env, OPENCLAW_WORKSPACE: ws, NO_COLOR: '1' },
+      env: sandboxEnv({ OPENCLAW_WORKSPACE: ws, CLAUDE_CONFIG_DIR: dir }),
       encoding: 'utf8',
     });
     assert.notEqual(r.status, 2, `installer aborted on argv parse: ${r.stderr}`);
@@ -292,7 +314,7 @@ test('openclaw install is idempotent: skill frontmatter not double-prepended, SO
   const ws = path.join(dir, 'ws');
   fs.mkdirSync(ws);
   try {
-    const env = { ...process.env, OPENCLAW_WORKSPACE: ws, NO_COLOR: '1' };
+    const env = sandboxEnv({ OPENCLAW_WORKSPACE: ws, CLAUDE_CONFIG_DIR: dir });
     const args = ['--only', 'openclaw', '--non-interactive', '--no-mcp-shrink', '--config-dir', dir];
     spawnSync(process.execPath, [INSTALLER, ...args], { env, encoding: 'utf8' });
     spawnSync(process.execPath, [INSTALLER, ...args], { env, encoding: 'utf8' });
@@ -320,7 +342,7 @@ test('openclaw install preserves user content in SOUL.md (append, not overwrite)
   fs.writeFileSync(path.join(ws, 'SOUL.md'), userContent);
   try {
     spawnSync(process.execPath, [INSTALLER, '--only', 'openclaw', '--non-interactive', '--no-mcp-shrink', '--config-dir', dir], {
-      env: { ...process.env, OPENCLAW_WORKSPACE: ws, NO_COLOR: '1' },
+      env: sandboxEnv({ OPENCLAW_WORKSPACE: ws, CLAUDE_CONFIG_DIR: dir }),
       encoding: 'utf8',
     });
     const soulRaw = fs.readFileSync(path.join(ws, 'SOUL.md'), 'utf8');
@@ -339,7 +361,7 @@ test('openclaw uninstall removes skill folder + strips SOUL.md block, preserving
   const userContent = '# my workspace\n\nfoo bar baz\n';
   fs.writeFileSync(path.join(ws, 'SOUL.md'), userContent);
   try {
-    const env = { ...process.env, OPENCLAW_WORKSPACE: ws, NO_COLOR: '1' };
+    const env = sandboxEnv({ OPENCLAW_WORKSPACE: ws, CLAUDE_CONFIG_DIR: dir });
     spawnSync(process.execPath, [INSTALLER, '--only', 'openclaw', '--non-interactive', '--no-mcp-shrink', '--config-dir', dir], { env, encoding: 'utf8' });
 
     // Strip claude/gemini from PATH so uninstall doesn't touch real plugins.
@@ -368,7 +390,7 @@ test('tldr-init.js --only openclaw routes through the same helper', () => {
   try {
     const initScript = path.join(REPO_ROOT, 'src', 'tools', 'tldr-init.js');
     const r = spawnSync(process.execPath, [initScript, dir, '--only', 'openclaw'], {
-      env: { ...process.env, OPENCLAW_WORKSPACE: ws, NO_COLOR: '1' },
+      env: sandboxEnv({ OPENCLAW_WORKSPACE: ws, CLAUDE_CONFIG_DIR: dir }),
       encoding: 'utf8',
     });
     assert.equal(r.status, 0, `tldr-init failed: ${r.stderr || r.stdout}`);

@@ -15,12 +15,30 @@ function freshTmpDir() {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'cm-dryrun-'));
 }
 
+// SAFETY: every spawn here is --dry-run (the installer guards each fs mutation
+// behind opts.dryRun), but sandbox every config root a full --uninstall would
+// resolve — HOME for native providers (~/.codex, ~/.grok, ~/.pi/agent,
+// ~/.gemini/config), HERMES_HOME, XDG_CONFIG_HOME (opencode), OPENCLAW_WORKSPACE
+// — so no future non-dry-run regression can reach the developer's real dirs.
+const SANDBOX_HOME = fs.mkdtempSync(path.join(os.tmpdir(), 'cm-dryrun-sandbox-'));
+function dryrunEnv(cfg) {
+  return {
+    ...process.env,
+    HOME: SANDBOX_HOME,
+    XDG_CONFIG_HOME: path.join(SANDBOX_HOME, '.config'),
+    HERMES_HOME: path.join(SANDBOX_HOME, '.hermes'),
+    OPENCLAW_WORKSPACE: path.join(SANDBOX_HOME, '.openclaw', 'workspace'),
+    CLAUDE_CONFIG_DIR: cfg,
+    NO_COLOR: '1',
+  };
+}
+
 test('dry-run --only claude prints plan and writes nothing', () => {
   const cfg = freshTmpDir();
-  const r = spawnSync('node', [INSTALLER,
+  const r = spawnSync(process.execPath, [INSTALLER,
     '--dry-run', '--only', 'claude', '--no-mcp-shrink', '--non-interactive',
     '--config-dir', cfg,
-  ], { encoding: 'utf8', env: { ...process.env, CLAUDE_CONFIG_DIR: cfg } });
+  ], { encoding: 'utf8', env: dryrunEnv(cfg) });
   assert.equal(r.status, 0);
   // Only fires if `claude` is on PATH on the test runner. If not, this assertion
   // is a no-op (the installer just prints "nothing detected" and exits 0).
@@ -46,8 +64,8 @@ test('dry-run --uninstall does not delete files', () => {
     JSON.stringify({ hooks: { SessionStart: [{ hooks: [{ type: 'command', command: 'node ' + fake }] }] } }, null, 2));
   const before = fs.readFileSync(path.join(cfg, 'settings.json'), 'utf8');
 
-  const r = spawnSync('node', [INSTALLER, '--uninstall', '--dry-run', '--non-interactive', '--config-dir', cfg],
-    { encoding: 'utf8', env: { ...process.env, CLAUDE_CONFIG_DIR: cfg } });
+  const r = spawnSync(process.execPath, [INSTALLER, '--uninstall', '--dry-run', '--non-interactive', '--config-dir', cfg],
+    { encoding: 'utf8', env: dryrunEnv(cfg) });
   assert.equal(r.status, 0);
 
   // File still present, settings unchanged.

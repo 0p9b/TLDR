@@ -40,15 +40,53 @@ function shimOpencode() {
   return dir;
 }
 
+// Spawn the absolute node (process.execPath), never bare 'node': ocEnv strips
+// claude/gemini from PATH and on boxes where node is colocated with them (e.g.
+// ~/.local/bin) that would also drop node, making a bare 'node' spawn die
+// ENOENT. process.execPath is immune to PATH mangling.
 function runInstaller(args, env) {
-  return spawnSync('node', [INSTALLER, ...args, '--non-interactive', '--no-mcp-shrink'], {
+  return spawnSync(process.execPath, [INSTALLER, ...args, '--non-interactive', '--no-mcp-shrink'], {
     env, encoding: 'utf8',
   });
 }
 
-function pathWith(prependDir) {
+// A PATH stripped of the dirs that contain the named binaries.
+function pathWithout(binNames) {
   const sep = IS_WIN ? ';' : ':';
-  return prependDir + sep + (process.env.PATH || '');
+  const exts = IS_WIN ? ['.exe', '.cmd', '.bat', ''] : [''];
+  const want = new Set(binNames);
+  return (process.env.PATH || '')
+    .split(sep)
+    .filter(dir => {
+      if (!dir) return false;
+      for (const b of want) for (const ext of exts) {
+        try { if (fs.existsSync(path.join(dir, b + ext))) return false; } catch (_) {}
+      }
+      return true;
+    })
+    .join(sep);
+}
+
+// SAFETY: sandbox every config root a full `--uninstall` resolves. The opencode
+// artifacts live under XDG_CONFIG_HOME=xdg (the throwaway we assert on), but a
+// full uninstall ALSO strips native providers via HOME (~/.codex, ~/.grok,
+// ~/.pi/agent, ~/.gemini/config), hermes via HERMES_HOME, openclaw via
+// OPENCLAW_WORKSPACE, and the claude hooks/settings via CLAUDE_CONFIG_DIR — so
+// those roots are redirected under SANDBOX_HOME, and claude/gemini are stripped
+// from PATH so their plugin/extension uninstall never runs against the real
+// machine. The opencode shim stays on PATH so install detection still fires.
+const SANDBOX_HOME = fs.mkdtempSync(path.join(os.tmpdir(), 'tldr-opencode-sandbox-'));
+function ocEnv(xdg, shimDir) {
+  return {
+    ...process.env,
+    HOME: SANDBOX_HOME,
+    XDG_CONFIG_HOME: xdg,
+    HERMES_HOME: path.join(SANDBOX_HOME, '.hermes'),
+    OPENCLAW_WORKSPACE: path.join(SANDBOX_HOME, '.openclaw', 'workspace'),
+    CLAUDE_CONFIG_DIR: path.join(SANDBOX_HOME, '.claude'),
+    PATH: shimDir + (IS_WIN ? ';' : ':') + pathWithout(['claude', 'gemini']),
+    NO_COLOR: '1',
+  };
 }
 
 // ── 1. Fresh install populates expected files ────────────────────────────
@@ -56,12 +94,7 @@ test('opencode fresh install drops plugin, commands, agents, skills, AGENTS.md, 
   const xdg = freshTmpDir();
   const shimDir = shimOpencode();
   try {
-    const r = runInstaller(['--only', 'opencode'], {
-      ...process.env,
-      XDG_CONFIG_HOME: xdg,
-      PATH: pathWith(shimDir),
-      NO_COLOR: '1',
-    });
+    const r = runInstaller(['--only', 'opencode'], ocEnv(xdg, shimDir));
     assert.notEqual(r.status, 2, `argv error: ${r.stderr}`);
 
     const ocDir = path.join(xdg, 'opencode');
@@ -102,7 +135,7 @@ test('opencode idempotent install does not duplicate plugin entries', () => {
   const xdg = freshTmpDir();
   const shimDir = shimOpencode();
   try {
-    const env = { ...process.env, XDG_CONFIG_HOME: xdg, PATH: pathWith(shimDir), NO_COLOR: '1' };
+    const env = ocEnv(xdg, shimDir);
     const r1 = runInstaller(['--only', 'opencode'], env);
     assert.notEqual(r1.status, 2);
     const r2 = runInstaller(['--only', 'opencode'], env);
@@ -127,7 +160,7 @@ test('opencode re-install preserves user edits to plugin.js without --force', ()
   const xdg = freshTmpDir();
   const shimDir = shimOpencode();
   try {
-    const env = { ...process.env, XDG_CONFIG_HOME: xdg, PATH: pathWith(shimDir), NO_COLOR: '1' };
+    const env = ocEnv(xdg, shimDir);
     const r1 = runInstaller(['--only', 'opencode'], env);
     assert.notEqual(r1.status, 2);
 
@@ -159,7 +192,7 @@ test('opencode uninstall strips fenced AGENTS.md block, preserving user prefix a
   const xdg = freshTmpDir();
   const shimDir = shimOpencode();
   try {
-    const env = { ...process.env, XDG_CONFIG_HOME: xdg, PATH: pathWith(shimDir), NO_COLOR: '1' };
+    const env = ocEnv(xdg, shimDir);
     const r1 = runInstaller(['--only', 'opencode'], env);
     assert.notEqual(r1.status, 2);
 
@@ -203,7 +236,7 @@ test('opencode install tolerates JSONC opencode.json (comments + trailing commas
 }
 `);
 
-    const env = { ...process.env, XDG_CONFIG_HOME: xdg, PATH: pathWith(shimDir), NO_COLOR: '1' };
+    const env = ocEnv(xdg, shimDir);
     const r = runInstaller(['--only', 'opencode'], env);
     assert.notEqual(r.status, 2);
 
@@ -222,7 +255,7 @@ test('opencode uninstall removes plugin dir, command/agent/skill files, prunes o
   const xdg = freshTmpDir();
   const shimDir = shimOpencode();
   try {
-    const env = { ...process.env, XDG_CONFIG_HOME: xdg, PATH: pathWith(shimDir), NO_COLOR: '1' };
+    const env = ocEnv(xdg, shimDir);
     const r1 = runInstaller(['--only', 'opencode'], env);
     assert.notEqual(r1.status, 2);
 
@@ -252,7 +285,7 @@ test('opencode plugin handles /tldr ultra and stop tldr via chat.message + syste
   const xdg = freshTmpDir();
   const shimDir = shimOpencode();
   try {
-    const env = { ...process.env, XDG_CONFIG_HOME: xdg, PATH: pathWith(shimDir), NO_COLOR: '1' };
+    const env = ocEnv(xdg, shimDir);
     const r = runInstaller(['--only', 'opencode'], env);
     assert.notEqual(r.status, 2);
 

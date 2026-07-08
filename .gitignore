@@ -26,3 +26,6 @@ node_modules/
 # Backups
 *.bak
 *.bak.*
+
+# EAP runtime cache (created when EAP is installed and you work in this repo)
+.eap/
