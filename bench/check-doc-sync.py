@@ -47,6 +47,23 @@ for needle in [
 ]:
     expect_contains(prompt, needle, "TLDR.md")
 
+# Safety carve-out MUST ship in every prompt variant. install.sh copies TLDR.md
+# into up to 8 global rules files; a variant without an Auto-Clarity/safety
+# carve-out silently compresses security warnings and irreversible-action
+# confirmations. Each variant is checked with a marker it actually uses.
+SAFETY_VARIANTS = [
+    (TLDR, ["## Auto-Clarity", "Security warnings", "irreversible"]),
+    (ROOT / "src" / "rules" / "tldr-activate.md", ["Auto-Clarity", "security warnings", "irreversible"]),
+    (ROOT / "src" / "rules" / "tldr-openclaw-bootstrap.md", ["Auto-Clarity", "security warnings", "irreversible"]),
+    (ROOT / "skills" / "tldr" / "SKILL.md", ["## Auto-Clarity", "Security warnings", "irreversible action"]),
+]
+for path, needles in SAFETY_VARIANTS:
+    if not path.exists():
+        fail(f"safety-carve-out variant missing from repo: {path}")
+    text = path.read_text(encoding="utf-8")
+    for needle in needles:
+        expect_contains(text, needle, f"{path.name} safety carve-out")
+
 # Command file must carry core defaults for nudge independence.
 for needle in [
     "Default: 1 sentence.",
