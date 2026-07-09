@@ -4,7 +4,7 @@
   "description": "Verdict-first communication mode for Claude Code. No filler, full technical accuracy.",
   "owner": {
     "name": "ZeroPointNineBar",
-    "url": "https://github.com/ZeroPointNineBar"
+    "url": "https://github.com/0point9bar"
   },
   "plugins": [
     {

@@ -2,7 +2,7 @@
   "version": 1,
   "skills": {
     "tldrcrew": {
-      "source": "ZeroPointNineBar/TLDR",
+      "source": "0point9bar/TLDR",
       "sourceType": "github",
       "skillPath": "skills/tldrcrew/SKILL.md",
       "computedHash": "f9badabda10f66582fe7156df3be635fc54e041f0dedd7aac51a1245ac0b2c89"

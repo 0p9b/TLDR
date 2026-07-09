@@ -19,12 +19,12 @@ files, or the model's thinking tokens.
 |---|---|---|---|
 | Prose-output reduction (**historical**) | ~60–75% typical; −82.1% aggregate on the v0.13.1 run; −77% to −87% per agent | multi-harness CLI benches; `tiktoken o200k_base`; prose outside code fences only | [`data/benchmarks.md`](../data/benchmarks.md) |
 | Input reduction from the prompt | 0% | it is an output-style instruction | — |
-| Input cost the prompt **adds**, per turn | ~350 tokens (prompt-only install: `TLDR.md` is 1,336 bytes) up to ~1–1.5k tokens (skill + hook installs: [`skills/tldr/SKILL.md`](../skills/tldr/SKILL.md) is ~3.3 KB, plus skill-list entries and session-start rule injection) | file sizes at ≈4 chars/token | repo files |
+| Input cost the prompt **adds**, per turn | ~470 tokens (prompt-only install: `TLDR.md` is 1,892 bytes) up to ~1–1.5k tokens (skill + hook installs: [`skills/tldr/SKILL.md`](../skills/tldr/SKILL.md) is ~3.3 KB, plus skill-list entries and session-start rule injection) | file sizes at ≈4 chars/token | repo files |
 | Accuracy under TLDR | **not measured** | the bench suite is style-focused, not correctness-focused | [`data/philosophy.md`](../data/philosophy.md), §6.5 |
 | Latency | **not measured** | — | — |
 
 **Every reduction number above is historical.** The benched prompts were
-the v0.13–v0.18 generations. The shipped `TLDR.md` (1,336 bytes) and
+the v0.13–v0.18 generations. The shipped `TLDR.md` (1,892 bytes) and
 `commands/tldr.md` were later tightened to a 1-sentence / 3-word-default /
 6-word-max profile and have **not** been rerun through the full suite. The
 same caveat heads [`data/benchmarks.md`](../data/benchmarks.md) and
@@ -45,7 +45,7 @@ same caveat heads [`data/benchmarks.md`](../data/benchmarks.md) and
 ## When TLDR loses (net-negative)
 
 Plainly: **the skill/hook install costs roughly 1–1.5k input tokens every
-turn (the prompt-only install ~350). If it saves less output than that,
+turn (the prompt-only install ~470). If it saves less output than that,
 you are paying to use it.**
 
 - **Terse workloads.** If your normal replies are already ~150 output
@@ -93,7 +93,7 @@ you are paying to use it.**
 > Either way, TLDR replies are faster to read. That part is free.
 
 Found a workload where these numbers are wrong?
-[Open an issue](https://github.com/ZeroPointNineBar/TLDR/issues) with your A/B and it
+[Open an issue](https://github.com/0point9bar/TLDR/issues) with your A/B and it
 goes on this page.
 
 ---

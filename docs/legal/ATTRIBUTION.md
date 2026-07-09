@@ -1,6 +1,6 @@
 # Attribution
 
-**TLDR** is an independent product maintained by [ZeroPointNineBar](https://github.com/ZeroPointNineBar).
+**TLDR** is an independent product maintained by [ZeroPointNineBar](https://github.com/0point9bar).
 
 ## Third-party lineage (MIT)
 

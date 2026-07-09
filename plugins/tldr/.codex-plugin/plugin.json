@@ -4,10 +4,10 @@
   "description": "Ultra-compressed communication mode. Cut filler. Keep technical accuracy.",
   "author": {
     "name": "ZeroPointNineBar",
-    "url": "https://github.com/ZeroPointNineBar"
+    "url": "https://github.com/0point9bar"
   },
-  "homepage": "https://github.com/ZeroPointNineBar/TLDR",
-  "repository": "https://github.com/ZeroPointNineBar/TLDR",
+  "homepage": "https://github.com/0point9bar/TLDR",
+  "repository": "https://github.com/0point9bar/TLDR",
   "license": "MIT",
   "keywords": [
     "productivity",
@@ -25,9 +25,9 @@
     "capabilities": [
       "Write"
     ],
-    "websiteURL": "https://github.com/ZeroPointNineBar/TLDR",
-    "privacyPolicyURL": "https://github.com/ZeroPointNineBar/TLDR/blob/main/README.md",
-    "termsOfServiceURL": "https://github.com/ZeroPointNineBar/TLDR/blob/main/LICENSE",
+    "websiteURL": "https://github.com/0point9bar/TLDR",
+    "privacyPolicyURL": "https://github.com/0point9bar/TLDR/blob/main/README.md",
+    "termsOfServiceURL": "https://github.com/0point9bar/TLDR/blob/main/LICENSE",
     "defaultPrompt": [
       "Use tldr mode. Cut filler. Keep technical accuracy."
     ],

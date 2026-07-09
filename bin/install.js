@@ -8,7 +8,7 @@
 //
 // Distribution:
 //   Local clone: node bin/install.js [flags]
-//   curl|bash:   delegated from install-full.sh shim → npx -y github:ZeroPointNineBar/TLDR -- [flags]
+//   curl|bash:   delegated from install-full.sh shim → npx -y github:0point9bar/TLDR -- [flags]
 //   Windows:     pwsh install.ps1 [flags] → same npx delegation
 //
 // Pure stdlib, zero npm runtime deps.
@@ -28,7 +28,7 @@ const { stripOpencodeAgentTools } = require('./lib/opencode-agent');
 const { atomicWrite, createSecureTempDir, safeRmdir } = require('./lib/safe-fs');
 const { findFencedBlocks, stripFencedBlocks, upsertFencedBlock } = require('./lib/fenced');
 
-const REPO = 'ZeroPointNineBar/TLDR';
+const REPO = '0point9bar/TLDR';
 // Pin remote fetches to an IMMUTABLE release tag, never the moving `main`. A
 // push to main must never silently change what a `curl|bash` / npx install
 // downloads and executes — and, crucially, the integrity manifest
@@ -1305,7 +1305,7 @@ function uninstall(ctx) {
     }
 
     // Remove the plugin marketplace we registered at install time
-    // (`claude plugin marketplace add ZeroPointNineBar/TLDR` → named "tldr"). Idempotent:
+    // (`claude plugin marketplace add 0point9bar/TLDR` → named "tldr"). Idempotent:
     // probe `marketplace list` first so a machine that never had it stays quiet;
     // on --dry-run always print the intent.
     if (opts.dryRun) {
@@ -1479,7 +1479,7 @@ function printHelp() {
   process.stdout.write(`tldr installer — detects your agents and installs TLDR for each one.
 
 USAGE
-  npx -y github:ZeroPointNineBar/TLDR -- [flags]
+  npx -y github:0point9bar/TLDR -- [flags]
   node bin/install.js [flags]
   bash install-full.sh [flags]         # shim → npx
   pwsh install.ps1 [flags]             # shim → npx
@@ -1510,10 +1510,10 @@ FLAGS
   -h, --help            Show this help.
 
 EXAMPLES
-  npx -y github:ZeroPointNineBar/TLDR                        # default install
-  npx -y github:ZeroPointNineBar/TLDR -- --all               # all the trimmings
-  npx -y github:ZeroPointNineBar/TLDR -- --only claude --no-mcp-shrink
-  npx -y github:ZeroPointNineBar/TLDR -- --uninstall
+  npx -y github:0point9bar/TLDR                        # default install
+  npx -y github:0point9bar/TLDR -- --all               # all the trimmings
+  npx -y github:0point9bar/TLDR -- --only claude --no-mcp-shrink
+  npx -y github:0point9bar/TLDR -- --uninstall
 
   Issues: https://github.com/${REPO}/issues
 `);

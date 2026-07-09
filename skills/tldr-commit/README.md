@@ -41,4 +41,4 @@ before 2026-06-01. Old route returns 410 after that date.
 ## See also
 
 - [`SKILL.md`](./SKILL.md) — full LLM-facing instructions
-- [TLDR README](https://github.com/ZeroPointNineBar/TLDR/blob/main/README.md) — repo overview
+- [TLDR README](https://github.com/0point9bar/TLDR/blob/main/README.md) — repo overview

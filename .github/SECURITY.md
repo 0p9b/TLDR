@@ -6,8 +6,8 @@ Only the `main` branch is supported.
 
 ## Reporting a Vulnerability
 
-- **Sensitive issues:** please use [GitHub security advisories](https://github.com/ZeroPointNineBar/TLDR/security/advisories/new).
-- **Non-sensitive issues:** open a regular [issue](https://github.com/ZeroPointNineBar/TLDR/issues).
+- **Sensitive issues:** please use [GitHub security advisories](https://github.com/0point9bar/TLDR/security/advisories/new).
+- **Non-sensitive issues:** open a regular [issue](https://github.com/0point9bar/TLDR/issues).
 
 Target response time: **within 7 days** for valid vulnerability reports. This is a best-effort commitment, not a paid-support SLA.
 

@@ -177,10 +177,10 @@ for needle in [
 if OLD_CITATION.exists():
     fail("data/citations.cff should be .github/CITATION.cff for citation tooling")
 
-expect_contains(citation, 'url: "https://github.com/ZeroPointNineBar/TLDR"', ".github/CITATION.cff repository URL")
-expect_contains(citation, 'repository-code: "https://github.com/ZeroPointNineBar/TLDR"', ".github/CITATION.cff repository URL")
-if "https://github.com/ZeroPointNineBar/TLDR.md" in citation:
-    fail(".github/CITATION.cff still references non-existent ZeroPointNineBar/TLDR.md repository")
+expect_contains(citation, 'url: "https://github.com/0point9bar/TLDR"', ".github/CITATION.cff repository URL")
+expect_contains(citation, 'repository-code: "https://github.com/0point9bar/TLDR"', ".github/CITATION.cff repository URL")
+if "https://github.com/0point9bar/TLDR.md" in citation:
+    fail(".github/CITATION.cff still references non-existent 0point9bar/TLDR.md repository")
 
 if LEGACY_IDEA_TEMPLATE.exists():
     fail("legacy .github/ISSUE_TEMPLATE/idea.md should stay removed; use idea.yml")

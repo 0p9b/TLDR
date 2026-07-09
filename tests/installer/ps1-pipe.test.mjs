@@ -1,7 +1,7 @@
 // Pipe-execution safety for TLDR's PowerShell hook installer.
 //
 // TLDR's hooks are installed on Windows via:
-//   irm https://raw.githubusercontent.com/ZeroPointNineBar/TLDR/main/src/hooks/install.ps1 | iex
+//   irm https://raw.githubusercontent.com/0point9bar/TLDR/main/src/hooks/install.ps1 | iex
 //
 // When a script is piped to `iex`, it is executed as a bare string: there is no
 // backing file on disk, so every "path of the running script" variable

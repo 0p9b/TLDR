@@ -2,7 +2,7 @@
 # TLDR — uninstaller for the SessionStart + UserPromptSubmit hooks
 # Removes: hook files in ~/.claude/hooks, settings.json entries, and the flag file
 # Usage: bash src/hooks/uninstall.sh
-#   or:  bash <(curl -s https://raw.githubusercontent.com/ZeroPointNineBar/TLDR/main/src/hooks/uninstall.sh)
+#   or:  bash <(curl -s https://raw.githubusercontent.com/0point9bar/TLDR/main/src/hooks/uninstall.sh)
 set -e
 
 CLAUDE_DIR="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"

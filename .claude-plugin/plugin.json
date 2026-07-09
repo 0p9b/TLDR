@@ -3,7 +3,7 @@
   "description": "Verdict-first communication mode. Cuts output tokens while keeping full technical accuracy.",
   "author": {
     "name": "ZeroPointNineBar",
-    "url": "https://github.com/ZeroPointNineBar"
+    "url": "https://github.com/0point9bar"
   },
   "hooks": {
     "SessionStart": [

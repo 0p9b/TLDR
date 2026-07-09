@@ -27,4 +27,4 @@ Saved:    7,356 tokens (~65%)
 ## See also
 
 - [`SKILL.md`](./SKILL.md) — hook contract and mechanics
-- [TLDR README](https://github.com/ZeroPointNineBar/TLDR/blob/main/README.md) — repo overview
+- [TLDR README](https://github.com/0point9bar/TLDR/blob/main/README.md) — repo overview
