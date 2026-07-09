@@ -56,7 +56,11 @@ while [ "$#" -gt 0 ]; do
   shift
  done
 
-RAW_BASE="https://raw.githubusercontent.com/ZeroPointNineBar/TLDR/main"
+# Pin remote fetches to an immutable release tag, never the moving `main` — a
+# push to main must never silently change what a `curl|bash` install downloads.
+# Keep the default in lockstep with PINNED_REF in bin/install.js. Override with
+# TLDR_REF for branch testing.
+RAW_BASE="https://raw.githubusercontent.com/ZeroPointNineBar/TLDR/${TLDR_REF:-v0.20.0}"
 if [ -f "${BASH_SOURCE[0]:-}" ]; then
   SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd || true)"
   LOCAL_PROMPT="${SCRIPT_DIR}/${PROMPT_NAME}"

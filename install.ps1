@@ -62,5 +62,9 @@ if (-not $npx) {
 # Do NOT pass `--` here — npm 7+ npx already forwards trailing args to the
 # package, and a literal `--` was tripping bin/install.js's parseArgs as an
 # unknown flag.
-& npx -y "github:$Repo" @Args
+# Pin to an immutable release tag, never the moving default branch. Keep the
+# default in lockstep with PINNED_REF in bin/install.js. Override with TLDR_REF
+# for branch testing.
+$Ref = if ($env:TLDR_REF) { $env:TLDR_REF } else { "v0.20.0" }
+& npx -y "github:$Repo#$Ref" @Args
 exit $LASTEXITCODE

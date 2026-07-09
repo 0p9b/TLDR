@@ -1,0 +1,11 @@
+# Auto detect text files and perform LF normalization
+* text=auto
+
+# Windows scripts keep CRLF-tolerant handling but normalize in-repo to LF
+*.ps1 text eol=lf
+
+# Binary artifacts
+*.skill binary
+*.png binary
+*.jpg binary
+*.ico binary
