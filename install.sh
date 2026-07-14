@@ -18,10 +18,13 @@ Behavior:
     NON-destructive, per-agent native install of all 37 supported agents, use
     the full installer instead: `npx -y github:0point9bar/TLDR -- --all`.
   - Also installs /tldr command to supported agents' command dirs (claude, opencode, factory, cursor).
-  - --with-hermes updates ~/.hermes/SOUL.md too.
+  - --with-hermes updates ~/.hermes/SOUL.md too (prompt merge only).
   - If SOUL.md already exists, --with-hermes preserves it and appends or updates
     a managed TLDR block instead of blindly overwriting the whole file.
   - --overwrite-hermes replaces ~/.hermes/SOUL.md with TLDR.md only.
+  - Hermes skill-suite install (tldr, tldr-commit, tldr-review, tldr-help,
+    tldr-stats, tldr-compress, tldrcrew → ~/.hermes/skills/productivity/) is
+    handled by the full installer: node bin/install.js --only hermes
 EOF
 }
 

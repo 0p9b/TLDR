@@ -113,6 +113,54 @@ test('bare -- (POSIX end-of-options) is accepted and ignored', () => {
   assert.equal(r.status, 0);
 });
 
+test('bare --with-mcp-shrink (no upstream) exits 2 with hint', () => {
+  // tldr-shrink is a proxy and requires an upstream command — refuse bare flag.
+  const r = run('--with-mcp-shrink', '--non-interactive', '--dry-run');
+  assert.equal(r.status, 2);
+  assert.match(r.stderr, /requires an upstream command/);
+  assert.match(r.stderr, /server-filesystem/);
+});
+
+test('--with-mcp-shrink followed by another flag (no value) exits 2', () => {
+  const r = run('--with-mcp-shrink', '--dry-run', '--non-interactive');
+  assert.equal(r.status, 2);
+  assert.match(r.stderr, /requires an upstream command/);
+});
+
+test('--with-mcp-shrink="<cmd>" registers wrapping that upstream', () => {
+  const r = run(
+    '--with-mcp-shrink=npx @modelcontextprotocol/server-filesystem /tmp',
+    '--only', 'claude', '--dry-run', '--non-interactive',
+    '--config-dir', '/tmp/__cm_shrink_test'
+  );
+  assert.equal(r.status, 0);
+  // Dry-run only emits the planned `claude mcp add` line when claude is on
+  // PATH (installMcpShrink probes `claude mcp --help` first). Assert the
+  // wrapping content only when that line is actually present.
+  if (/would run: claude mcp add tldr-shrink/.test(r.stdout)) {
+    assert.match(r.stdout, /claude mcp add tldr-shrink .* npx @modelcontextprotocol\/server-filesystem \/tmp/);
+    assert.match(r.stdout, /(@zeropointninebar\/tldr-shrink|tldr-shrink\/index\.js)/);
+  }
+});
+
+test('--with-mcp-shrink "<cmd>" (space-separated) also accepted', () => {
+  const r = run(
+    '--with-mcp-shrink', 'npx @modelcontextprotocol/server-filesystem /tmp',
+    '--only', 'claude', '--dry-run', '--non-interactive',
+    '--config-dir', '/tmp/__cm_shrink_space'
+  );
+  assert.equal(r.status, 0);
+  if (/would run: claude mcp add tldr-shrink/.test(r.stdout)) {
+    assert.match(r.stdout, /tldr-shrink .* npx @modelcontextprotocol\/server-filesystem \/tmp/);
+  }
+});
+
+test('--all does NOT auto-enable mcp-shrink (no sensible default upstream)', () => {
+  const r = run('--all', '--only', 'claude', '--dry-run', '--non-interactive', '--config-dir', '/tmp/__cm_all_no_shrink');
+  assert.equal(r.status, 0);
+  assert.doesNotMatch(r.stdout, /wiring tldr-shrink MCP proxy/);
+});
+
 // ── FIX9: --only with a separators-only value must error, not mean "all" ──────
 test('FIX9: --only with a comma-only value exits 2', () => {
   const r = run('--only', ',', '--non-interactive');

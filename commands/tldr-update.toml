@@ -1,0 +1,2 @@
+description = "Update TLDR from GitHub and refresh installed agent hooks/skills/rules"
+prompt = "Update TLDR to the latest release (or a named ref), then refresh installed agents. If `bin/install.js` exists in the current repo (a TLDR checkout), run `node bin/install.js update {{args}}`. Else if `tldr` is on PATH, run `tldr update {{args}}`. Else run `npx -y github:0point9bar/TLDR -- update {{args}}`. Report before SHA, after SHA, and what was reinstalled. Prefer `--check` first when the user only asked whether an update is available."

@@ -153,3 +153,37 @@ test('hermes dry-run uninstall leaves the managed block in place', () => {
     fs.rmSync(home, { recursive: true, force: true });
   }
 });
+
+// ── 6. Skill suite copied into ~/.hermes/skills/productivity/ ──────────────
+const HERMES_SKILLS = [
+  'tldr', 'tldr-commit', 'tldr-review', 'tldr-help', 'tldr-stats', 'tldr-compress', 'tldrcrew', 'tldr-update',
+];
+
+test('hermes install copies TLDR skill suite into skills/productivity', () => {
+  const home = freshHome();
+  try {
+    const r = runInstaller(['--only', 'hermes'], home);
+    assert.notEqual(r.status, 2, `argv error: ${r.stderr}`);
+    for (const name of HERMES_SKILLS) {
+      const skillMd = path.join(home, 'skills', 'productivity', name, 'SKILL.md');
+      assert.ok(fs.existsSync(skillMd), `missing skill: ${skillMd}`);
+    }
+  } finally {
+    fs.rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test('hermes uninstall removes productivity skill dirs', () => {
+  const home = freshHome();
+  try {
+    runInstaller(['--only', 'hermes'], home);
+    const r = runInstaller(['--uninstall'], home);
+    assert.notEqual(r.status, 2);
+    for (const name of HERMES_SKILLS) {
+      const dir = path.join(home, 'skills', 'productivity', name);
+      assert.equal(fs.existsSync(dir), false, `skill survived uninstall: ${dir}`);
+    }
+  } finally {
+    fs.rmSync(home, { recursive: true, force: true });
+  }
+});

@@ -27,6 +27,7 @@ const OPENCLAW = require('./lib/openclaw');
 const { stripOpencodeAgentTools } = require('./lib/opencode-agent');
 const { atomicWrite, createSecureTempDir, safeRmdir } = require('./lib/safe-fs');
 const { findFencedBlocks, stripFencedBlocks, upsertFencedBlock } = require('./lib/fenced');
+const UPDATE = require('./lib/update');
 
 const REPO = '0point9bar/TLDR';
 // Pin remote fetches to an IMMUTABLE release tag, never the moving `main`. A
@@ -45,9 +46,14 @@ const INIT_SCRIPT_URL = `${RAW_BASE}/src/tools/tldr-init.js`;
 // would resolve to whatever an attacker publishes under that name and execute
 // it as an auto-started MCP server. Names under the @zeropointninebar scope cannot be
 // squatted by anyone who does not own the scope, which closes that hole. Until
-// the package is published, the npm-view probe below skips registration
-// cleanly rather than fetching anything.
+// the package is published, installMcpShrink falls back to the in-repo
+// src/mcp-servers/tldr-shrink when `npm view` fails (clone / local install).
 const MCP_SHRINK_PKG = '@zeropointninebar/tldr-shrink';
+const MCP_SHRINK_LOCAL = path.join('src', 'mcp-servers', 'tldr-shrink', 'index.js');
+// Hermes productivity skill suite (mirrors OPENCODE_SKILL_DIRS naming).
+const HERMES_SKILL_DIRS = [
+  'tldr', 'tldr-commit', 'tldr-review', 'tldr-help', 'tldr-stats', 'tldr-compress', 'tldrcrew', 'tldr-update',
+];
 // Hook files to copy. Statusline ships in both .sh (macOS/Linux) and .ps1
 // (Windows) flavors — copy both regardless of host OS so a roaming
 // $CLAUDE_CONFIG_DIR (e.g. dotfiles repo) keeps working across platforms.
@@ -61,6 +67,21 @@ const HOOK_FILES = [
   'tldr-statusline.ps1',
   'tldrcrew-model-overrides.js',
 ];
+
+// ── Subcommand peel ────────────────────────────────────────────────────────
+// `tldr update|install|uninstall|list …` dispatches by first argv token.
+// Bare flags with no subcommand keep install behavior (compat for
+// `npx … -- --only claude` and `node bin/install.js --all`).
+const SUBCOMMANDS = new Set(['update', 'install', 'uninstall', 'list']);
+
+function peelCommand(argv) {
+  if (!argv || argv.length === 0) return { command: 'install', argv: [] };
+  const first = argv[0];
+  if (SUBCOMMANDS.has(first)) {
+    return { command: first, argv: argv.slice(1) };
+  }
+  return { command: 'install', argv };
+}
 
 // ── Argv ───────────────────────────────────────────────────────────────────
 function parseArgs(argv) {
@@ -78,6 +99,21 @@ function parseArgs(argv) {
   const explicitToggle = {};
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
+    // --with-mcp-shrink=<upstream cmd>  (handled before the switch so the
+    // GNU-style =value form is recognized). Bare --with-mcp-shrink falls
+    // through to the switch and is rejected — tldr-shrink is a proxy and a
+    // stub registration just lands the user in a broken-MCP loop.
+    if (a.startsWith('--with-mcp-shrink=')) {
+      const raw = a.slice('--with-mcp-shrink='.length);
+      const tokens = raw.trim().split(/\s+/).filter(Boolean);
+      if (tokens.length === 0) {
+        die('error: --with-mcp-shrink requires an upstream command\n' +
+            '  example: --with-mcp-shrink="npx @modelcontextprotocol/server-filesystem /path"');
+      }
+      opts.withMcpShrink = tokens;
+      explicitToggle.withMcpShrink = tokens;
+      continue;
+    }
     switch (a) {
       case '--dry-run': opts.dryRun = true; break;
       case '--force': opts.force = true; break;
@@ -85,7 +121,24 @@ function parseArgs(argv) {
       case '--with-hooks': opts.withHooks = true; explicitToggle.withHooks = true; break;
       case '--no-hooks': opts.withHooks = false; explicitToggle.withHooks = false; break;
       case '--with-init': opts.withInit = true; explicitToggle.withInit = true; break;
-      case '--with-mcp-shrink': opts.withMcpShrink = true; explicitToggle.withMcpShrink = true; break;
+      case '--with-mcp-shrink': {
+        const v = argv[i + 1];
+        if (v && !v.startsWith('--')) {
+          i++;
+          const tokens = v.trim().split(/\s+/).filter(Boolean);
+          if (tokens.length === 0) {
+            die('error: --with-mcp-shrink requires an upstream command\n' +
+                '  example: --with-mcp-shrink "npx @modelcontextprotocol/server-filesystem /path"');
+          }
+          opts.withMcpShrink = tokens;
+          explicitToggle.withMcpShrink = tokens;
+        } else {
+          die('error: --with-mcp-shrink requires an upstream command — tldr-shrink\n' +
+              '  is a proxy and exits immediately without one. Pass the upstream:\n' +
+              '  --with-mcp-shrink="npx @modelcontextprotocol/server-filesystem /path"');
+        }
+        break;
+      }
       case '--no-mcp-shrink': opts.withMcpShrink = false; explicitToggle.withMcpShrink = false; break;
       case '--all': opts.all = true; break;
       case '--minimal': opts.minimal = true; break;
@@ -124,13 +177,15 @@ function parseArgs(argv) {
     }
   }
   if (opts.all && opts.minimal) die('error: --all and --minimal are mutually exclusive');
-  // --all/--minimal only set DEFAULTS for the extra toggles…
-  if (opts.all) { opts.withHooks = true; opts.withInit = true; opts.withMcpShrink = true; }
+  // --all turns on hooks + per-repo init only. It deliberately does NOT force
+  // withMcpShrink — tldr-shrink is a proxy that needs an upstream command, so
+  // there's no sensible "everything on" default. Opt in with
+  // --with-mcp-shrink="<upstream cmd>".
+  if (opts.all) { opts.withHooks = true; opts.withInit = true; }
   if (opts.minimal) { opts.withHooks = false; opts.withInit = false; opts.withMcpShrink = false; }
   // …then any EXPLICIT --with-*/--no-* toggle wins, regardless of order.
   for (const k of Object.keys(explicitToggle)) opts[k] = explicitToggle[k];
   if (opts.withHooks === 'auto') opts.withHooks = true;
-  // tldr-shrink is opt-in by default. --all still enables it explicitly.
   // Validate --only ids against the provider matrix. PROVIDERS is defined later
   // in the file but is in scope by the time this function runs.
   if (opts.only.length) {
@@ -200,7 +255,7 @@ const PROVIDERS = [
   { id: 'gemini',     label: 'Gemini CLI',          mech: 'gemini extensions install',     detect: 'command:gemini' },
   { id: 'opencode',   label: 'opencode',            mech: 'native opencode plugin',        detect: 'command:opencode' },
   { id: 'openclaw',   label: 'OpenClaw',            mech: 'workspace skill + SOUL.md',     detect: 'command:openclaw||dir:$HOME/.openclaw/workspace' },
-  { id: 'hermes',     label: 'Hermes Agent',        mech: 'native hermes SOUL.md merge',   detect: 'command:hermes' },
+  { id: 'hermes',     label: 'Hermes Agent',        mech: 'native hermes SOUL.md + productivity skills',   detect: 'command:hermes' },
   { id: 'codex',      label: 'Codex CLI',           mech: 'native AGENTS.md + skill',       detect: 'command:codex',           native: { dir: '$HOME/.codex',    rules: 'AGENTS.md', skills: 'skills' } },
   { id: 'pi',         label: 'Pi Coding Agent',     mech: 'native AGENTS.md + skill',       detect: 'command:pi',              native: { dir: '$HOME/.pi/agent', rules: 'AGENTS.md', skills: 'skills' } },
   { id: 'grok',       label: 'Grok Build CLI',      mech: 'native AGENTS.md + skill',       detect: 'command:grok',            native: { dir: '$HOME/.grok',     rules: 'AGENTS.md', skills: 'skills' } },
@@ -512,9 +567,9 @@ function installViaSkills(ctx, prov) {
 // opencode.json with a "plugin" array entry. Mirrors the Claude Code hook
 // architecture as closely as opencode allows — only the statusline is missing
 // (opencode's TUI exposes no plugin-writable badge).
-const OPENCODE_SKILL_DIRS  = ['tldr', 'tldr-commit', 'tldr-review', 'tldr-help', 'tldr-stats', 'tldr-compress', 'tldrcrew'];
+const OPENCODE_SKILL_DIRS  = ['tldr', 'tldr-commit', 'tldr-review', 'tldr-help', 'tldr-stats', 'tldr-compress', 'tldrcrew', 'tldr-update'];
 const OPENCODE_AGENT_FILES = ['tldrcrew-investigator.md', 'tldrcrew-builder.md', 'tldrcrew-reviewer.md'];
-const OPENCODE_COMMAND_FILES = ['tldr.md', 'tldr-commit.md', 'tldr-review.md', 'tldr-compress.md', 'tldr-stats.md', 'tldr-help.md'];
+const OPENCODE_COMMAND_FILES = ['tldr.md', 'tldr-commit.md', 'tldr-review.md', 'tldr-compress.md', 'tldr-stats.md', 'tldr-help.md', 'tldr-update.md'];
 const OPENCODE_PLUGIN_REL = './plugins/tldr/plugin.js';
 // Legacy sentinel from installs that pre-date the marker fence and the
 // persona-register cleanup. Detection-only (idempotency + uninstall of old
@@ -815,14 +870,21 @@ function installOpencode(ctx) {
       cfg.plugin.push(OPENCODE_PLUGIN_REL);
     }
     if (opts.withMcpShrink) {
+      // opts.withMcpShrink is the array of upstream-cmd tokens parseArgs
+      // produced. tldr-shrink is a proxy — it exits without an upstream.
       if (!cfg.mcp || typeof cfg.mcp !== 'object') cfg.mcp = {};
       if (!cfg.mcp['tldr-shrink']) {
-        cfg.mcp['tldr-shrink'] = {
-          type: 'local',
-          command: ['npx', '-y', MCP_SHRINK_PKG],
-          enabled: true,
-        };
-        process.stdout.write('  registered tldr-shrink MCP server\n');
+        const launch = resolveMcpShrinkLaunch(repoRoot);
+        if (!launch) {
+          warn('  tldr-shrink unavailable (npm + local path both missing); skipped MCP wiring');
+        } else {
+          cfg.mcp['tldr-shrink'] = {
+            type: 'local',
+            command: [...launch, ...opts.withMcpShrink],
+            enabled: true,
+          };
+          process.stdout.write(`  registered tldr-shrink MCP server (wraps: ${opts.withMcpShrink.join(' ')})\n`);
+        }
       }
     }
     SETTINGS.writeSettings(opencodeJson, cfg);
@@ -890,6 +952,19 @@ function hermesSoulPath() {
   return path.join(hermesConfigDir(), 'SOUL.md');
 }
 
+function hermesSkillsRoot() {
+  return path.join(hermesConfigDir(), 'skills', 'productivity');
+}
+
+// Prefer skills/<name>, fall back to plugins/tldr/skills/<name> (plugin mirror).
+function resolveHermesSkillSrc(repoRoot, skillDir) {
+  const primary = path.join(repoRoot, 'skills', skillDir);
+  if (fs.existsSync(primary)) return primary;
+  const mirror = path.join(repoRoot, 'plugins', 'tldr', 'skills', skillDir);
+  if (fs.existsSync(mirror)) return mirror;
+  return null;
+}
+
 // The managed block body is TLDR.md (repo root) — the same source install.sh
 // resolves as PROMPT_PATH. Returns null when there's no local clone on disk.
 function loadHermesRuleset(repoRoot) {
@@ -941,10 +1016,13 @@ function installHermes(ctx) {
   }
 
   const soul = hermesSoulPath();
+  const skillsRoot = hermesSkillsRoot();
 
   if (opts.dryRun) {
     note(`  would merge TLDR.md ruleset into ${soul}`);
     note(`  (between ${HERMES_MARK_BEGIN} / ${HERMES_MARK_END} markers)`);
+    note(`  would mkdir ${skillsRoot}/`);
+    note(`  would copy ${HERMES_SKILL_DIRS.length} skill dirs into ${skillsRoot}/`);
     results.installed.push('hermes');
     process.stdout.write('\n');
     return;
@@ -961,6 +1039,22 @@ function installHermes(ctx) {
       atomicWrite(soul, r.text, 0o644);
       process.stdout.write(`  ${r.action}: ${soul}\n`);
     }
+
+    // Also copy the TLDR skill suite into ~/.hermes/skills/productivity/
+    // (same pattern as caveman HERMES_SKILL_DIRS).
+    fs.mkdirSync(skillsRoot, { recursive: true });
+    for (const skillDir of HERMES_SKILL_DIRS) {
+      const srcDir = resolveHermesSkillSrc(repoRoot, skillDir);
+      const destDir = path.join(skillsRoot, skillDir);
+      if (srcDir) {
+        if (fs.existsSync(destDir)) fs.rmSync(destDir, { recursive: true, force: true });
+        copyDirRecursive(srcDir, destDir);
+        note(`  copied ${skillDir} → ${destDir}`);
+      } else {
+        warn(`  skill dir not found: skills/${skillDir} (or plugins/tldr/skills/${skillDir})`);
+      }
+    }
+
     results.installed.push('hermes');
   } catch (e) {
     warn('  hermes install failed: ' + (e && e.message || e));
@@ -1107,14 +1201,27 @@ async function installHooks(ctx) {
 }
 
 // ── MCP shrink wiring ─────────────────────────────────────────────────────
-function installMcpShrink(ctx) {
-  const { note, warn, opts } = ctx;
-  // Probe npm first — registry outage = clean skip with manual snippet.
+// Prefer published scoped package via npx; fall back to in-repo index.js when
+// `npm view` fails (unpublished / air-gapped clone). Returns argv prefix
+// (without upstream tokens), or null when neither is available.
+function resolveMcpShrinkLaunch(repoRoot) {
   const probe = captureSpawn('npm', ['view', MCP_SHRINK_PKG, 'name']);
-  if (probe.status !== 0) {
-    warn(`    'npm view ${MCP_SHRINK_PKG}' returned no metadata — registry unreachable or package missing.`);
-    note('    Skipping registration. Re-run --with-mcp-shrink when the package is available.');
-    return { kind: 'skip', why: 'npm registry probe failed' };
+  if (probe.status === 0) return ['npx', '-y', MCP_SHRINK_PKG];
+  const local = repoRoot && path.join(repoRoot, MCP_SHRINK_LOCAL);
+  if (local && fs.existsSync(local)) return [absoluteNodePath(), local];
+  return null;
+}
+
+function installMcpShrink(ctx) {
+  const { note, warn, opts, repoRoot } = ctx;
+  const launch = resolveMcpShrinkLaunch(repoRoot);
+  if (!launch) {
+    warn(`    'npm view ${MCP_SHRINK_PKG}' failed and local ${MCP_SHRINK_LOCAL} missing.`);
+    note('    Skipping registration. Re-run --with-mcp-shrink from a clone, or publish the package.');
+    return { kind: 'skip', why: 'tldr-shrink not available (npm + local)' };
+  }
+  if (launch[0] !== 'npx') {
+    note(`    npm package unavailable — using local ${MCP_SHRINK_LOCAL}`);
   }
   // Detect modern `claude mcp add`
   const help = captureSpawn('claude', ['mcp', '--help']);
@@ -1123,10 +1230,19 @@ function installMcpShrink(ctx) {
     note('    src/hooks/README.md to your Claude Code MCP config manually.');
     return { kind: 'skip', why: 'manual config required' };
   }
-  const r = runSpawn('claude', ['mcp', 'add', 'tldr-shrink', '--', 'npx', '-y', MCP_SHRINK_PKG], null, opts.dryRun);
+  // opts.withMcpShrink is always an array of upstream-cmd tokens by the
+  // time we get here; parseArgs rejects bare --with-mcp-shrink.
+  const upstream = opts.withMcpShrink;
+  const r = runSpawn(
+    'claude',
+    ['mcp', 'add', 'tldr-shrink', '--', ...launch, ...upstream],
+    null, opts.dryRun
+  );
   if ((r.status || 0) === 0) {
-    note('    registered. Wrap an upstream by editing the mcpServers entry — see:');
-    note(`    https://github.com/${REPO}/tree/main/src/mcp-servers/tldr-shrink`);
+    note(`    registered, wrapping: ${upstream.join(' ')}`);
+    note(`    Edit ~/.claude.json mcpServers["tldr-shrink"] to change the upstream,`);
+    note('    or `claude mcp remove tldr-shrink` to drop it.');
+    note(`    Docs: https://github.com/${REPO}/tree/main/src/mcp-servers/tldr-shrink`);
     return { kind: 'ok' };
   }
   return { kind: 'fail', why: 'claude mcp add failed' };
@@ -1410,9 +1526,22 @@ function uninstall(ctx) {
   // preserving any user-authored content above and below, via the shared
   // nearest-preceding-BEGIN stripper (data-loss-safe on orphan/duplicate
   // markers). Probed by SOUL.md existence; if absent (or no marker block), the
-  // stripper is a no-op.
+  // stripper is a no-op. Also remove skill folders installHermes copied.
   const hermesSoul = hermesSoulPath();
   stripFencedFile(hermesSoul, HERMES_MARK_BEGIN, HERMES_MARK_END, opts, note);
+  const hermesRoot = hermesSkillsRoot();
+  if (fs.existsSync(hermesRoot)) {
+    let prunedHermes = false;
+    for (const name of HERMES_SKILL_DIRS) {
+      const p = path.join(hermesRoot, name);
+      if (fs.existsSync(p)) {
+        if (!opts.dryRun) { try { fs.rmSync(p, { recursive: true, force: true }); } catch (_) {} }
+        note(`  removed ${p}`);
+        prunedHermes = true;
+      }
+    }
+    if (prunedHermes) ok('  pruned TLDR skills from Hermes');
+  }
 
   // Flag file
   const flag = path.join(configDir, '.tldr-active');
@@ -1469,7 +1598,8 @@ function printList(noColor) {
   }
   process.stdout.write('\n');
   process.stdout.write(c.dim('  Defaults: --with-hooks ON, --with-mcp-shrink OFF, --with-init OFF.\n'));
-  process.stdout.write(c.dim('  --all turns hooks + init + mcp-shrink on, --minimal turns all extras off.\n'));
+  process.stdout.write(c.dim('  --all = hooks + init (mcp-shrink needs an upstream — opt in explicitly).\n'));
+  process.stdout.write(c.dim('  --minimal turns hooks + init + mcp-shrink off.\n'));
 }
 
 function pad(s, n) { s = String(s); return s + ' '.repeat(Math.max(0, n - s.length)); }
@@ -1479,10 +1609,21 @@ function printHelp() {
   process.stdout.write(`tldr installer — detects your agents and installs TLDR for each one.
 
 USAGE
+  tldr [install] [flags]               # default when no subcommand
+  tldr update [flags]                  # fetch latest + reinstall agents
+  tldr uninstall [flags]
+  tldr list
   npx -y github:0point9bar/TLDR -- [flags]
-  node bin/install.js [flags]
+  node bin/install.js [update|install|uninstall|list] [flags]
   bash install-full.sh [flags]         # shim → npx
   pwsh install.ps1 [flags]             # shim → npx
+
+SUBCOMMANDS
+  install               Install / refresh (default; bare flags = install).
+  update                Fetch latest from GitHub and re-run install.
+                        See: tldr update --help
+  uninstall             Remove TLDR from this machine (same as --uninstall).
+  list                  Print provider matrix (same as --list).
 
 FLAGS
   --dry-run             Print what would run, do nothing.
@@ -1490,14 +1631,19 @@ FLAGS
   --only <agent>        Install only for the named agent. Repeatable.
                         See --list for valid ids.
   --skip-skills         Don't run the npx-skills auto-detect fallback.
-  --all                 Turn on hooks + init + mcp-shrink.
+  --all                 Turn on hooks + init. (mcp-shrink needs an upstream;
+                        pass --with-mcp-shrink="<cmd>" to add it.)
   --minimal             Just the plugin/extension install.
   --with-hooks          Claude Code: install SessionStart/UserPromptSubmit hooks
                         + statusline badge. (Default ON.)
   --no-hooks            Skip the hooks installer.
   --with-init           Write per-repo IDE rule files into \$PWD.
-  --with-mcp-shrink     Claude Code: register optional tldr-shrink MCP proxy. (Default OFF.)
-  --no-mcp-shrink       Skip MCP shrink.
+  --with-mcp-shrink="<upstream cmd>"
+                        Claude Code: register tldr-shrink MCP proxy wrapping
+                        the given upstream MCP server. (Default OFF.) Required
+                        value — tldr-shrink exits immediately without one.
+                        Example: --with-mcp-shrink="npx @modelcontextprotocol/server-filesystem /tmp"
+  --no-mcp-shrink       Skip MCP shrink. (Default.)
   --uninstall, -u       Remove TLDR from this machine.
   --config-dir <path>   Claude Code config dir for hook files + settings.json.
                         Default: \$CLAUDE_CONFIG_DIR or ~/.claude. Does NOT
@@ -1511,9 +1657,12 @@ FLAGS
 
 EXAMPLES
   npx -y github:0point9bar/TLDR                        # default install
-  npx -y github:0point9bar/TLDR -- --all               # all the trimmings
+  npx -y github:0point9bar/TLDR -- --all               # hooks + init
   npx -y github:0point9bar/TLDR -- --only claude --no-mcp-shrink
   npx -y github:0point9bar/TLDR -- --uninstall
+  tldr update                                          # from clone or ~/.tldr/src
+  tldr update --check                                  # report only
+  node bin/install.js update --ref v0.20.0
 
   Issues: https://github.com/${REPO}/issues
 `);
@@ -1521,7 +1670,30 @@ EXAMPLES
 
 // ── Main ───────────────────────────────────────────────────────────────────
 async function main() {
-  const opts = parseArgs(process.argv.slice(2));
+  const peeled = peelCommand(process.argv.slice(2));
+
+  // update is its own flow (git fetch + reinstall) — never enter install parseArgs.
+  if (peeled.command === 'update') {
+    let updateOpts;
+    try {
+      updateOpts = UPDATE.parseUpdateArgs(peeled.argv);
+    } catch (e) {
+      process.stderr.write((e && e.message ? e.message : String(e)) + '\n');
+      return 1;
+    }
+    const result = UPDATE.runUpdate(updateOpts, {
+      repoRoot: detectRepoRoot(),
+      candidates: [detectRepoRoot(), process.cwd()],
+    });
+    return result.exitCode || 0;
+  }
+
+  // Subcommand aliases → legacy flags (bare --list / --uninstall still work).
+  let argv = peeled.argv;
+  if (peeled.command === 'uninstall') argv = ['--uninstall', ...argv];
+  if (peeled.command === 'list') argv = ['--list', ...argv];
+
+  const opts = parseArgs(argv);
   const c = makeChalk(opts.noColor);
   if (opts.help) { printHelp(); return 0; }
   if (opts.listOnly) { printList(opts.noColor); return 0; }

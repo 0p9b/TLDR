@@ -34,7 +34,7 @@ What it does:
 
 - Auto-detects every supported agent installed on your machine (Claude Code, Cursor, Codex, etc.).
 - For each one, runs that agent's native install path (plugin / extension / rule file / `npx skills add`).
-- Wires Claude Code hooks and statusline badge on top. Optional `tldr-shrink` MCP middleware is available with `--with-mcp-shrink`.
+- Wires Claude Code hooks and statusline badge on top. (`tldr-shrink` MCP middleware is opt-in via `--with-mcp-shrink="<upstream cmd>"` — see flag table below.)
 - Skips anything you don't have. Safe to re-run. ~30 seconds end-to-end.
 
 Want to preview before installing? Use `--dry-run`:
@@ -53,6 +53,7 @@ If you want to install for one agent (or want to know exactly what command runs 
 | **Gemini CLI** | `gemini extensions install https://github.com/0point9bar/TLDR` | Yes |
 | **opencode** | `node bin/install.js --only opencode` *(or `npx -y github:0point9bar/TLDR -- --only opencode`)* | Yes (plugin + AGENTS.md) |
 | **OpenClaw** | `npx -y github:0point9bar/TLDR -- --only openclaw` | Yes (workspace skill + SOUL.md) |
+| **Hermes Agent** | `npx -y github:0point9bar/TLDR -- --only hermes` *(or `node bin/install.js --only hermes` from a clone)* | Yes (SOUL.md merge + native skills under `~/.hermes/skills/productivity/`) |
 | **Codex CLI** | `node bin/install.js --only codex` *(or `npx -y github:0point9bar/TLDR -- --only codex`)* | Yes (global `~/.codex/AGENTS.md` + skill) |
 | **Pi Coding Agent** | `node bin/install.js --only pi` *(or `npx -y github:0point9bar/TLDR -- --only pi`)* | Yes (global `~/.pi/agent/AGENTS.md` + skill) |
 | **Grok Build CLI** | `node bin/install.js --only grok` *(or `npx -y github:0point9bar/TLDR -- --only grok`)* | Yes (global `~/.grok/AGENTS.md` + skill) |
@@ -115,13 +116,13 @@ Useful flags:
 
 | Flag | What |
 |---|---|
-| `--all` | Plugin + hooks + statusline + MCP shrink + per-repo rule files in `$PWD`. The full ride. |
+| `--all` | Plugin + hooks + statusline + per-repo rule files in `$PWD`. (MCP shrink is opt-in — see `--with-mcp-shrink` below.) |
 | `--minimal` | Plugin / extension only. No hooks, no MCP shrink, no per-repo rules. |
 | `--only <id>` | One agent only. Repeatable: `--only claude --only cursor`. |
 | `--dry-run` | Print every command. Write nothing. |
 | `--with-init` | Drop always-on rule files into the current repo (`.cursor/`, `.windsurf/`, `.clinerules/`, `.github/copilot-instructions.md`, `.opencode/AGENTS.md`, `AGENTS.md`). OpenClaw uses its native installer path instead. |
-| `--with-mcp-shrink` | Register optional `tldr-shrink` MCP proxy. Off by default. |
-| `--no-mcp-shrink` | Explicitly skip MCP-shrink registration. |
+| `--with-mcp-shrink="<upstream cmd>"` | Register `tldr-shrink` MCP proxy wrapping the given upstream MCP server. **Off by default.** A value is required — tldr-shrink is a proxy and exits immediately without one. Example: `--with-mcp-shrink="npx @modelcontextprotocol/server-filesystem /tmp"`. Uses `npx -y @zeropointninebar/tldr-shrink` when published; from a clone, falls back to `src/mcp-servers/tldr-shrink` if `npm view` fails. |
+| `--no-mcp-shrink` | Skip MCP-shrink registration. (Default.) |
 | `--with-hooks` / `--no-hooks` | Force-on or force-off the Claude Code hook installer. (Default: on.) |
 | `--skip-skills` | Don't run the npx-skills auto-detect fallback when nothing else matched. |
 | `--config-dir <path>` | Claude Code config dir for hook files + `settings.json`. **Does NOT scope** `claude plugin install`, `gemini extensions install`, opencode (`XDG_CONFIG_HOME`), or openclaw (`OPENCLAW_WORKSPACE`) — those use their own paths. Default: `$CLAUDE_CONFIG_DIR` or `~/.claude`. `~` is expanded. |
@@ -173,6 +174,22 @@ If it's missing or empty, the SessionStart hook didn't fire. See troubleshooting
 
 Statusline should show `[TLDR]` (orange) at the bottom of Claude Code. After your first `/tldr-stats` run it appends a savings counter like `[TLDR] ⛏ 12.4k`.
 
+## Updating
+
+From a git clone (or the cache at `~/.tldr/src`):
+
+```bash
+tldr update                 # fetch + fast-forward (or latest vX.Y.Z tag) + reinstall
+node bin/install.js update  # same
+tldr update --check         # report only
+tldr update --ref v0.20.0   # pin a tag/branch
+tldr update --dry-run       # plan only
+```
+
+Uses the local TLDR checkout when you are inside that repo; otherwise clones/updates `~/.tldr/src`. After the tree moves, re-runs `install.js --non-interactive --force` so hooks/skills/rules refresh. `--force` only hard-resets the **local** checkout when a fast-forward fails — never force-pushes. Slash command: `/tldr-update`.
+
+curl|npx installs stay on the immutable `PINNED_REF` in `bin/install.js` until you update from a git clone as above.
+
 ## Uninstall
 
 ```bash
@@ -186,6 +203,7 @@ What it removes:
 - The Claude Code plugin and the Gemini CLI extension (if installed).
 - The opencode native plugin (`~/.config/opencode/plugins/tldr/`, the `plugin` and `mcp.tldr-shrink` entries from `opencode.json`, our skill/agent/command files, the TLDR block from `AGENTS.md`, and the opencode flag file).
 - The OpenClaw workspace skill folder and the marker-fenced block from `~/.openclaw/workspace/SOUL.md` (when present).
+- The Hermes managed block from `~/.hermes/SOUL.md` and TLDR skill dirs under `~/.hermes/skills/productivity/` (when present).
 - The `.tldr-active` flag file.
 
 What it does **not** remove:
@@ -253,8 +271,9 @@ The installer doesn't phone home. It writes to:
 - Each agent's own config location — Cursor's `.cursor/rules/`, Windsurf's `.windsurf/rules/`, opencode's `~/.config/opencode/`, etc.
 - Your current working directory (only with `--with-init`) — repo-local rule files.
 - `~/.openclaw/workspace/` (only with `--only openclaw`) — OpenClaw's global workspace skill + SOUL.md bootstrap.
+- `~/.hermes/SOUL.md` and `~/.hermes/skills/productivity/` (only with Hermes / `--only hermes`) — ruleset merge + skill suite copy.
 
-No telemetry. No analytics. The installer's own code makes no network calls. Network requests do happen indirectly through the per-agent CLIs it shells out to — `claude plugin marketplace add`, `claude plugin install`, `gemini extensions install`, `npm view tldr-shrink`, and `npx -y skills add`. Each fetches from its own registry (Anthropic / GitHub / npm). Source: [`bin/install.js`](../bin/install.js).
+No telemetry. No analytics. Run from a clone or via npx, the installer's own code makes no network calls — files are copied locally. One exception: run detached from any checkout (the rare curl-fallback path), it downloads the hook files from raw.githubusercontent.com pinned to an immutable release tag and verifies each against a SHA-256 manifest before wiring anything. Network requests also happen indirectly through the per-agent CLIs it shells out to — `claude plugin marketplace add`, `claude plugin install`, `gemini extensions install`, `npm view @zeropointninebar/tldr-shrink`, and `npx -y skills add`. Each fetches from its own registry (Anthropic / GitHub / npm). Source: [`bin/install.js`](../bin/install.js). After install: zero network calls, ever — full statement in [SECURITY.md → Privacy & Telemetry](../.github/SECURITY.md#privacy--telemetry).
 
 ---
 

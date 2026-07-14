@@ -28,7 +28,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p plugins/tldr/agents dist
-          for s in tldr tldr-compress tldrcrew tldr-commit tldr-review tldr-stats tldr-help; do
+          for s in tldr tldr-compress tldrcrew tldr-commit tldr-review tldr-stats tldr-help tldr-update; do
             mkdir -p "plugins/tldr/skills/$s"
             rsync -a --delete "skills/$s/" "plugins/tldr/skills/$s/"
           done

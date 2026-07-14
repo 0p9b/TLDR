@@ -6,13 +6,34 @@
 
 The result: tool catalogs that the model burns fewer tokens to read, with no change to tool semantics.
 
+**Package name:** `@zeropointninebar/tldr-shrink` (scoped). The unscoped name `tldr-shrink` is **not** published and must not be used with `npx` (dependency-confusion risk).
+
 ## Install
 
+The scoped package may not be on the public npm registry yet. Prefer a **local/file** install from a clone:
+
 ```bash
-npm install -g tldr-shrink
-# or run directly via npx
-npx tldr-shrink <upstream-command> [...args]
+# From a TLDR clone
+node src/mcp-servers/tldr-shrink/index.js <upstream-command> [...args]
+
+# Or point npm/npx at the local package directory
+npx --prefix ./src/mcp-servers/tldr-shrink tldr-shrink <upstream-command> [...args]
 ```
+
+When published:
+
+```bash
+npm install -g @zeropointninebar/tldr-shrink
+npx -y @zeropointninebar/tldr-shrink <upstream-command> [...args]
+```
+
+The full installer wires this for you:
+
+```bash
+node bin/install.js --with-mcp-shrink="npx @modelcontextprotocol/server-filesystem /path"
+```
+
+If `npm view @zeropointninebar/tldr-shrink` fails, the installer falls back to the in-repo `src/mcp-servers/tldr-shrink/index.js` automatically.
 
 ## Use it
 
@@ -22,9 +43,25 @@ Wrap any MCP server in your Claude Code (or other client) config:
 {
   "mcpServers": {
     "fs-shrunk": {
+      "command": "node",
+      "args": [
+        "/absolute/path/to/TLDR/src/mcp-servers/tldr-shrink/index.js",
+        "npx", "@modelcontextprotocol/server-filesystem", "/path/to/dir"
+      ]
+    }
+  }
+}
+```
+
+Or, once the scoped package is published:
+
+```jsonc
+{
+  "mcpServers": {
+    "fs-shrunk": {
       "command": "npx",
       "args": [
-        "tldr-shrink",
+        "-y", "@zeropointninebar/tldr-shrink",
         "npx", "@modelcontextprotocol/server-filesystem", "/path/to/dir"
       ]
     }
@@ -51,7 +88,7 @@ By design, v1 is conservative:
 
 ## Status
 
-Pre-1.0 — the compression rules and field set may change. The plugin is part of the TLDR ecosystem; see the repo for the full skill suite (`tldr`, `tldrcrew`, `tldr-compress`, `tldr-stats`).
+Pre-1.0 — the compression rules and field set may change. The plugin is part of the TLDR ecosystem; see the repo for the full skill suite (`tldr`, `tldrcrew`, `tldr-compress`, `tldr-stats`). Not faking an npm publish: use the local path until `@zeropointninebar/tldr-shrink` is actually published.
 
 ## License
 

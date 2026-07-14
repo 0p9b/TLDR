@@ -102,13 +102,13 @@ test('opencode fresh install drops plugin, commands, agents, skills, AGENTS.md, 
     assert.ok(fs.existsSync(path.join(ocDir, 'plugins', 'tldr', 'package.json')), 'plugin package.json missing');
     assert.ok(fs.existsSync(path.join(ocDir, 'plugins', 'tldr', 'tldr-config.cjs')), 'tldr-config.cjs sibling missing');
 
-    for (const f of ['tldr.md', 'tldr-commit.md', 'tldr-review.md', 'tldr-compress.md', 'tldr-stats.md', 'tldr-help.md']) {
+    for (const f of ['tldr.md', 'tldr-commit.md', 'tldr-review.md', 'tldr-compress.md', 'tldr-stats.md', 'tldr-help.md', 'tldr-update.md']) {
       assert.ok(fs.existsSync(path.join(ocDir, 'commands', f)), `command ${f} missing`);
     }
     for (const f of ['tldrcrew-investigator.md', 'tldrcrew-builder.md', 'tldrcrew-reviewer.md']) {
       assert.ok(fs.existsSync(path.join(ocDir, 'agents', f)), `agent ${f} missing`);
     }
-    for (const name of ['tldr', 'tldr-commit', 'tldr-review', 'tldr-help', 'tldr-stats', 'tldr-compress', 'tldrcrew']) {
+    for (const name of ['tldr', 'tldr-commit', 'tldr-review', 'tldr-help', 'tldr-stats', 'tldr-compress', 'tldrcrew', 'tldr-update']) {
       assert.ok(fs.existsSync(path.join(ocDir, 'skills', name, 'SKILL.md')), `skill ${name}/SKILL.md missing`);
     }
     assert.ok(fs.existsSync(path.join(ocDir, 'AGENTS.md')), 'AGENTS.md missing');

@@ -90,6 +90,8 @@ Optional Hermes merge into `~/.hermes/SOUL.md`:
 curl -fsSL https://raw.githubusercontent.com/0point9bar/TLDR/main/install.sh | bash -s -- --with-hermes
 ```
 
+(Prompt-only. Full Hermes skill suite → `node bin/install.js --only hermes`.)
+
 Preview: `curl -fsSL https://raw.githubusercontent.com/0point9bar/TLDR/main/install.sh`
 
 Manual paths and copy/paste commands: [`data/agent-locations.md`](data/agent-locations.md).
@@ -107,13 +109,23 @@ From a clone:
 ```bash
 git clone https://github.com/0point9bar/TLDR.git && cd TLDR
 node bin/install.js          # detected agents
-node bin/install.js --all    # hooks + per-repo init + optional extras
+node bin/install.js --all    # hooks + per-repo init (mcp-shrink needs upstream — opt in)
+node bin/install.js --with-mcp-shrink="npx @modelcontextprotocol/server-filesystem /tmp"
 node bin/install.js --list   # agent matrix
 ```
 
 Windows: [`install.ps1`](install.ps1) runs the Node installer.
 
 **Full flags, per-agent table, verify, uninstall, troubleshooting:** **[docs/INSTALL.md](docs/INSTALL.md)**.
+
+### Updating
+
+```bash
+tldr update                 # or: node bin/install.js update
+tldr update --check         # report available update only
+```
+
+Refreshes the git tree (local clone or `~/.tldr/src`), then reinstalls agent hooks/skills. Details: **[docs/INSTALL.md § Updating](docs/INSTALL.md#updating)**. Slash: `/tldr-update`.
 
 ## Verify (prompt install)
 

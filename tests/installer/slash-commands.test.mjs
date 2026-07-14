@@ -67,7 +67,7 @@ test('tldr-stats.toml prompt is intercepted by the mode-tracker regex', () => {
 
 // Every command documented for Claude Code. Each needs a .md (Claude Code)
 // AND a .toml (Gemini extension) sibling — the formats coexist in commands/.
-const DOCUMENTED_COMMANDS = ['tldr', 'tldr-commit', 'tldr-review', 'tldr-stats', 'tldr-init'];
+const DOCUMENTED_COMMANDS = ['tldr', 'tldr-commit', 'tldr-review', 'tldr-stats', 'tldr-init', 'tldr-update'];
 
 for (const name of DOCUMENTED_COMMANDS) {
   test(`commands/${name}.md exists so Claude Code registers /${name}`, () => {
