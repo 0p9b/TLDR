@@ -57,6 +57,7 @@ If you want to install for one agent (or want to know exactly what command runs 
 | **Codex CLI** | `node bin/install.js --only codex` *(or `npx -y github:0point9bar/TLDR -- --only codex`)* | Yes (global `~/.codex/AGENTS.md` + skill) |
 | **Pi Coding Agent** | `node bin/install.js --only pi` *(or `npx -y github:0point9bar/TLDR -- --only pi`)* | Yes (global `~/.pi/agent/AGENTS.md` + skill) |
 | **Grok Build CLI** | `node bin/install.js --only grok` *(or `npx -y github:0point9bar/TLDR -- --only grok`)* | Yes (global `~/.grok/AGENTS.md` + skill) |
+| **oh-my-pi** | `node bin/install.js --only omp` *(or `npx -y github:0point9bar/TLDR -- --only omp`)* | Yes (global `~/.omp/agent/AGENTS.md` + skill) |
 | **Cursor** | `node bin/install.js --only cursor` *(or `npx -y github:0point9bar/TLDR -- --only cursor`)* | Skill (`/tldr`) at `~/.cursor/skills/`; cursor-agent has no global rules file, so always-on is per-repo via `--with-init` |
 | **Windsurf** | `npx skills add 0point9bar/TLDR -a windsurf` | Per-session by default; `--with-init` for an always-on rule file |
 | **Cline** | `npx skills add 0point9bar/TLDR -a cline` | Per-session by default; `--with-init` for an always-on rule file |
