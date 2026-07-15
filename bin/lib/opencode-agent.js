@@ -1,11 +1,18 @@
 'use strict';
 
-// Strip Claude-Code-style `tools:` frontmatter from subagents before copying
-// them into opencode. Claude accepts YAML arrays (`tools: [Read, Grep, Bash]`),
-// but opencode expects a map or no field. Omitting the field preserves default
-// opencode tools while the agent prompt body still self-restricts behavior.
+// Strip Claude-Code-only frontmatter from subagents before copying them into
+// opencode. Two Claude-isms break opencode, so both are dropped:
+//   • `tools: [Read, Grep, Bash]` — Claude accepts the YAML array, but opencode
+//     wants a map or no field and rejects the array (one bad file invalidates
+//     the whole opencode config, so nothing loads).
+//   • `model: haiku` — an Anthropic alias. When opencode has no Anthropic
+//     provider authed, spawning the subagent fails with "Model not found:
+//     haiku/." (confirmed at runtime). Dropping it lets the subagent inherit
+//     opencode's default model and spawn.
+// Omitting both preserves opencode's defaults while the agent prompt body still
+// self-restricts behavior.
 
-const TOOLS_FIELD_RE = /^tools[ \t]*:/;
+const DROP_FIELD_RE = /^(tools|model)[ \t]*:/;
 const CONTINUATION_RE = /^[ \t]/;
 const FRONTMATTER_FENCE = '---\n';
 
@@ -24,7 +31,7 @@ function stripOpencodeAgentTools(content) {
       if (CONTINUATION_RE.test(line)) continue;
       dropping = false;
     }
-    if (TOOLS_FIELD_RE.test(line)) { dropping = true; continue; }
+    if (DROP_FIELD_RE.test(line)) { dropping = true; continue; }
     out.push(line);
   }
 

@@ -1,5 +1,6 @@
 // Subagent frontmatter sanitizer for opencode.
-// opencode rejects Claude's YAML array form: `tools: [Read, Grep, Bash]`.
+// opencode rejects Claude's YAML array `tools:` and can't resolve the Anthropic
+// `model:` alias without an Anthropic provider — the sanitizer strips both.
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -40,7 +41,7 @@ body line two
   assert.doesNotMatch(fm, /^tools:/m);
   assert.match(fm, /^name: test-agent$/m);
   assert.match(fm, /^description: short description$/m);
-  assert.match(fm, /^model: haiku$/m);
+  assert.doesNotMatch(fm, /^model:/m);
   assert.match(out, /^body line one$/m);
 });
 
@@ -59,7 +60,7 @@ body
   const fm = frontmatter(out);
   assert.doesNotMatch(fm, /^tools:/m);
   assert.doesNotMatch(fm, /^\s+- Read$/m);
-  assert.match(fm, /^model: haiku$/m);
+  assert.doesNotMatch(fm, /^model:/m);
 });
 
 test('preserves folded `description: >` continuation lines', () => {
@@ -81,11 +82,11 @@ body
   assert.match(fm, /no scope creep/);
 });
 
-test('returns input unchanged without frontmatter or tools field', () => {
+test('returns input unchanged without frontmatter or tools/model field', () => {
   assert.equal(stripOpencodeAgentTools('body\ntools: [Read]\n'), 'body\ntools: [Read]\n');
   const src = `---
 name: x
-model: haiku
+description: y
 ---
 body
 `;
@@ -105,6 +106,7 @@ test('all shipped tldrcrew agents become opencode-safe after transform', () => {
     const fm = frontmatter(out);
     assert.match(frontmatter(src), /^tools:\s*\[/m, `${f}: source should retain Claude tools array`);
     assert.doesNotMatch(fm, /^tools:/m, `${f}: tools field survived`);
+    assert.doesNotMatch(fm, /^model:/m, `${f}: model field survived`);
     assert.match(fm, /^name: tldrcrew-/m, `${f}: name preserved`);
     assert.equal(
       out.replace(/^---\n[\s\S]*?\n---\n/, ''),
