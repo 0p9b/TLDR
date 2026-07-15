@@ -35,6 +35,7 @@ test('--list prints provider matrix', () => {
   assert.match(r.stdout, /codex\b/);
   assert.match(r.stdout, /\bpi\b/);
   assert.match(r.stdout, /grok\b/);
+  assert.match(r.stdout, /\bomp\b/);
   // a still-soft provider keeps its (soft) tag (antigravity is now native)
   assert.match(r.stdout, /copilot\b.*\(soft\)/);
 });
@@ -139,7 +140,7 @@ test('--with-mcp-shrink="<cmd>" registers wrapping that upstream', () => {
   // wrapping content only when that line is actually present.
   if (/would run: claude mcp add tldr-shrink/.test(r.stdout)) {
     assert.match(r.stdout, /claude mcp add tldr-shrink .* npx @modelcontextprotocol\/server-filesystem \/tmp/);
-    assert.match(r.stdout, /(@zeropointninebar\/tldr-shrink|tldr-shrink\/index\.js)/);
+    assert.match(r.stdout, /(@0point9bar\/tldr-shrink|tldr-shrink\/index\.js)/);
   }
 });
 

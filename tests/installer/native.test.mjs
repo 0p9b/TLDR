@@ -1,16 +1,17 @@
-// Native AGENTS.md-convention installs — codex / pi / grok / antigravity / cursor.
+// Native AGENTS.md-convention installs — codex / pi / grok / antigravity / omp / cursor.
 //
 // These agents auto-discover skills from a directory; most also auto-load a
 // global AGENTS.md. TLDR installs natively (no npx, no network): the fenced
-// ruleset in <dir>/<rules> (when the agent has a global rules file) plus
-// skills/tldr/ copied into <dir>/<skills>/tldr/. Driven purely through a
-// throwaway HOME; `--only <id>` makes the provider explicit.
+// ruleset in <dir>/<rules> (when the agent has a global rules file) plus the
+// full TLDR skill suite copied into <dir>/<skills>/<name>/. Driven purely
+// through a throwaway HOME; `--only <id>` makes the provider explicit.
 //
 // Verified surfaces (from on-machine recon):
 //   codex       → ~/.codex/AGENTS.md              + ~/.codex/skills/
 //   pi          → ~/.pi/agent/AGENTS.md           + ~/.pi/agent/skills/
 //   grok        → ~/.grok/AGENTS.md               + ~/.grok/skills/
 //   antigravity → ~/.gemini/config/AGENTS.md      + ~/.gemini/config/skills/
+//   omp         → ~/.omp/agent/AGENTS.md          + ~/.omp/agent/skills/
 //   cursor      → (no global rules file)          + ~/.cursor/skills/   [skill-only]
 
 import { test } from 'node:test';
@@ -36,6 +37,7 @@ const NATIVE = [
   { id: 'pi', sub: ['.pi', 'agent'], rules: true },
   { id: 'grok', sub: ['.grok'], rules: true },
   { id: 'antigravity', sub: ['.gemini', 'config'], rules: true },
+  { id: 'omp', sub: ['.omp', 'agent'], rules: true },
   { id: 'cursor', sub: ['.cursor'], rules: false },
 ];
 
@@ -74,6 +76,10 @@ for (const prov of NATIVE) {
       const skill = skillFor(home, prov);
       assert.ok(fs.existsSync(skill), `${prov.id}: skills/tldr/SKILL.md not copied`);
       assert.match(fs.readFileSync(skill, 'utf8'), /name:\s*tldr/, `${prov.id}: SKILL.md frontmatter missing`);
+
+      // Full TLDR skill suite installs, not just skills/tldr (parity with opencode/hermes).
+      const suiteSkill = path.join(dirFor(home, prov), 'skills', 'tldr-commit', 'SKILL.md');
+      assert.ok(fs.existsSync(suiteSkill), `${prov.id}: full skill suite not copied (tldr-commit missing)`);
 
       if (prov.rules) {
         const rules = rulesFor(home, prov);
@@ -118,11 +124,16 @@ for (const prov of NATIVE) {
       }
       fs.mkdirSync(path.dirname(skillFor(home, prov)), { recursive: true });
       fs.writeFileSync(skillFor(home, prov), '---\nname: tldr\n---\n');
+      // A second suite skill must also be swept (uninstall loops the full suite).
+      const suiteSkill = path.join(dirFor(home, prov), 'skills', 'tldr-commit', 'SKILL.md');
+      fs.mkdirSync(path.dirname(suiteSkill), { recursive: true });
+      fs.writeFileSync(suiteSkill, '---\nname: tldr-commit\n---\n');
 
       const r = runInstaller(['--uninstall'], home);
       assert.notEqual(r.status, 2, `argv error: ${r.stderr}`);
 
       assert.equal(fs.existsSync(skillFor(home, prov)), false, `${prov.id}: skill not removed`);
+      assert.equal(fs.existsSync(suiteSkill), false, `${prov.id}: full-suite skill not removed`);
       if (prov.rules) {
         const text = fs.readFileSync(rulesFor(home, prov), 'utf8');
         assert.equal(countMarkers(text, BEGIN), 0, `${prov.id}: begin marker survived`);

@@ -34,7 +34,7 @@ Once installed, nothing in TLDR touches the network. Verified against the code (
 ### At install time: exactly these network requests, nothing else
 
 - `curl … install.sh | bash` (or `irm … install.ps1 | iex`) fetches the shim from raw.githubusercontent.com, which delegates to `npx -y github:0point9bar/TLDR` — npm fetches this repo from GitHub.
-- The installer shells out to per-agent CLIs which fetch from their own registries: `claude plugin marketplace add` / `claude plugin install` (Anthropic/GitHub), `gemini extensions install`, `npm view @zeropointninebar/tldr-shrink`, `npx -y skills add` (npm).
+- The installer shells out to per-agent CLIs which fetch from their own registries: `claude plugin marketplace add` / `claude plugin install` (Anthropic/GitHub), `gemini extensions install`, `npm view @0point9bar/tldr-shrink`, `npx -y skills add` (npm).
 - **Rare fallback:** if the installer runs detached from a repo checkout, it downloads the hook files from raw.githubusercontent.com **pinned to an immutable release tag** and verifies each against a published SHA-256 manifest before wiring anything (a mismatch aborts). From a normal clone or npx run, files are copied locally — offline installs work. For unpublished `tldr-shrink`, a clone install falls back to `src/mcp-servers/tldr-shrink` with no registry fetch.
 
 Nothing is uploaded in any of these steps. Details and the full list of paths written: [docs/INSTALL.md → Privacy](../docs/INSTALL.md#privacy).
