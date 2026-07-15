@@ -66,7 +66,7 @@ The active-mode flag is `$CLAUDE_CONFIG_DIR/.tldr-active`; stats suffix is `$CLA
 
 ## opencode notes
 
-`bin/install.js` copies `agents/tldrcrew-*.md` into opencode after passing them through `bin/lib/opencode-agent.js`. That strips Claude-style `tools: [Read, Grep, Bash]` frontmatter because opencode rejects YAML arrays there.
+`bin/install.js` copies `agents/tldrcrew-*.md` into opencode after passing them through `bin/lib/opencode-agent.js` (`stripOpencodeAgentTools`). That strips two Claude-isms: the `tools: [Read, Grep, Bash]` array (opencode rejects YAML arrays — one bad file invalidates the whole opencode config) and the `model:` field (an Anthropic alias opencode can't resolve without an Anthropic provider, so the subagent would fail to spawn with "Model not found"). Claude keeps both.
 
 ## MCP shrink notes
 
