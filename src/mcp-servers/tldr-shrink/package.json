@@ -1,5 +1,5 @@
 {
-  "name": "@zeropointninebar/tldr-shrink",
+  "name": "@0point9bar/tldr-shrink",
   "version": "0.1.0",
   "description": "MCP proxy that compresses prose fields (tool descriptions, etc.) using TLDR rules. Same accuracy, fewer context tokens.",
   "license": "MIT",
@@ -9,7 +9,7 @@
     "url": "git+https://github.com/0point9bar/TLDR.git",
     "directory": "src/mcp-servers/tldr-shrink"
   },
-  "author": "ZeroPointNineBar",
+  "author": "0point9bar",
   "keywords": [
     "mcp",
     "model-context-protocol",

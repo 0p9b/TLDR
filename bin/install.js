@@ -44,11 +44,11 @@ const INIT_SCRIPT_URL = `${RAW_BASE}/src/tools/tldr-init.js`;
 // Scoped package name, owner-controlled. A bare unscoped name ('tldr-shrink')
 // is a dependency-confusion vector: it is not published, so `npx -y tldr-shrink`
 // would resolve to whatever an attacker publishes under that name and execute
-// it as an auto-started MCP server. Names under the @zeropointninebar scope cannot be
+// it as an auto-started MCP server. Names under the @0point9bar scope cannot be
 // squatted by anyone who does not own the scope, which closes that hole. Until
 // the package is published, installMcpShrink falls back to the in-repo
 // src/mcp-servers/tldr-shrink when `npm view` fails (clone / local install).
-const MCP_SHRINK_PKG = '@zeropointninebar/tldr-shrink';
+const MCP_SHRINK_PKG = '@0point9bar/tldr-shrink';
 const MCP_SHRINK_LOCAL = path.join('src', 'mcp-servers', 'tldr-shrink', 'index.js');
 // Hermes productivity skill suite (mirrors OPENCODE_SKILL_DIRS naming).
 const HERMES_SKILL_DIRS = [
@@ -259,6 +259,11 @@ const PROVIDERS = [
   { id: 'codex',      label: 'Codex CLI',           mech: 'native AGENTS.md + skill',       detect: 'command:codex',           native: { dir: '$HOME/.codex',    rules: 'AGENTS.md', skills: 'skills' } },
   { id: 'pi',         label: 'Pi Coding Agent',     mech: 'native AGENTS.md + skill',       detect: 'command:pi',              native: { dir: '$HOME/.pi/agent', rules: 'AGENTS.md', skills: 'skills' } },
   { id: 'grok',       label: 'Grok Build CLI',      mech: 'native AGENTS.md + skill',       detect: 'command:grok',            native: { dir: '$HOME/.grok',     rules: 'AGENTS.md', skills: 'skills' } },
+  // oh-my-pi (omp): loads a user-scope AGENTS.md and auto-discovers skills from
+  // <agentDir>/skills. Default agent dir is ~/.omp/agent; it becomes
+  // ~/.omp/profiles/<name>/agent only when OMP_PROFILE/PI_PROFILE is set — the
+  // installer targets the default (~/.omp/agent).
+  { id: 'omp',        label: 'oh-my-pi',            mech: 'native AGENTS.md + skill',       detect: 'command:omp',             native: { dir: '$HOME/.omp/agent', rules: 'AGENTS.md', skills: 'skills' } },
 
   // IDE / VS Code-family — extension probes are precise. Cursor/Windsurf also
   // ship CLI binaries; we drop the dir fallback because the dir lingers after
@@ -695,9 +700,11 @@ function stripFencedRuleset(agentsMd, opts, note) {
 
 // ── Generic native install for AGENTS.md-convention agents ────────────────
 // For agents that auto-load a global AGENTS.md and auto-discover skills from a
-// directory. Writes the fenced ruleset into <dir>/<rules> and drops skills/tldr/
-// into <dir>/<skills>/tldr/. Driven by a provider's `native` config. Used by
-// codex (~/.codex), pi (~/.pi/agent), grok (~/.grok). Needs a local repo clone.
+// directory. Writes the fenced ruleset into <dir>/<rules> (skipped when
+// rules:null) and copies the full TLDR skill suite (OPENCODE_SKILL_DIRS) into
+// <dir>/<skills>/<name>/. Driven by a provider's `native` config. Used by codex
+// (~/.codex), pi (~/.pi/agent), grok (~/.grok), antigravity (~/.gemini/config),
+// omp (~/.omp/agent), and cursor (~/.cursor, skill-only). Needs a local clone.
 function installNativeAgentsMd(ctx, prov) {
   const { say, note, warn, opts, repoRoot, results } = ctx;
   results.detected++;
@@ -706,10 +713,10 @@ function installNativeAgentsMd(ctx, prov) {
   const dir = expandHome(n.dir);
   // `rules: null` means the agent has NO global always-on rules file (e.g.
   // cursor-agent, which only honors per-project AGENTS.md/.cursor/rules); we
-  // still install the auto-discovered skill and point users at --with-init.
+  // still install the auto-discovered skills and point users at --with-init.
   const rulesFile = n.rules === null ? null : path.join(dir, n.rules || 'AGENTS.md');
-  const skillDest = path.join(dir, n.skills || 'skills', 'tldr');
-  const noRulesNote = '  no global always-on rules file for this agent — skill installed; use --with-init for a per-repo rule file';
+  const skillsDir = path.join(dir, n.skills || 'skills');
+  const noRulesNote = '  no global always-on rules file for this agent — skills installed; use --with-init for a per-repo rule file';
 
   if (!repoRoot) {
     warn(`  ${prov.label} native install requires a local clone of the TLDR repo.`);
@@ -721,21 +728,24 @@ function installNativeAgentsMd(ctx, prov) {
   if (opts.dryRun) {
     if (rulesFile) note(`  would write fenced TLDR ruleset to ${rulesFile}`);
     else note(noRulesNote);
-    note(`  would copy skills/tldr/ into ${skillDest}/`);
+    note(`  would copy ${OPENCODE_SKILL_DIRS.length} skill dirs into ${skillsDir}/`);
     results.installed.push(prov.id);
     process.stdout.write('\n');
     return;
   }
   try {
     fs.mkdirSync(dir, { recursive: true });
-    const skillSrc = path.join(repoRoot, 'skills', 'tldr');
-    if (fs.existsSync(skillSrc)) {
-      if (fs.existsSync(skillDest) && !opts.force) {
-        note(`  skipped ${skillDest}/ (exists; --force to overwrite)`);
-      } else {
-        copyDirRecursive(skillSrc, skillDest);
-        process.stdout.write(`  installed: ${skillDest}/\n`);
-      }
+    // Full TLDR skill suite (same canonical list opencode/hermes ship) so native
+    // agents auto-discover all skills, not just skills/tldr. Per-skill skip
+    // (unless --force) mirrors the opencode loop.
+    const skillSrcDir = path.join(repoRoot, 'skills');
+    for (const name of OPENCODE_SKILL_DIRS) {
+      const src = path.join(skillSrcDir, name);
+      const dest = path.join(skillsDir, name);
+      if (!fs.existsSync(src)) continue;
+      if (fs.existsSync(dest) && !opts.force) { note(`  skipped ${dest}/ (exists; --force to overwrite)`); continue; }
+      copyDirRecursive(src, dest);
+      process.stdout.write(`  installed: ${dest}/\n`);
     }
     if (rulesFile) writeFencedRuleset(rulesFile, repoRoot, opts, note);
     else note(noRulesNote);
@@ -1542,22 +1552,35 @@ function uninstall(ctx) {
     }
     if (prunedHermes) ok('  pruned TLDR skills from Hermes');
   }
+  // Legacy sweep: an older installer copied skills into ~/.hermes/skills/tldr
+  // (current path is ~/.hermes/skills/productivity/). Remove the stale dir so
+  // uninstall doesn't orphan it. Guarded; no-op when absent.
+  const hermesLegacy = path.join(hermesConfigDir(), 'skills', 'tldr');
+  if (fs.existsSync(hermesLegacy)) {
+    if (!opts.dryRun) { try { fs.rmSync(hermesLegacy, { recursive: true, force: true }); } catch (_) {} }
+    note(`  removed ${hermesLegacy}`);
+    ok('  pruned legacy TLDR skill dir from Hermes');
+  }
 
   // Flag file
   const flag = path.join(configDir, '.tldr-active');
   if (fs.existsSync(flag) && !opts.dryRun) { try { fs.unlinkSync(flag); } catch (_) {} }
 
-  // Native AGENTS.md-convention installs (codex/pi/grok) — strip the fenced
-  // TLDR block from each agent's rules file and remove its skills/tldr/ dir.
+  // Native AGENTS.md-convention installs (codex/pi/grok/antigravity/omp/cursor)
+  // — strip the fenced TLDR block from each agent's rules file and remove every
+  // skill dir the install copied (the full OPENCODE_SKILL_DIRS suite).
   for (const prov of PROVIDERS.filter(p => p.native)) {
     const ndir = expandHome(prov.native.dir);
     const rulesFile = prov.native.rules === null ? null : path.join(ndir, prov.native.rules || 'AGENTS.md');
-    const skillDir = path.join(ndir, prov.native.skills || 'skills', 'tldr');
+    const skillsDir = path.join(ndir, prov.native.skills || 'skills');
     let touched = rulesFile ? stripFencedRuleset(rulesFile, opts, note) : false;
-    if (fs.existsSync(skillDir)) {
-      if (!opts.dryRun) { try { fs.rmSync(skillDir, { recursive: true, force: true }); } catch (_) {} }
-      note(`  removed ${skillDir}`);
-      touched = true;
+    for (const name of OPENCODE_SKILL_DIRS) {
+      const skillDir = path.join(skillsDir, name);
+      if (fs.existsSync(skillDir)) {
+        if (!opts.dryRun) { try { fs.rmSync(skillDir, { recursive: true, force: true }); } catch (_) {} }
+        note(`  removed ${skillDir}`);
+        touched = true;
+      }
     }
     if (touched) ok(`  pruned TLDR entries for ${prov.label}`);
   }

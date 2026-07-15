@@ -6,7 +6,7 @@
 
 The result: tool catalogs that the model burns fewer tokens to read, with no change to tool semantics.
 
-**Package name:** `@zeropointninebar/tldr-shrink` (scoped). The unscoped name `tldr-shrink` is **not** published and must not be used with `npx` (dependency-confusion risk).
+**Package name:** `@0point9bar/tldr-shrink` (scoped). The unscoped name `tldr-shrink` is **not** published and must not be used with `npx` (dependency-confusion risk).
 
 ## Install
 
@@ -23,8 +23,8 @@ npx --prefix ./src/mcp-servers/tldr-shrink tldr-shrink <upstream-command> [...ar
 When published:
 
 ```bash
-npm install -g @zeropointninebar/tldr-shrink
-npx -y @zeropointninebar/tldr-shrink <upstream-command> [...args]
+npm install -g @0point9bar/tldr-shrink
+npx -y @0point9bar/tldr-shrink <upstream-command> [...args]
 ```
 
 The full installer wires this for you:
@@ -33,7 +33,7 @@ The full installer wires this for you:
 node bin/install.js --with-mcp-shrink="npx @modelcontextprotocol/server-filesystem /path"
 ```
 
-If `npm view @zeropointninebar/tldr-shrink` fails, the installer falls back to the in-repo `src/mcp-servers/tldr-shrink/index.js` automatically.
+If `npm view @0point9bar/tldr-shrink` fails, the installer falls back to the in-repo `src/mcp-servers/tldr-shrink/index.js` automatically.
 
 ## Use it
 
@@ -61,7 +61,7 @@ Or, once the scoped package is published:
     "fs-shrunk": {
       "command": "npx",
       "args": [
-        "-y", "@zeropointninebar/tldr-shrink",
+        "-y", "@0point9bar/tldr-shrink",
         "npx", "@modelcontextprotocol/server-filesystem", "/path/to/dir"
       ]
     }
@@ -88,7 +88,7 @@ By design, v1 is conservative:
 
 ## Status
 
-Pre-1.0 — the compression rules and field set may change. The plugin is part of the TLDR ecosystem; see the repo for the full skill suite (`tldr`, `tldrcrew`, `tldr-compress`, `tldr-stats`). Not faking an npm publish: use the local path until `@zeropointninebar/tldr-shrink` is actually published.
+Pre-1.0 — the compression rules and field set may change. The plugin is part of the TLDR ecosystem; see the repo for the full skill suite (`tldr`, `tldrcrew`, `tldr-compress`, `tldr-stats`). Not faking an npm publish: use the local path until `@0point9bar/tldr-shrink` is actually published.
 
 ## License
 
