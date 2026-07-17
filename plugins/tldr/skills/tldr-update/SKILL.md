@@ -25,7 +25,7 @@ Pick the first that applies:
    ```
 3. **Fallback**:
    ```bash
-   npx -y github:0point9bar/TLDR -- update $ARGUMENTS
+   npx -y github:0p9b/TLDR -- update $ARGUMENTS
    ```
 
 ## Useful flags

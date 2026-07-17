@@ -8,6 +8,6 @@ Write the per-repo TLDR rule files (Cursor, Windsurf, Cline, Copilot, opencode, 
 How to run the init script — pick the first that applies:
 
 1. If `src/tools/tldr-init.js` exists in the current repo (you are inside a TLDR checkout), run: `node src/tools/tldr-init.js $ARGUMENTS`
-2. Otherwise download and run the standalone script (it is self-contained and supports stdin execution): `curl -fsSL https://raw.githubusercontent.com/0point9bar/TLDR/main/src/tools/tldr-init.js | node - $ARGUMENTS`
+2. Otherwise download and run the standalone script (it is self-contained and supports stdin execution): `curl -fsSL https://raw.githubusercontent.com/0p9b/TLDR/main/src/tools/tldr-init.js | node - $ARGUMENTS`
 
 Use `--dry-run` first if the user did not pass `--force`, so we never silently overwrite an existing rule file.

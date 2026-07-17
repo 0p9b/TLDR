@@ -116,7 +116,7 @@ test('runUpdate --check with mocked local tree: update available', () => {
     let installCalled = false;
     const git = scriptedGit([
       ['rev-parse --is-inside-work-tree', { stdout: 'true\n' }],
-      ['remote -v', { stdout: 'origin\thttps://github.com/0point9bar/TLDR.git (fetch)\n' }],
+      ['remote -v', { stdout: 'origin\thttps://github.com/0p9b/TLDR.git (fetch)\n' }],
       ['rev-parse HEAD', { stdout: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n' }],
       ['rev-parse --abbrev-ref HEAD', { stdout: 'main\n' }],
       ['describe --tags --exact-match HEAD', { status: 1 }],
@@ -163,7 +163,7 @@ test('runUpdate --dry-run does not call install when already up to date', () => 
     const lines = [];
     const git = scriptedGit([
       ['rev-parse --is-inside-work-tree', { stdout: 'true\n' }],
-      ['remote -v', { stdout: 'origin\thttps://github.com/0point9bar/TLDR.git (fetch)\n' }],
+      ['remote -v', { stdout: 'origin\thttps://github.com/0p9b/TLDR.git (fetch)\n' }],
       ['rev-parse HEAD', { stdout: sha + '\n' }],
       ['rev-parse --abbrev-ref HEAD', { stdout: 'main\n' }],
       ['describe --tags --exact-match HEAD', { status: 1 }],
@@ -211,7 +211,7 @@ test('runUpdate applies ff-only merge then reinstalls', () => {
       const key = args.join(' ');
       if (key === 'rev-parse --is-inside-work-tree') return { status: 0, stdout: 'true\n', stderr: '' };
       if (key === 'remote -v') {
-        return { status: 0, stdout: 'origin\thttps://github.com/0point9bar/TLDR.git (fetch)\n', stderr: '' };
+        return { status: 0, stdout: 'origin\thttps://github.com/0p9b/TLDR.git (fetch)\n', stderr: '' };
       }
       if (key === 'rev-parse HEAD') return { status: 0, stdout: state.head + '\n', stderr: '' };
       if (key === 'rev-parse --abbrev-ref HEAD') return { status: 0, stdout: 'main\n', stderr: '' };
@@ -270,7 +270,7 @@ test('runUpdate --force hard-resets when ff-only fails', () => {
       const key = args.join(' ');
       if (key === 'rev-parse --is-inside-work-tree') return { status: 0, stdout: 'true\n', stderr: '' };
       if (key === 'remote -v') {
-        return { status: 0, stdout: 'origin\thttps://github.com/0point9bar/TLDR.git (fetch)\n', stderr: '' };
+        return { status: 0, stdout: 'origin\thttps://github.com/0p9b/TLDR.git (fetch)\n', stderr: '' };
       }
       if (key === 'rev-parse HEAD') return { status: 0, stdout: state.head + '\n', stderr: '' };
       if (key === 'rev-parse --abbrev-ref HEAD') return { status: 0, stdout: 'main\n', stderr: '' };
@@ -331,7 +331,7 @@ test('resolveSourceDir prefers local TLDR git checkout over cache', () => {
     fs.mkdirSync(path.join(tmp, '.git'));
     const git = scriptedGit([
       ['rev-parse --is-inside-work-tree', { stdout: 'true\n' }],
-      ['remote -v', { stdout: 'origin\thttps://github.com/0point9bar/TLDR.git (fetch)\n' }],
+      ['remote -v', { stdout: 'origin\thttps://github.com/0p9b/TLDR.git (fetch)\n' }],
     ]);
     const src = UPDATE.resolveSourceDir([tmp], git);
     assert.equal(src.kind, 'local');

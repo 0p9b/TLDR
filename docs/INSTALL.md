@@ -13,7 +13,7 @@ Requires **Node ≥18**. Detects agents, installs plugins/extensions/skills/hook
 **macOS / Linux / WSL / Git Bash**
 
 ```bash
-npx -y github:0point9bar/TLDR
+npx -y github:0p9b/TLDR
 ```
 
 Equivalent from a clone: `node bin/install.js`
@@ -21,13 +21,13 @@ Equivalent from a clone: `node bin/install.js`
 **Prompt only (no Node)** — copies [`TLDR.md`](../TLDR.md) to standard agent paths; see [README.md#install--prompt-only-installsh](../README.md#install--prompt-only-installsh):
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/0point9bar/TLDR/main/install.sh | bash -s --
+curl -fsSL https://raw.githubusercontent.com/0p9b/TLDR/main/install.sh | bash -s --
 ```
 
 **Windows (PowerShell 5.1+)**
 
 ```powershell
-irm https://raw.githubusercontent.com/0point9bar/TLDR/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/0p9b/TLDR/main/install.ps1 | iex
 ```
 
 What it does:
@@ -40,7 +40,7 @@ What it does:
 Want to preview before installing? Use `--dry-run`:
 
 ```bash
-npx -y github:0point9bar/TLDR -- --dry-run
+npx -y github:0p9b/TLDR -- --dry-run
 ```
 
 ## Per-agent install
@@ -49,44 +49,44 @@ If you want to install for one agent (or want to know exactly what command runs 
 
 | Agent | Install command | Auto-activates? |
 |---|---|:-:|
-| **Claude Code** | `claude plugin marketplace add 0point9bar/TLDR && claude plugin install tldr@tldr` | Yes |
-| **Gemini CLI** | `gemini extensions install https://github.com/0point9bar/TLDR` | Yes |
-| **opencode** | `node bin/install.js --only opencode` *(or `npx -y github:0point9bar/TLDR -- --only opencode`)* | Yes (plugin + AGENTS.md) |
-| **OpenClaw** | `npx -y github:0point9bar/TLDR -- --only openclaw` | Yes (workspace skill + SOUL.md) |
-| **Hermes Agent** | `npx -y github:0point9bar/TLDR -- --only hermes` *(or `node bin/install.js --only hermes` from a clone)* | Yes (SOUL.md merge + native skills under `~/.hermes/skills/productivity/`) |
-| **Codex CLI** | `node bin/install.js --only codex` *(or `npx -y github:0point9bar/TLDR -- --only codex`)* | Yes (global `~/.codex/AGENTS.md` + skill) |
-| **Pi Coding Agent** | `node bin/install.js --only pi` *(or `npx -y github:0point9bar/TLDR -- --only pi`)* | Yes (global `~/.pi/agent/AGENTS.md` + skill) |
-| **Grok Build CLI** | `node bin/install.js --only grok` *(or `npx -y github:0point9bar/TLDR -- --only grok`)* | Yes (global `~/.grok/AGENTS.md` + skill) |
-| **oh-my-pi** | `node bin/install.js --only omp` *(or `npx -y github:0point9bar/TLDR -- --only omp`)* | Yes (global `~/.omp/agent/AGENTS.md` + skill) |
-| **Cursor** | `node bin/install.js --only cursor` *(or `npx -y github:0point9bar/TLDR -- --only cursor`)* | Skill (`/tldr`) at `~/.cursor/skills/`; cursor-agent has no global rules file, so always-on is per-repo via `--with-init` |
-| **Windsurf** | `npx skills add 0point9bar/TLDR -a windsurf` | Per-session by default; `--with-init` for an always-on rule file |
-| **Cline** | `npx skills add 0point9bar/TLDR -a cline` | Per-session by default; `--with-init` for an always-on rule file |
-| **GitHub Copilot** *(soft probe)* | `npx -y github:0point9bar/TLDR -- --only copilot --with-init` | Repo-wide instructions via `--with-init` |
-| **Continue** | `npx skills add 0point9bar/TLDR -a continue` | No — say `/tldr` |
-| **Kilo Code** | `npx skills add 0point9bar/TLDR -a kilo` | No |
-| **Roo Code** | `npx skills add 0point9bar/TLDR -a roo` | No |
-| **Augment Code** | `npx skills add 0point9bar/TLDR -a augment` | No |
-| **Aider Desk** | `npx skills add 0point9bar/TLDR -a aider-desk` | No |
-| **Sourcegraph Amp** | `npx skills add 0point9bar/TLDR -a amp` | No |
-| **IBM Bob** | `npx skills add 0point9bar/TLDR -a bob` | No |
-| **Crush** | `npx skills add 0point9bar/TLDR -a crush` | No |
-| **Devin (terminal)** | `npx skills add 0point9bar/TLDR -a devin` | No |
-| **Droid (Factory)** | `npx skills add 0point9bar/TLDR -a droid` | No |
-| **ForgeCode** | `npx skills add 0point9bar/TLDR -a forgecode` | No |
-| **Block Goose** | `npx skills add 0point9bar/TLDR -a goose` | No |
-| **iFlow CLI** | `npx skills add 0point9bar/TLDR -a iflow-cli` | No |
-| **Kiro CLI** | `npx skills add 0point9bar/TLDR -a kiro-cli` | No |
-| **Mistral Vibe** | `npx skills add 0point9bar/TLDR -a mistral-vibe` | No |
-| **OpenHands** | `npx skills add 0point9bar/TLDR -a openhands` | No |
-| **Qwen Code** | `npx skills add 0point9bar/TLDR -a qwen-code` | No |
-| **Atlassian Rovo Dev** | `npx skills add 0point9bar/TLDR -a rovodev` | No |
-| **Tabnine CLI** | `npx skills add 0point9bar/TLDR -a tabnine-cli` | No |
-| **Trae** | `npx skills add 0point9bar/TLDR -a trae` | No |
-| **Warp** | `npx skills add 0point9bar/TLDR -a warp` | No |
-| **Replit Agent** | `npx skills add 0point9bar/TLDR -a replit` | No |
-| **JetBrains Junie** *(soft probe)* | `npx skills add 0point9bar/TLDR -a junie` | No |
-| **Qoder** *(soft probe)* | `npx skills add 0point9bar/TLDR -a qoder` | No |
-| **Google Antigravity** | `node bin/install.js --only antigravity` *(or `npx -y github:0point9bar/TLDR -- --only antigravity`)* | Yes (global `~/.gemini/config/AGENTS.md` + skill) |
+| **Claude Code** | `claude plugin marketplace add 0p9b/TLDR && claude plugin install tldr@tldr` | Yes |
+| **Gemini CLI** | `gemini extensions install https://github.com/0p9b/TLDR` | Yes |
+| **opencode** | `node bin/install.js --only opencode` *(or `npx -y github:0p9b/TLDR -- --only opencode`)* | Yes (plugin + AGENTS.md) |
+| **OpenClaw** | `npx -y github:0p9b/TLDR -- --only openclaw` | Yes (workspace skill + SOUL.md) |
+| **Hermes Agent** | `npx -y github:0p9b/TLDR -- --only hermes` *(or `node bin/install.js --only hermes` from a clone)* | Yes (SOUL.md merge + native skills under `~/.hermes/skills/productivity/`) |
+| **Codex CLI** | `node bin/install.js --only codex` *(or `npx -y github:0p9b/TLDR -- --only codex`)* | Yes (global `~/.codex/AGENTS.md` + skill) |
+| **Pi Coding Agent** | `node bin/install.js --only pi` *(or `npx -y github:0p9b/TLDR -- --only pi`)* | Yes (global `~/.pi/agent/AGENTS.md` + skill) |
+| **Grok Build CLI** | `node bin/install.js --only grok` *(or `npx -y github:0p9b/TLDR -- --only grok`)* | Yes (global `~/.grok/AGENTS.md` + skill) |
+| **oh-my-pi** | `node bin/install.js --only omp` *(or `npx -y github:0p9b/TLDR -- --only omp`)* | Yes (global `~/.omp/agent/AGENTS.md` + skill) |
+| **Cursor** | `node bin/install.js --only cursor` *(or `npx -y github:0p9b/TLDR -- --only cursor`)* | Skill (`/tldr`) at `~/.cursor/skills/`; cursor-agent has no global rules file, so always-on is per-repo via `--with-init` |
+| **Windsurf** | `npx skills add 0p9b/TLDR -a windsurf` | Per-session by default; `--with-init` for an always-on rule file |
+| **Cline** | `npx skills add 0p9b/TLDR -a cline` | Per-session by default; `--with-init` for an always-on rule file |
+| **GitHub Copilot** *(soft probe)* | `npx -y github:0p9b/TLDR -- --only copilot --with-init` | Repo-wide instructions via `--with-init` |
+| **Continue** | `npx skills add 0p9b/TLDR -a continue` | No — say `/tldr` |
+| **Kilo Code** | `npx skills add 0p9b/TLDR -a kilo` | No |
+| **Roo Code** | `npx skills add 0p9b/TLDR -a roo` | No |
+| **Augment Code** | `npx skills add 0p9b/TLDR -a augment` | No |
+| **Aider Desk** | `npx skills add 0p9b/TLDR -a aider-desk` | No |
+| **Sourcegraph Amp** | `npx skills add 0p9b/TLDR -a amp` | No |
+| **IBM Bob** | `npx skills add 0p9b/TLDR -a bob` | No |
+| **Crush** | `npx skills add 0p9b/TLDR -a crush` | No |
+| **Devin (terminal)** | `npx skills add 0p9b/TLDR -a devin` | No |
+| **Droid (Factory)** | `npx skills add 0p9b/TLDR -a droid` | No |
+| **ForgeCode** | `npx skills add 0p9b/TLDR -a forgecode` | No |
+| **Block Goose** | `npx skills add 0p9b/TLDR -a goose` | No |
+| **iFlow CLI** | `npx skills add 0p9b/TLDR -a iflow-cli` | No |
+| **Kiro CLI** | `npx skills add 0p9b/TLDR -a kiro-cli` | No |
+| **Mistral Vibe** | `npx skills add 0p9b/TLDR -a mistral-vibe` | No |
+| **OpenHands** | `npx skills add 0p9b/TLDR -a openhands` | No |
+| **Qwen Code** | `npx skills add 0p9b/TLDR -a qwen-code` | No |
+| **Atlassian Rovo Dev** | `npx skills add 0p9b/TLDR -a rovodev` | No |
+| **Tabnine CLI** | `npx skills add 0p9b/TLDR -a tabnine-cli` | No |
+| **Trae** | `npx skills add 0p9b/TLDR -a trae` | No |
+| **Warp** | `npx skills add 0p9b/TLDR -a warp` | No |
+| **Replit Agent** | `npx skills add 0p9b/TLDR -a replit` | No |
+| **JetBrains Junie** *(soft probe)* | `npx skills add 0p9b/TLDR -a junie` | No |
+| **Qoder** *(soft probe)* | `npx skills add 0p9b/TLDR -a qoder` | No |
+| **Google Antigravity** | `node bin/install.js --only antigravity` *(or `npx -y github:0p9b/TLDR -- --only antigravity`)* | Yes (global `~/.gemini/config/AGENTS.md` + skill) |
 
 "Soft probe" = installer won't auto-detect these without `--only <id>` because there's no reliable always-on signal (Copilot subscription state is auth-gated; the others have no CLI / config-dir-only). Pass the flag when you want them.
 
@@ -100,7 +100,7 @@ If you'd rather see exactly what runs:
 
 ```bash
 # Clone the repo
-git clone https://github.com/0point9bar/TLDR.git
+git clone https://github.com/0p9b/TLDR.git
 cd TLDR
 
 # Preview every command the installer would run
@@ -142,7 +142,7 @@ For agents without a hook system (Cursor, Windsurf, Cline, Copilot, and friends)
 node bin/install.js --with-init
 
 # Or pull the rule body straight in (manual)
-curl -fsSL https://raw.githubusercontent.com/0point9bar/TLDR/main/src/rules/tldr-activate.md \
+curl -fsSL https://raw.githubusercontent.com/0p9b/TLDR/main/src/rules/tldr-activate.md \
   > .cursor/rules/tldr.mdc   # or .windsurf/rules/tldr.md, .clinerules/tldr.md, .github/copilot-instructions.md
 ```
 
@@ -194,7 +194,7 @@ curl|npx installs stay on the immutable `PINNED_REF` in `bin/install.js` until y
 ## Uninstall
 
 ```bash
-npx -y github:0point9bar/TLDR -- --uninstall
+npx -y github:0p9b/TLDR -- --uninstall
 ```
 
 What it removes:
@@ -209,7 +209,7 @@ What it removes:
 
 What it does **not** remove:
 
-- Skills installed via `npx skills add` — the `skills` CLI manages those. Run `npx skills remove 0point9bar/TLDR` (or use your IDE's skill manager).
+- Skills installed via `npx skills add` — the `skills` CLI manages those. Run `npx skills remove 0p9b/TLDR` (or use your IDE's skill manager).
 - Per-repo rule files written by `--with-init` (`.cursor/rules/`, `.windsurf/rules/`, `.clinerules/`, `.github/copilot-instructions.md`, `.opencode/AGENTS.md`, `AGENTS.md`). Delete by hand if you want.
 
 ## Troubleshooting
@@ -222,7 +222,7 @@ Open your agent in this repo and say:
 
 Agent read repo. Agent run install. TLDR make agent talk less — agent first job is install TLDR to talk less. Snake eat tail.
 
-Still broken? [Open an issue](https://github.com/0point9bar/TLDR/issues).
+Still broken? [Open an issue](https://github.com/0p9b/TLDR/issues).
 
 **"I ran the installer but Claude Code isn't talking TLDR."**
 
@@ -278,4 +278,4 @@ No telemetry. No analytics. Run from a clone or via npx, the installer's own cod
 
 ---
 
-Stuck? Open an issue: <https://github.com/0point9bar/TLDR/issues>
+Stuck? Open an issue: <https://github.com/0p9b/TLDR/issues>

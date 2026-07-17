@@ -56,4 +56,4 @@ Resolution: env var > config file > `full`.
 
 ## More
 
-Full docs: https://github.com/0point9bar/TLDR
+Full docs: https://github.com/0p9b/TLDR

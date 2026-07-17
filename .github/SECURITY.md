@@ -6,8 +6,8 @@ Only the `main` branch is supported.
 
 ## Reporting a Vulnerability
 
-- **Sensitive issues:** please use [GitHub security advisories](https://github.com/0point9bar/TLDR/security/advisories/new).
-- **Non-sensitive issues:** open a regular [issue](https://github.com/0point9bar/TLDR/issues).
+- **Sensitive issues:** please use [GitHub security advisories](https://github.com/0p9b/TLDR/security/advisories/new).
+- **Non-sensitive issues:** open a regular [issue](https://github.com/0p9b/TLDR/issues).
 
 Target response time: **within 7 days** for valid vulnerability reports. This is a best-effort commitment, not a paid-support SLA.
 
@@ -33,7 +33,7 @@ Once installed, nothing in TLDR touches the network. Verified against the code (
 
 ### At install time: exactly these network requests, nothing else
 
-- `curl … install.sh | bash` (or `irm … install.ps1 | iex`) fetches the shim from raw.githubusercontent.com, which delegates to `npx -y github:0point9bar/TLDR` — npm fetches this repo from GitHub.
+- `curl … install.sh | bash` (or `irm … install.ps1 | iex`) fetches the shim from raw.githubusercontent.com, which delegates to `npx -y github:0p9b/TLDR` — npm fetches this repo from GitHub.
 - The installer shells out to per-agent CLIs which fetch from their own registries: `claude plugin marketplace add` / `claude plugin install` (Anthropic/GitHub), `gemini extensions install`, `npm view @0point9bar/tldr-shrink`, `npx -y skills add` (npm).
 - **Rare fallback:** if the installer runs detached from a repo checkout, it downloads the hook files from raw.githubusercontent.com **pinned to an immutable release tag** and verifies each against a published SHA-256 manifest before wiring anything (a mismatch aborts). From a normal clone or npx run, files are copied locally — offline installs work. For unpublished `tldr-shrink`, a clone install falls back to `src/mcp-servers/tldr-shrink` with no registry fetch.
 
@@ -41,7 +41,7 @@ Nothing is uploaded in any of these steps. Details and the full list of paths wr
 
 ### What stays on your machine
 
-Everything. Skill/rule files in your agents' config dirs, the mode flag file and merged `settings.json` under `~/.claude/` (or `$CLAUDE_CONFIG_DIR`), the lifetime-savings statusline file, Hermes `SOUL.md` + `~/.hermes/skills/productivity/` skill copies, and `.original.md` backups from `/tldr-compress`. Uninstall removes what the installer wrote: `npx -y github:0point9bar/TLDR -- --uninstall`.
+Everything. Skill/rule files in your agents' config dirs, the mode flag file and merged `settings.json` under `~/.claude/` (or `$CLAUDE_CONFIG_DIR`), the lifetime-savings statusline file, Hermes `SOUL.md` + `~/.hermes/skills/productivity/` skill copies, and `.original.md` backups from `/tldr-compress`. Uninstall removes what the installer wrote: `npx -y github:0p9b/TLDR -- --uninstall`.
 
 ### Enterprise / air-gapped use
 

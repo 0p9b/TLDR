@@ -8,7 +8,7 @@ const os = require('os');
 const path = require('path');
 const child_process = require('child_process');
 
-const REPO = '0point9bar/TLDR';
+const REPO = '0p9b/TLDR';
 const REPO_URL = `https://github.com/${REPO}.git`;
 const CACHE_DIR = path.join(os.homedir(), '.tldr', 'src');
 const RELEASE_TAG_RE = /^v\d+\.\d+\.\d+$/;
@@ -112,7 +112,7 @@ function isInsideGitWorkTree(dir, git) {
 function remotesMentionTldr(dir, git) {
   const r = git(dir, ['remote', '-v']);
   if (!gitOk(r)) return false;
-  return /github\.com[/:]0point9bar\/TLDR(?:\.git)?(?:\s|$)/i.test(r.stdout);
+  return /github\.com[/:]0p9b\/TLDR(?:\.git)?(?:\s|$)/i.test(r.stdout);
 }
 
 function packageIsTldrInstaller(dir) {

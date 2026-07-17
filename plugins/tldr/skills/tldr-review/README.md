@@ -30,4 +30,4 @@ L107: ❓ q: why drop the cache here? Reads on next request will miss.
 ## See also
 
 - [`SKILL.md`](./SKILL.md) — full LLM-facing instructions
-- [TLDR README](https://github.com/0point9bar/TLDR/blob/main/README.md) — repo overview
+- [TLDR README](https://github.com/0p9b/TLDR/blob/main/README.md) — repo overview

@@ -4,10 +4,10 @@
   "description": "Verdict-first communication mode. Cuts filler while preserving technical accuracy.",
   "author": {
     "name": "ZeroPointNineBar",
-    "url": "https://github.com/0point9bar"
+    "url": "https://github.com/0p9b"
   },
-  "homepage": "https://github.com/0point9bar/TLDR",
-  "repository": "https://github.com/0point9bar/TLDR",
+  "homepage": "https://github.com/0p9b/TLDR",
+  "repository": "https://github.com/0p9b/TLDR",
   "license": "MIT",
   "skills": "./skills/",
   "assets": {

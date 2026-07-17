@@ -6,8 +6,8 @@ type: software
 authors:
   - alias: ZeroPointNineBar
     affiliation: Independent
-url: "https://github.com/0point9bar/TLDR"
-repository-code: "https://github.com/0point9bar/TLDR"
+url: "https://github.com/0p9b/TLDR"
+repository-code: "https://github.com/0p9b/TLDR"
 license: MIT
 version: "0.20.0"
 date-released: "2026-06-30"

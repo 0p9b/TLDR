@@ -165,8 +165,8 @@ def verify_skills_lock() -> None:
     )
     for name, entry in lock["skills"].items():
         ensure(
-            entry.get("source") == "0point9bar/TLDR",
-            f"skills-lock.json: {name} source must be 0point9bar/TLDR (self-contained repo, no upstream pins)",
+            entry.get("source") == "0p9b/TLDR",
+            f"skills-lock.json: {name} source must be 0p9b/TLDR (self-contained repo, no upstream pins)",
         )
         skill_path = ROOT / entry["skillPath"]
         ensure(skill_path.exists(), f"skills-lock.json: {entry['skillPath']} missing")

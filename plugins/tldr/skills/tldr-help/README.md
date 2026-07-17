@@ -35,4 +35,4 @@ Deactivate:
 ## See also
 
 - [`SKILL.md`](./SKILL.md) — full reference card
-- [TLDR README](https://github.com/0point9bar/TLDR/blob/main/README.md) — repo overview
+- [TLDR README](https://github.com/0p9b/TLDR/blob/main/README.md) — repo overview

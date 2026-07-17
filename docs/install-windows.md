@@ -1,6 +1,6 @@
 # Windows install fallback
 
-If `irm https://raw.githubusercontent.com/0point9bar/TLDR/main/install.ps1 | iex` fails on Windows (issues #249, #199, #72), set up plugin-skill activation by hand. This does **not** install the standalone hooks or the statusline — for those, run the unified Node installer afterwards: `npx -y github:0point9bar/TLDR -- --only claude` (or `node bin/install.js --only claude` from a clone).
+If `irm https://raw.githubusercontent.com/0p9b/TLDR/main/install.ps1 | iex` fails on Windows (issues #249, #199, #72), set up plugin-skill activation by hand. This does **not** install the standalone hooks or the statusline — for those, run the unified Node installer afterwards: `npx -y github:0p9b/TLDR -- --only claude` (or `node bin/install.js --only claude` from a clone).
 
 ```powershell
 $ClaudeDir = if ($env:CLAUDE_CONFIG_DIR) { $env:CLAUDE_CONFIG_DIR } else { Join-Path $HOME ".claude" }
@@ -24,7 +24,7 @@ if (-not ($marketplace.PSObject.Properties.Name -contains "plugins")) {
 }
 $plugins = [ordered]@{}
 foreach ($p in $marketplace.plugins.PSObject.Properties) { $plugins[$p.Name] = $p.Value }
-$plugins["tldr"] = [ordered]@{ name = "tldr"; source = "0point9bar/TLDR"; version = "main" }
+$plugins["tldr"] = [ordered]@{ name = "tldr"; source = "0p9b/TLDR"; version = "main" }
 $marketplace.plugins = [pscustomobject]$plugins
 $marketplace | ConvertTo-Json -Depth 10 | Set-Content -Path $MarketplaceFile -Encoding UTF8
 ```
@@ -42,7 +42,7 @@ Verify: `Test-Path "$PluginSkillDir\SKILL.md"` should print `True`. Restart Clau
 `npx skills` uses symlinks by default. If symlinks fail, add `--copy`:
 
 ```powershell
-npx skills add 0point9bar/TLDR --copy
+npx skills add 0p9b/TLDR --copy
 ```
 
 ## Want it always on (any agent)?

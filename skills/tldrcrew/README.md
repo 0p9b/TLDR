@@ -58,4 +58,4 @@ Overrides patch only the `model:` line in the installed agent's frontmatter; the
 - [`agents/tldrcrew-investigator.md`](../../agents/tldrcrew-investigator.md)
 - [`agents/tldrcrew-builder.md`](../../agents/tldrcrew-builder.md)
 - [`agents/tldrcrew-reviewer.md`](../../agents/tldrcrew-reviewer.md)
-- [TLDR README](https://github.com/0point9bar/TLDR#readme) — repo overview
+- [TLDR README](https://github.com/0p9b/TLDR#readme) — repo overview

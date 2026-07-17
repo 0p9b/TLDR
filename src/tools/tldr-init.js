@@ -4,7 +4,7 @@
 //
 // Usage:
 //   node src/tools/tldr-init.js [target-dir] [--dry-run] [--force] [--only <agent>]
-//   curl -fsSL https://raw.githubusercontent.com/0point9bar/TLDR/main/src/tools/tldr-init.js | node - [args]
+//   curl -fsSL https://raw.githubusercontent.com/0p9b/TLDR/main/src/tools/tldr-init.js | node - [args]
 //
 // Without args, runs in cwd. Generates the rule files for Cursor, Windsurf,
 // Cline, Copilot, opencode, and AGENTS.md. Does NOT modify CLAUDE.md or compress
@@ -155,7 +155,7 @@ function processOpenclaw(opts) {
     return {
       status: 'unsupported-standalone',
       label: 'x',
-      detail: '~/.openclaw/workspace (helper unavailable in standalone curl|node mode — use `npx -y github:0point9bar/TLDR -- --only openclaw`)',
+      detail: '~/.openclaw/workspace (helper unavailable in standalone curl|node mode — use `npx -y github:0p9b/TLDR -- --only openclaw`)',
     };
   }
   const repoRoot = path.resolve(__dirname, '..', '..');
