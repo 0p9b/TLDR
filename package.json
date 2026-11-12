@@ -1,6 +1,6 @@
 {
   "name": "tldr-installer",
-  "version": "0.20.0",
+  "version": "0.21.0",
   "description": "TLDR installer \u2014 detects your AI coding agents and installs TLDR (verdict-first style enforcer) for each one.",
   "license": "MIT",
   "author": "ZeroPointNineBar",

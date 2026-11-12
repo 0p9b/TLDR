@@ -9,7 +9,7 @@ authors:
 url: "https://github.com/0p9b/TLDR"
 repository-code: "https://github.com/0p9b/TLDR"
 license: MIT
-version: "0.20.0"
+version: "0.21.0"
 date-released: "2026-06-30"
 keywords:
   - prompt-engineering

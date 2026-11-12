@@ -58,4 +58,4 @@ if ! command -v npx >/dev/null 2>&1; then
 fi
 
 # Pin to the same tag as install.ps1 / bin/install.js; TLDR_REF overrides.
-exec npx -y "github:$REPO#${TLDR_REF:-v0.20.0}" "$@"
+exec npx -y "github:$REPO#${TLDR_REF:-v0.21.0}" "$@"

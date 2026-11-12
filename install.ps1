@@ -65,6 +65,6 @@ if (-not $npx) {
 # Pin to an immutable release tag, never the moving default branch. Keep the
 # default in lockstep with PINNED_REF in bin/install.js. Override with TLDR_REF
 # for branch testing.
-$Ref = if ($env:TLDR_REF) { $env:TLDR_REF } else { "v0.20.0" }
+$Ref = if ($env:TLDR_REF) { $env:TLDR_REF } else { "v0.21.0" }
 & npx -y "github:$Repo#$Ref" @Args
 exit $LASTEXITCODE

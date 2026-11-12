@@ -58,9 +58,13 @@ If you want to install for one agent (or want to know exactly what command runs 
 | **Pi Coding Agent** | `node bin/install.js --only pi` *(or `npx -y github:0p9b/TLDR -- --only pi`)* | Yes (global `~/.pi/agent/AGENTS.md` + skill) |
 | **Grok Build CLI** | `node bin/install.js --only grok` *(or `npx -y github:0p9b/TLDR -- --only grok`)* | Yes (global `~/.grok/AGENTS.md` + skill) |
 | **oh-my-pi** | `node bin/install.js --only omp` *(or `npx -y github:0p9b/TLDR -- --only omp`)* | Yes (global `~/.omp/agent/AGENTS.md` + skill) |
+| **Prime Agent** | `node bin/install.js --only prime` | Yes (global `~/.prime/agent/AGENTS.md` + skill) |
+| **dsh** | `node bin/install.js --only dsh` | Yes (global `~/.dsh/AGENTS.md` + skill) |
+| **ZCode** | `node bin/install.js --only zcode` | Yes (global `~/.zcode/AGENTS.md` + skill) |
 | **Cursor** | `node bin/install.js --only cursor` *(or `npx -y github:0p9b/TLDR -- --only cursor`)* | Skill (`/tldr`) at `~/.cursor/skills/`; cursor-agent has no global rules file, so always-on is per-repo via `--with-init` |
 | **Windsurf** | `npx skills add 0p9b/TLDR -a windsurf` | Per-session by default; `--with-init` for an always-on rule file |
-| **Cline** | `npx skills add 0p9b/TLDR -a cline` | Per-session by default; `--with-init` for an always-on rule file |
+| **Cline** | native (`~/.cline/CLINE.md` + `~/.cline/skills/`) | Always-on; `--with-init` also writes per-repo `.clinerules/` |
+| **smolcoder** | `node bin/install.js --with-init` (run inside the repo) | Per-repo root `AGENTS.md` (smolcoder has no global instruction file) |
 | **GitHub Copilot** *(soft probe)* | `npx -y github:0p9b/TLDR -- --only copilot --with-init` | Repo-wide instructions via `--with-init` |
 | **Continue** | `npx skills add 0p9b/TLDR -a continue` | No — say `/tldr` |
 | **Kilo Code** | `npx skills add 0p9b/TLDR -a kilo` | No |
@@ -183,7 +187,7 @@ From a git clone (or the cache at `~/.tldr/src`):
 tldr update                 # fetch + fast-forward (or latest vX.Y.Z tag) + reinstall
 node bin/install.js update  # same
 tldr update --check         # report only
-tldr update --ref v0.20.0   # pin a tag/branch
+tldr update --ref v0.21.0   # pin a tag/branch
 tldr update --dry-run       # plan only
 ```
 
