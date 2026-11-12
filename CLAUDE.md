@@ -1,4 +1,8 @@
-# CLAUDE.md — TLDR maintainer guide
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+# TLDR maintainer guide
 
 ## Product
 
@@ -17,6 +21,7 @@ TLDR/
 ├── skills/                         # source skills
 ├── agents/                         # source tldrcrew subagents
 ├── bin/install.js                  # full multi-agent installer
+├── bin/lib/                        # installer modules (see below)
 ├── install.sh                      # lightweight prompt-only copier
 ├── install-full.sh / install.ps1   # full-installer shims
 ├── src/hooks/                      # Claude hook/statusline stack
@@ -44,9 +49,11 @@ TLDR/
 | `pwsh install.ps1 -- --all` | PowerShell shim to full installer |
 | `node bin/install.js --list` | provider matrix |
 
-Supported full-installer providers include Claude, Gemini, Codex, Pi Coding Agent, Grok Build CLI, oh-my-pi, Cursor, Windsurf, Cline, Continue, Kilo, Roo, Augment, opencode, OpenClaw, Hermes Agent, Copilot, Aider Desk, Amp, Bob, Crush, Devin, Droid/Factory, ForgeCode, Goose, iFlow, Kiro, Mistral, OpenHands, Qwen, Rovo Dev, Tabnine, Trae, Warp, Replit, Junie, Qoder, and Antigravity (38 total; `node bin/install.js --list`).
+Supported full-installer providers include Claude, Gemini, Codex, Pi Coding Agent, Grok Build CLI, oh-my-pi, Cursor, Windsurf, Cline, Continue, Kilo, Roo, Augment, opencode, OpenClaw, Hermes Agent, Copilot, Aider Desk, Amp, Bob, Crush, Devin, Droid/Factory, ForgeCode, Goose, iFlow, Kiro, Mistral, OpenHands, Qwen, Rovo Dev, Tabnine, Trae, Warp, Replit, Junie, Qoder, Antigravity, Prime Agent, dsh, and ZCode (41 total; `node bin/install.js --list`).
 
-Native (no-npx, self-contained) providers install a fenced always-on TLDR ruleset into the agent's global instruction file plus the full auto-discovered TLDR skill suite (the 8 `OPENCODE_SKILL_DIRS`: `tldr`, `tldr-commit`, `tldr-review`, `tldr-help`, `tldr-stats`, `tldr-compress`, `tldrcrew`, `tldr-update`) under `<dir>/skills/`: Claude (plugin + hooks), opencode (`~/.config/opencode/AGENTS.md` + plugin), Hermes (`~/.hermes/SOUL.md`), OpenClaw (workspace `SOUL.md`), **Codex** (`~/.codex/AGENTS.md`), **Pi** (`~/.pi/agent/AGENTS.md`), **Grok** (`~/.grok/AGENTS.md`), **oh-my-pi** (`~/.omp/agent/AGENTS.md`; default agent dir, profile-scoped to `~/.omp/profiles/<name>/agent` when `OMP_PROFILE`/`PI_PROFILE` is set), and **Antigravity** (`~/.gemini/config/AGENTS.md`). **Cursor** installs the native skill suite to `~/.cursor/skills/` but `cursor-agent` has no global rules file, so its always-on activates per-session (`/tldr`) or per-repo via `--with-init`. The remaining agents install via `npx skills add 0p9b/TLDR -a <profile> -s '*' -g` (scoped to that agent, user-global).
+Native (no-npx, self-contained) providers install a fenced always-on TLDR ruleset into the agent's global instruction file plus the full auto-discovered TLDR skill suite (the 8 `OPENCODE_SKILL_DIRS`: `tldr`, `tldr-commit`, `tldr-review`, `tldr-help`, `tldr-stats`, `tldr-compress`, `tldrcrew`, `tldr-update`) under `<dir>/skills/`: Claude (plugin + hooks), opencode (`~/.config/opencode/AGENTS.md` + plugin), Hermes (`~/.hermes/SOUL.md`), OpenClaw (workspace `SOUL.md`), **Codex** (`~/.codex/AGENTS.md`), **Pi** (`~/.pi/agent/AGENTS.md`), **Grok** (`~/.grok/AGENTS.md`), **oh-my-pi** (`~/.omp/agent/AGENTS.md`; default agent dir, profile-scoped to `~/.omp/profiles/<name>/agent` when `OMP_PROFILE`/`PI_PROFILE` is set), **Antigravity** (`~/.gemini/config/AGENTS.md`), **Cline** (`~/.cline/CLINE.md`), **Prime Agent** (`~/.prime/agent/AGENTS.md`), **dsh** (`~/.dsh/AGENTS.md`), and **ZCode** (`~/.zcode/AGENTS.md`). **Cursor** installs the native skill suite to `~/.cursor/skills/` but `cursor-agent` has no global rules file, so its always-on activates per-session (`/tldr`) or per-repo via `--with-init`. The remaining agents install via `npx skills add 0p9b/TLDR -a <profile> -s '*' -g` (scoped to that agent, user-global).
+
+A native entry may set `env` (dsh: `DSH_HOME`) to relocate its dir; `nativeDir()` in `install-native.js` resolves it for install and uninstall.
 
 Native provider config is data-driven: a provider gets a `native: { dir, rules, skills }` entry (set `rules: null` for a skill-only agent like cursor) and `installNativeAgentsMd` / the uninstall loop handle it — no new code per agent.
 
@@ -63,9 +70,25 @@ Claude hook files live in `src/hooks/`:
 
 The active-mode flag is `$CLAUDE_CONFIG_DIR/.tldr-active`; stats suffix is `$CLAUDE_CONFIG_DIR/.tldr-statusline-suffix`.
 
+## Installer modules (`bin/lib/`)
+
+`bin/install.js` keeps argv parsing, provider detection and orchestration; the rest is split out:
+
+- `manifest.js` — the shipped artifact lists (`SKILL_DIRS`, `HOOK_FILES`, `CLAUDE_HOOK_MARKERS`, opencode agent/command/plugin paths, `AGENT_HOOK_SCRIPTS`). Edit lists here only. The standalone `src/hooks/tldr-install.{sh,ps1}` / `uninstall.{sh,ps1}` can't import it, so `tests/installer/manifest.test.mjs` pins their lists to it.
+- `io.js` — `realIO` / `dryIO`. Installers write through `ctx.io` (`mkdirp`, `copyFile`, `writeFile`, `atomicWrite`, `rm`, `run`...), so dry-run prints `would <op> <path>` from the same code path as a real run. Don't add `if (opts.dryRun)` branches. Exceptions: `installHooks` (remote download; e2e dry-run test asserts its lines) and the `runInit` curl fallback.
+- `rules-file.js` — fenced always-on ruleset write/strip.
+- `install-claude.js` — `installClaude` / `installGemini`; `install-skills.js` — `installViaSkills` (`npx skills add` agents). `installHooks` / `installMcpShrink` are injected as deps.
+- `install-native.js` — `installNative` (data-driven native providers), `installPiExtension`, `installAgentHooks`, `copyHookScripts`.
+- `install-opencode.js` / `install-hermes.js` — opencode (plugin, commands, subagents, skills, AGENTS.md, `opencode.json`) and Hermes (`SOUL.md` merge + skills) installs. `installOpencode(ctx, {resolveMcpShrinkLaunch})` takes the npm probe as a dependency.
+- `agent-hooks.js` — hook-config builders keyed by `STYLES` (`claude`, `cursor`, `antigravity`).
+
+`src/hooks/tldr-config.js` owns flag-dir resolution (`resolveFlagDir`, `flagPath`, `clearFlag`) and `parseModeChange`; the Claude hook, opencode plugin and Pi extension all use them. `tldr-mode-tracker.js` exports `run(data, {flagPath, stats})` for in-process tests. `tldr-activate.js` exports `run({argv, env, applyOverrides})` and `tldr-stats.js` exports `report(args)` (throws `StatsError`); the tracker calls `report` in-process, with no subprocess or timeout.
+
+dsh exposes a cordis mod/plugin API (profile `package.json` + `cordis.patch.yml`), not a JSON hook config, and ZCode's hooks need `hooks.enabled: true` (set by the installer), so dsh gets the always-on rules file plus skills only. smolcoder has no global instruction file; `--with-init` covers it via the root `AGENTS.md` target in `src/tools/tldr-init.js`.
+
 ## Native-agent hooks
 
-Codex, Cursor, Grok and Antigravity ship their own hook systems. `bin/lib/agent-hooks.js`
+Codex, Cursor, Grok, Antigravity and ZCode ship their own hook systems. `bin/lib/agent-hooks.js`
 builds each schema; `installAgentHooks` in `bin/install.js` copies the hook scripts to
 `<dir>/hooks/tldr/` (two levels under `<dir>/skills/`, so `tldr-activate.js`'s
 `../../skills/tldr/SKILL.md` lookup resolves) and merges entries into the agent's config.
@@ -76,6 +99,7 @@ builds each schema; `installAgentHooks` in `bin/install.js` copies the hook scri
 | grok | `~/.grok/hooks/tldr.json` | `SessionStart` + `UserPromptSubmit` | raw stdout (Claude-shaped) |
 | cursor | `~/.cursor/hooks.json` | `sessionStart` | `{"additional_context": ...}` |
 | antigravity | `~/.gemini/config/hooks.json` | `PreInvocation` | `{"injectSteps":[{"ephemeralMessage":...}]}` |
+| zcode | `~/.zcode/cli/config.json` (`hooks.events`) | `SessionStart` | `{"additional_context": ...}` |
 
 Pi has no JSON hook config — extensions are JS modules declared by a package
 manifest (`pi.extensions`). `src/plugins/tldr-pi/` installs to
@@ -108,6 +132,20 @@ Run full local gates:
 ```bash
 npm test   # runs every suite: installer, JS, and Python gates
 ```
+
+Single suites (`tests/run-all.mjs` globs `tests/installer/*.test.mjs`, `tests/test_*.js`, `tests/*.py`; new files are picked up automatically):
+
+```bash
+npm test -- --js-only                          # skip Python gates (CI Node matrix)
+node --test tests/installer/native.test.mjs    # one installer suite
+node tests/test_tldr_stats.js                  # one JS suite
+python3 tests/verify_repo.py                   # repo/install-surface gate
+python3 tests/check-doc-sync.py                # docs must match TLDR.md
+```
+
+`check-doc-sync.py` asserts the byte size of `TLDR.md` appears in the docs. Editing `TLDR.md` without updating those figures fails the gate.
+
+Prompt sources: `TLDR.md` is the canonical prompt copied by `install.sh`. `skills/tldr/SKILL.md` is the skill form, read by the hooks and Pi extension. `AGENTS.md` / `GEMINI.md` only `@`-import the skills, so don't duplicate content there. `tmp/` holds scratch test state; don't ship or edit it.
 
 Installer smoke:
 

@@ -87,11 +87,104 @@ function buildAntigravityStyle(existing, activateCmd) {
   return out;
 }
 
+// ── ZCode: ~/.zcode/cli/config.json, hooks.{enabled, events.<Event>} ─────
+// Grouped handlers like Claude, but nested under `hooks.events`, `timeoutMs`,
+// and the whole `hooks` block is inert unless `enabled` is true. Its hook
+// runner accepts a top-level `additional_context` string (the cursor envelope).
+const isObj = (v) => v && typeof v === 'object' && !Array.isArray(v);
+function buildZcodeStyle(existing, activateCmd) {
+  if (existing !== undefined && existing !== null && !isObj(existing)) {
+    throw new Error('zcode config root is not a JSON object');
+  }
+  const out = existing || {};
+  if (out.hooks !== undefined && !isObj(out.hooks)) throw new Error('zcode `hooks` is not an object');
+  const hooks = out.hooks || {};
+  if (hooks.events !== undefined && !isObj(hooks.events)) throw new Error('zcode `hooks.events` is not an object');
+  const events = hooks.events || {};
+  // Inert unless enabled. The prior value is NOT stored in the config (an extra
+  // key could fail ZCode's strict schema); install-native records it in a
+  // sidecar file and uninstall restores it via restorePrior.
+  hooks.enabled = true;
+  events.SessionStart = pruneGrouped(events.SessionStart).concat([{
+    hooks: [{ type: 'command', command: activateCmd, timeoutMs: 10000 }],
+  }]);
+  hooks.events = events;
+  out.hooks = hooks;
+  return out;
+}
+// One adapter per hook-file schema. Install and uninstall both go through it,
+// so the schema knowledge (and which prune pairs with which build) lives here.
+//   build(existing, {activate, tracker}) -> merged config
+//   prune(cfg)                           -> cfg with our entries removed (mutates)
+//   format                               -> --format= value for tldr-activate.js
+//                                          (absent for raw-stdout Claude style)
+function pruneEvents(cfg, prune) {
+  if (!cfg.hooks || typeof cfg.hooks !== 'object') return cfg;
+  for (const ev of Object.keys(cfg.hooks)) {
+    const kept = prune(cfg.hooks[ev]);
+    if (kept.length) cfg.hooks[ev] = kept;
+    else delete cfg.hooks[ev];
+  }
+  return cfg;
+}
+
+const STYLES = {
+  claude: {
+    build: (existing, c) => buildClaudeStyle(existing, c.activate, c.tracker),
+    prune: (cfg) => pruneEvents(cfg, pruneGrouped),
+  },
+  cursor: {
+    format: 'cursor',
+    build: (existing, c) => buildCursorStyle(existing, c.activate),
+    prune: (cfg) => pruneEvents(cfg, pruneFlat),
+  },
+  zcode: {
+    format: 'cursor',
+    // Sidecar (in the hooks dir) holding `absent` | `true` | `false`: the
+    // hooks.enabled value before install. Written once, read on uninstall.
+    priorFile: '.zcode-prior-enabled',
+    priorState: (existing) => {
+      const v = isObj(existing) && isObj(existing.hooks) ? existing.hooks.enabled : undefined;
+      return typeof v === 'boolean' ? String(v) : 'absent';
+    },
+    restorePrior: (cfg, state) => {
+      if (state === 'absent') {
+        if (isObj(cfg.hooks)) {
+          delete cfg.hooks.enabled;
+          if (!Object.keys(cfg.hooks).length) delete cfg.hooks;
+        }
+      } else {
+        // prune may have deleted the whole hooks block, so recreate it.
+        if (!isObj(cfg.hooks)) cfg.hooks = {};
+        cfg.hooks.enabled = state === 'true';
+      }
+      return cfg;
+    },
+    build: (existing, c) => buildZcodeStyle(existing, c.activate),
+    prune: (cfg) => {
+      const h = cfg.hooks;
+      if (!isObj(h) || !isObj(h.events)) return cfg;
+      pruneEvents({ hooks: h.events }, pruneGrouped);
+      // Drop what we created: empty events, then a hooks block with only `enabled`.
+      if (!Object.keys(h.events).length) delete h.events;
+      if (!Object.keys(h).filter(k => k !== 'enabled').length) delete cfg.hooks;
+      return cfg;
+    },
+  },
+  antigravity: {
+    format: 'antigravity',
+    build: (existing, c) => buildAntigravityStyle(existing, c.activate),
+    prune: (cfg) => { delete cfg.tldr; return cfg; },
+  },
+};
+
 module.exports = {
+  STYLES,
   isOurs,
   pruneGrouped,
   pruneFlat,
   buildClaudeStyle,
   buildCursorStyle,
   buildAntigravityStyle,
+  buildZcodeStyle,
 };

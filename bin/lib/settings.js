@@ -125,6 +125,18 @@ function readSettings(p) {
   }
 }
 
+// True when the file is valid JSONC but not strict JSON, i.e. it carries
+// comments that a JSON.stringify rewrite would silently drop.
+function hasJsoncComments(p) {
+  try {
+    let raw = fs.readFileSync(p, 'utf8');
+    if (raw.charCodeAt(0) === 0xFEFF) raw = raw.slice(1);
+    try { JSON.parse(raw); return false; } catch (_) { /* not strict */ }
+    JSON.parse(stripJsonComments(raw));
+    return true;
+  } catch (_) { return false; }
+}
+
 // ── writeSettings ──────────────────────────────────────────────────────────
 // Atomic write via secure temp dir + rename. 0600 because settings may contain tokens.
 function writeSettings(p, obj) {
@@ -244,9 +256,7 @@ function removeTldrHooks(settings, marker = 'tldr') {
 // touches commands matching the exact bare-node shape — won't false-positive
 // on user-authored hooks that just happen to mention TLDR.
 const MANAGED_HOOK_BASENAMES = new Set([
-  'tldr-activate.js',
-  'tldr-mode-tracker.js',
-  'tldr-stats.js',
+  ...require('./manifest').CLAUDE_HOOK_MARKERS.map(m => `${m}.js`),
   'tldr-statusline.sh',
 ]);
 function rewriteLegacyManagedHookCommands(settings, absoluteNode) {
@@ -274,6 +284,7 @@ function rewriteLegacyManagedHookCommands(settings, absoluteNode) {
 
 module.exports = {
   stripJsonComments,
+  hasJsoncComments,
   readSettings,
   writeSettings,
   validateHookFields,

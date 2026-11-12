@@ -38,6 +38,10 @@ const NATIVE = [
   { id: 'grok', sub: ['.grok'], rules: true },
   { id: 'antigravity', sub: ['.gemini', 'config'], rules: true },
   { id: 'omp', sub: ['.omp', 'agent'], rules: true },
+  { id: 'prime', sub: ['.prime', 'agent'], rules: true },
+  { id: 'dsh', sub: ['.dsh'], rules: true },
+  { id: 'zcode', sub: ['.zcode'], rules: true },
+  { id: 'cline', sub: ['.cline'], rules: true, file: 'CLINE.md' },
   { id: 'cursor', sub: ['.cursor'], rules: false },
 ];
 
@@ -62,7 +66,7 @@ function runInstaller(args, home) {
 }
 
 const dirFor = (home, prov) => path.join(home, ...prov.sub);
-const rulesFor = (home, prov) => path.join(dirFor(home, prov), 'AGENTS.md');
+const rulesFor = (home, prov) => path.join(dirFor(home, prov), prov.file || 'AGENTS.md');
 const skillFor = (home, prov) => path.join(dirFor(home, prov), 'skills', 'tldr', 'SKILL.md');
 const countMarkers = (text, needle) => text.split(needle).length - 1;
 
@@ -157,3 +161,26 @@ for (const prov of NATIVE) {
     }
   });
 }
+
+test('dsh: DSH_HOME relocates the install and uninstall target', () => {
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'tldr-dsh-home-'));
+  const dshHome = fs.mkdtempSync(path.join(os.tmpdir(), 'tldr-dsh-env-'));
+  const env = { ...process.env, HOME: home, XDG_CONFIG_HOME: path.join(home, '.config'), DSH_HOME: dshHome };
+  const run = (...a) => spawnSync(process.execPath, [INSTALLER, ...a, '--only', 'dsh', '--non-interactive'], { env, encoding: 'utf8' });
+  run();
+  assert.ok(fs.existsSync(path.join(dshHome, 'AGENTS.md')), 'installed under DSH_HOME');
+  assert.equal(fs.existsSync(path.join(home, '.dsh')), false, 'default dir untouched');
+  run('--uninstall');
+  assert.equal(fs.existsSync(path.join(dshHome, 'AGENTS.md')), false, 'uninstall followed DSH_HOME');
+});
+
+test('dsh: uninstall without DSH_HOME still cleans an install made with it', () => {
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'tldr-dsh-h-'));
+  const dshHome = fs.mkdtempSync(path.join(os.tmpdir(), 'tldr-dsh-e-'));
+  const base = { ...process.env, HOME: home, XDG_CONFIG_HOME: path.join(home, '.config') };
+  const run = (env, ...a) => spawnSync(process.execPath, [INSTALLER, ...a, '--only', 'dsh', '--non-interactive'], { env, encoding: 'utf8' });
+  run({ ...base, DSH_HOME: dshHome });
+  assert.ok(fs.existsSync(path.join(dshHome, 'AGENTS.md')));
+  run({ ...base, DSH_HOME: dshHome }, '--uninstall');
+  assert.equal(fs.existsSync(path.join(dshHome, 'AGENTS.md')), false);
+});

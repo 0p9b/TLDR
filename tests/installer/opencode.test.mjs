@@ -240,7 +240,9 @@ test('opencode install tolerates JSONC opencode.json (comments + trailing commas
     const r = runInstaller(['--only', 'opencode'], env);
     assert.notEqual(r.status, 2);
 
-    const cfg = JSON.parse(fs.readFileSync(path.join(ocDir, 'opencode.json'), 'utf8'));
+    const text = fs.readFileSync(path.join(ocDir, 'opencode.json'), 'utf8');
+    assert.ok(text.includes('/* user prefs */'), 'user comment dropped');
+    const cfg = JSON.parse(createRequire(import.meta.url)('../../bin/lib/settings').stripJsonComments(text));
     assert.equal(cfg.model, 'anthropic/claude-sonnet-4-5', 'user model setting wiped');
     assert.equal(cfg.theme, 'dark', 'user theme setting wiped');
     assert.ok(cfg.plugin.includes('./plugins/tldr/plugin.js'), 'plugin entry missing');

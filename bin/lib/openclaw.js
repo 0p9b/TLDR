@@ -27,11 +27,14 @@ const os = require('os');
 const path = require('path');
 const { atomicWrite } = require('./safe-fs');
 const { stripFencedBlocks } = require('./fenced');
+const {
+  OPENCLAW_SKILL_NAME: SKILL_NAME,
+  OPENCLAW_SOUL_MARK_BEGIN: MARK_BEGIN,
+  OPENCLAW_SOUL_MARK_END: MARK_END,
+  OPENCLAW_BOOTSTRAP_REL,
+} = require('./manifest');
 
-const SKILL_NAME = 'tldr';
 const SKILL_VERSION = '1.0.0';
-const MARK_BEGIN = '<!-- tldr-begin -->';
-const MARK_END = '<!-- tldr-end -->';
 const SOUL_FILE = 'SOUL.md';
 
 function resolveWorkspace(env = process.env) {
@@ -83,7 +86,7 @@ function mergeOpenclawFrontmatter(src) {
 // ── Bootstrap snippet load ────────────────────────────────────────────────
 function loadBootstrapSnippet(repoRoot) {
   if (repoRoot) {
-    const p = path.join(repoRoot, 'src', 'rules', 'tldr-openclaw-bootstrap.md');
+    const p = path.join(repoRoot, OPENCLAW_BOOTSTRAP_REL);
     const body = readIfExists(p);
     if (body) return body.endsWith('\n') ? body : body + '\n';
   }
@@ -115,7 +118,7 @@ function loadBootstrapSnippet(repoRoot) {
 
 function loadSkillBody(repoRoot) {
   if (!repoRoot) return null;
-  return readIfExists(path.join(repoRoot, 'skills', 'tldr', 'SKILL.md'));
+  return readIfExists(path.join(repoRoot, 'skills', SKILL_NAME, 'SKILL.md'));
 }
 
 // ── SOUL.md marker-block append/strip ─────────────────────────────────────

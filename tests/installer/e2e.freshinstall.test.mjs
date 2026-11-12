@@ -248,10 +248,13 @@ test('install tolerates JSONC settings.json (comments + trailing commas)', { ski
     const r = runInstaller(['--only', 'claude'], dir);
     assert.notEqual(r.status, 2, `installer aborted on argv parse: ${r.stderr}`);
 
-    // After install, settings.json must be strict-JSON parseable.
+    // After install, settings.json must still parse once comments are stripped,
+    // and the user's comments must survive the hook wiring.
     const raw = fs.readFileSync(path.join(dir, 'settings.json'), 'utf8');
     let parsed;
-    assert.doesNotThrow(() => { parsed = JSON.parse(raw); }, 'settings.json must round-trip as strict JSON');
+    assert.doesNotThrow(() => { parsed = JSON.parse(SETTINGS.stripJsonComments(raw)); }, 'settings.json must parse as JSONC');
+    assert.ok(raw.includes('// user wrote this by hand'), 'user comment kept');
+    assert.ok(raw.includes('/* keep it simple */'), 'user block comment kept');
 
     // User's `model` key must survive the merge.
     assert.equal(parsed.model, 'opus', 'user-authored model setting was dropped');

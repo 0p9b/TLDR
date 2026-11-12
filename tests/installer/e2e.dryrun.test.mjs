@@ -45,9 +45,9 @@ test('dry-run --only claude prints plan and writes nothing', () => {
   if (/Claude Code detected/.test(r.stdout)) {
     assert.match(r.stdout, /would run: claude plugin marketplace add/);
     assert.match(r.stdout, /would run: claude plugin install tldr@tldr/);
-    assert.match(r.stdout, /would mkdir -p .*\/hooks/);
-    assert.match(r.stdout, /would install .*tldr-activate\.js/);
-    assert.match(r.stdout, /would merge SessionStart \+ UserPromptSubmit \+ statusline/);
+    assert.match(r.stdout, /would mkdir .*\/hooks/);
+    assert.match(r.stdout, /would write .*tldr-activate\.js/);
+    assert.match(r.stdout, /would write .*settings\.json/);
   }
   // Nothing should have been written.
   assert.equal(fs.existsSync(path.join(cfg, 'settings.json')), false);

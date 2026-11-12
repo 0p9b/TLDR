@@ -23,11 +23,15 @@ const readline = require('readline');
 const crypto = require('crypto');
 
 const SETTINGS = require('./lib/settings');
+const { patchJsonc } = require('./lib/jsonc-patch');
 const OPENCLAW = require('./lib/openclaw');
-const { stripOpencodeAgentTools } = require('./lib/opencode-agent');
-const { atomicWrite, createSecureTempDir, safeRmdir } = require('./lib/safe-fs');
-const { findFencedBlocks, stripFencedBlocks, upsertFencedBlock } = require('./lib/fenced');
+const { installOpencode: installOpencodeWith, opencodeConfigDir } = require('./lib/install-opencode');
+const { installClaude, installGemini } = require('./lib/install-claude');
+const { installViaSkills } = require('./lib/install-skills');
 const AGENT_HOOKS = require('./lib/agent-hooks');
+const { realIO, dryIO } = require('./lib/io');
+const RULES = require('./lib/rules-file');
+const { installNative, expandHome, nativeDir } = require('./lib/install-native');
 const UPDATE = require('./lib/update');
 
 const REPO = '0p9b/TLDR';
@@ -38,10 +42,11 @@ const REPO = '0p9b/TLDR';
 // rewrite a hook and its recorded checksum in lockstep. RELEASE PROCESS: bump
 // PINNED_REF only AFTER regenerating src/hooks/checksums.sha256 so the tag and
 // the manifest stay coherent. Override with TLDR_REF for branch testing.
-const PINNED_REF = process.env.TLDR_REF || 'v0.20.0';
+const PINNED_REF = process.env.TLDR_REF || 'v0.21.0';
 const RAW_BASE = `https://raw.githubusercontent.com/${REPO}/${PINNED_REF}`;
 const HOOKS_REMOTE = `${RAW_BASE}/src/hooks`;
-const INIT_SCRIPT_URL = `${RAW_BASE}/src/tools/tldr-init.js`;
+const TOOLS_REMOTE = `${RAW_BASE}/src/tools`;
+const INIT_SCRIPT_URL = `${TOOLS_REMOTE}/tldr-init.js`;
 // Scoped package name, owner-controlled. A bare unscoped name ('tldr-shrink')
 // is a dependency-confusion vector: it is not published, so `npx -y tldr-shrink`
 // would resolve to whatever an attacker publishes under that name and execute
@@ -51,24 +56,13 @@ const INIT_SCRIPT_URL = `${RAW_BASE}/src/tools/tldr-init.js`;
 // src/mcp-servers/tldr-shrink when `npm view` fails (clone / local install).
 const MCP_SHRINK_PKG = '@0point9bar/tldr-shrink';
 const MCP_SHRINK_LOCAL = path.join('src', 'mcp-servers', 'tldr-shrink', 'index.js');
-// Hermes productivity skill suite (mirrors OPENCODE_SKILL_DIRS naming).
-const HERMES_SKILL_DIRS = [
-  'tldr', 'tldr-commit', 'tldr-review', 'tldr-help', 'tldr-stats', 'tldr-compress', 'tldrcrew', 'tldr-update',
-];
-// Hook files to copy. Statusline ships in both .sh (macOS/Linux) and .ps1
-// (Windows) flavors — copy both regardless of host OS so a roaming
-// $CLAUDE_CONFIG_DIR (e.g. dotfiles repo) keeps working across platforms.
-const HOOK_FILES = [
-  'package.json',
-  'tldr-config.js',
-  'tldr-instructions.js',
-  'tldr-activate.js',
-  'tldr-mode-tracker.js',
-  'tldr-stats.js',
-  'tldr-statusline.sh',
-  'tldr-statusline.ps1',
-  'tldrcrew-model-overrides.js',
-];
+const MANIFEST = require('./lib/manifest');
+const { HOOK_FILES, CLAUDE_HOOK_MARKERS, OPENCODE_AGENT_FILES, OPENCODE_COMMAND_FILES, OPENCODE_PLUGIN_REL } = MANIFEST;
+const OPENCODE_SKILL_DIRS = MANIFEST.SKILL_DIRS;
+const HERMES_SKILL_DIRS = MANIFEST.SKILL_DIRS;
+const {
+  installHermes, hermesConfigDir, hermesSoulPath, hermesSkillsRoot, HERMES_MARK_BEGIN, HERMES_MARK_END,
+} = require('./lib/install-hermes');
 
 // ── Subcommand peel ────────────────────────────────────────────────────────
 // `tldr update|install|uninstall|list …` dispatches by first argv token.
@@ -266,13 +260,17 @@ const PROVIDERS = [
   // ~/.omp/profiles/<name>/agent only when OMP_PROFILE/PI_PROFILE is set — the
   // installer targets the default (~/.omp/agent).
   { id: 'omp',        label: 'oh-my-pi',            mech: 'native AGENTS.md + skill',       detect: 'command:omp',             native: { dir: '$HOME/.omp/agent', rules: 'AGENTS.md', skills: 'skills' } },
+  // Prime Agent, dsh, ZCode: user-global AGENTS.md + <dir>/skills (ZCode also wires SessionStart in cli/config.json).
+  { id: 'prime',      label: 'Prime Agent',         mech: 'native AGENTS.md + skill',       detect: 'command:prime-agent',     native: { dir: '$HOME/.prime/agent', rules: 'AGENTS.md', skills: 'skills' } },
+  { id: 'dsh',        label: 'dsh',                 mech: 'native AGENTS.md + skill',       detect: 'dir:$HOME/.dsh',          native: { dir: '$HOME/.dsh', env: 'DSH_HOME', rules: 'AGENTS.md', skills: 'skills' } },
+  { id: 'zcode',      label: 'ZCode',               mech: 'native AGENTS.md + skill',       detect: 'dir:$HOME/.zcode',        native: { dir: '$HOME/.zcode', rules: 'AGENTS.md', skills: 'skills', hooks: { file: 'cli/config.json', style: 'zcode' } } },
 
   // IDE / VS Code-family — extension probes are precise. Cursor/Windsurf also
   // ship CLI binaries; we drop the dir fallback because the dir lingers after
   // uninstall and false-positives heavily.
   { id: 'cursor',     label: 'Cursor',              mech: 'native skill (per-repo rules)',  detect: 'command:cursor-agent||command:cursor||macapp:Cursor', native: { dir: '$HOME/.cursor', skills: 'skills', rules: null, hooks: { file: 'hooks.json', style: 'cursor' } } },
   { id: 'windsurf',   label: 'Windsurf',            mech: 'npx skills add (windsurf)',     detect: 'command:windsurf||macapp:Windsurf', profile: 'windsurf' },
-  { id: 'cline',      label: 'Cline',               mech: 'npx skills add (cline)',        detect: 'vscode-ext:cline',        profile: 'cline' },
+  { id: 'cline',      label: 'Cline',               mech: 'native CLINE.md + skill',        detect: 'vscode-ext:cline',        native: { dir: '$HOME/.cline', rules: 'CLINE.md', skills: 'skills' } },
   { id: 'continue',   label: 'Continue',            mech: 'npx skills add (continue)',     detect: 'vscode-ext:continue.continue||vscode-ext:continue', profile: 'continue' },
   { id: 'kilo',       label: 'Kilo Code',           mech: 'npx skills add (kilo)',         detect: 'vscode-ext:kilocode', profile: 'kilo' },
   { id: 'roo',        label: 'Roo Code',            mech: 'npx skills add (roo)',          detect: 'vscode-ext:roo||vscode-ext:rooveterinaryinc.roo-cline||cursor-ext:roo', profile: 'roo' },
@@ -330,7 +328,6 @@ function hasCmd(cmd) {
 
 function shellEscape(s) { return `'${String(s).replace(/'/g, `'\\''`)}'`; }
 
-function expandHome(p) { return p.replace(/^\$HOME/, os.homedir()).replace(/^~/, os.homedir()); }
 
 function vscodeExtPresent(needle) {
   const home = os.homedir();
@@ -453,534 +450,12 @@ function captureSpawn(cmd, args) {
 }
 
 // ── Per-provider installers ────────────────────────────────────────────────
-async function installClaude(ctx) {
-  const { say, note, warn, ok, opts, results } = ctx;
-  results.detected++;
-  say('→ Claude Code detected');
-
-  // Plugin install (idempotent unless --force)
-  let alreadyInstalled = false;
-  if (!opts.force) {
-    const r = captureSpawn('claude', ['plugin', 'list']);
-    if (r.status === 0 && /tldr/i.test(r.stdout || '')) alreadyInstalled = true;
-  }
-  if (alreadyInstalled) {
-    note('  TLDR plugin already installed (use --force to reinstall)');
-    results.skipped.push(['claude', 'plugin already installed']);
-  } else {
-    const r1 = runSpawn('claude', ['plugin', 'marketplace', 'add', REPO], null, opts.dryRun);
-    const r2 = runSpawn('claude', ['plugin', 'install', 'tldr@tldr'], null, opts.dryRun);
-    // Strict === 0: a spawn that never launched (ENOENT) yields status null, which
-    // `(status || 0) === 0` wrongly coerced to success and reported "installed".
-    if (r1.status === 0 && r2.status === 0) results.installed.push('claude');
-    else results.failed.push(['claude', 'claude plugin install failed (CLI missing or errored)']);
-  }
-
-  if (opts.withHooks) {
-    say('  → installing hooks (--with-hooks)');
-    const r = await installHooks(ctx);
-    if (r === 'ok') results.installed.push('claude-hooks');
-    else if (r === 'skip') results.skipped.push(['claude-hooks', 'already wired']);
-    else results.failed.push(['claude-hooks', r]);
-  }
-
-  if (opts.withMcpShrink) {
-    say('  → wiring tldr-shrink MCP proxy (--with-mcp-shrink)');
-    const r = installMcpShrink(ctx);
-    if (r.kind === 'ok')   results.installed.push('tldr-shrink');
-    if (r.kind === 'skip') results.skipped.push(['tldr-shrink', r.why]);
-    if (r.kind === 'fail') results.failed.push(['tldr-shrink', r.why]);
-  }
-
-  process.stdout.write('\n');
-}
-
-function installGemini(ctx) {
-  const { say, note, opts, results } = ctx;
-  results.detected++;
-  say('→ Gemini CLI detected');
-
-  if (!opts.force) {
-    const r = captureSpawn('gemini', ['extensions', 'list']);
-    if (r.status === 0 && /tldr/i.test(r.stdout || '')) {
-      note('  TLDR extension already installed (use --force to reinstall)');
-      results.skipped.push(['gemini', 'extension already installed']);
-      process.stdout.write('\n');
-      return;
-    }
-  }
-  const r = runSpawn('gemini', ['extensions', 'install', `https://github.com/${REPO}`], null, opts.dryRun);
-  if ((r.status || 0) === 0) results.installed.push('gemini');
-  else results.failed.push(['gemini', 'gemini extensions install failed']);
-  process.stdout.write('\n');
-}
-
-function installViaSkills(ctx, prov) {
-  const { say, opts, results } = ctx;
-  results.detected++;
-  say(`→ ${prov.label} detected`);
-  // --yes --all: skip the upstream skill-selection TUI and confirmation prompts.
-  // Without these, `curl|bash` (no TTY on stdin) renders an empty checkbox list
-  // the user can't interact with, then exits 0 with zero skills installed —
-  // and our installer happily reports success. See issue #370.
-  // We've already decided which agent to install for via auto-detect / --only;
-  // making the user re-select 7 skills inside skills CLI would be redundant.
-  //
-  // NOTE: `--all` expands to `--skill '*' --agent '*'`, which OVERRIDES `-a
-  // <profile>` and fans the install out to every agent the skills CLI knows
-  // (~50), into the shared ~/.agents store — not what a scoped, per-agent
-  // install wants. Use `-s '*'` (all TLDR skills) + `-a <profile>` (this agent
-  // only) + `-g` (user-global, not the CWD project store) instead.
-  const args = ['-y', 'skills', 'add', REPO, '-a', prov.profile, '-s', '*', '-g', '--yes'];
-  const r = runSpawn('npx', args, null, opts.dryRun);
-  if ((r.status || 0) === 0) results.installed.push(prov.id);
-  else results.failed.push([prov.id, `npx skills add (${prov.profile}) failed`]);
-  process.stdout.write('\n');
-}
-
 // ── opencode native install ───────────────────────────────────────────────
 // Drops the in-repo plugin (src/plugins/tldr-opencode/) plus skills, agents,
 // commands, and an AGENTS.md ruleset into ~/.config/opencode/. Patches
 // opencode.json with a "plugin" array entry. Mirrors the Claude Code hook
 // architecture as closely as opencode allows — only the statusline is missing
 // (opencode's TUI exposes no plugin-writable badge).
-const OPENCODE_SKILL_DIRS  = ['tldr', 'tldr-commit', 'tldr-review', 'tldr-help', 'tldr-stats', 'tldr-compress', 'tldrcrew', 'tldr-update'];
-const OPENCODE_AGENT_FILES = ['tldrcrew-investigator.md', 'tldrcrew-builder.md', 'tldrcrew-reviewer.md'];
-const OPENCODE_COMMAND_FILES = ['tldr.md', 'tldr-commit.md', 'tldr-review.md', 'tldr-compress.md', 'tldr-stats.md', 'tldr-help.md', 'tldr-update.md'];
-const OPENCODE_PLUGIN_REL = './plugins/tldr/plugin.js';
-// Legacy sentinel from installs that pre-date the marker fence and the
-// persona-register cleanup. Detection-only (idempotency + uninstall of old
-// unfenced blocks) — never written to disk or emitted to the model.
-const OPENCODE_AGENTS_MD_SENTINEL = 'Respond terse like smart TLDR';
-// Marker fence for the opencode AGENTS.md ruleset block. Same convention as
-// bin/lib/openclaw.js for SOUL.md — lets us strip our block cleanly even when
-// the user has authored content above AND below it.
-const OPENCODE_AGENTS_MD_BEGIN = '<!-- tldr-begin -->';
-const OPENCODE_AGENTS_MD_END = '<!-- tldr-end -->';
-
-function opencodeConfigDir() {
-  if (process.env.XDG_CONFIG_HOME) return path.join(process.env.XDG_CONFIG_HOME, 'opencode');
-  if (IS_WIN) return path.join(process.env.APPDATA || path.join(os.homedir(), 'AppData', 'Roaming'), 'opencode');
-  return path.join(os.homedir(), '.config', 'opencode');
-}
-
-// ── Shared AGENTS.md ruleset writer / stripper ────────────────────────────
-// Write the fenced TLDR ruleset (src/rules/tldr-activate.md) into an agent's
-// global AGENTS.md-style rules file. Preserves user content above and below the
-// begin/end fence, is idempotent on the markers, and recognizes the legacy
-// unfenced sentinel. Shared by installOpencode and installNativeAgentsMd
-// (codex/pi/grok) so every AGENTS.md-convention agent uses one code path. The
-// marker/sentinel constants are TLDR-generic (values `<!-- tldr-begin -->` …).
-function writeFencedRuleset(agentsMd, repoRoot, opts, note) {
-  const ruleBody = fs.readFileSync(path.join(repoRoot, 'src', 'rules', 'tldr-activate.md'), 'utf8').trimEnd() + '\n';
-  // blockCore has NO trailing newline: the newline after the END marker belongs
-  // to the surrounding file so an in-place replace can be byte-idempotent.
-  const blockCore = `${OPENCODE_AGENTS_MD_BEGIN}\n${ruleBody}${OPENCODE_AGENTS_MD_END}`;
-  const fencedBlock = blockCore + '\n';
-  // atomicWrite (temp file + rename) replaces a planted symlink with a real
-  // file instead of writing THROUGH it to an out-of-tree target.
-  if (!fs.existsSync(agentsMd)) {
-    atomicWrite(agentsMd, fencedBlock, 0o644);
-    process.stdout.write(`  installed: ${agentsMd}\n`);
-    return;
-  }
-  const existing = fs.readFileSync(agentsMd, 'utf8');
-  const blocks = findFencedBlocks(existing, OPENCODE_AGENTS_MD_BEGIN, OPENCODE_AGENTS_MD_END);
-  if (blocks.length > 0) {
-    // UPSERT via nearest-preceding pairing: replace the LAST well-formed block,
-    // drop earlier duplicates, and preserve ALL surrounding user text — including
-    // an orphan BEGIN above the block. Byte-identical ⇒ no-op (idempotent), so an
-    // upgrade refreshes a stale ruleset instead of leaving it behind.
-    const next = upsertFencedBlock(existing, OPENCODE_AGENTS_MD_BEGIN, OPENCODE_AGENTS_MD_END, ruleBody);
-    if (next === existing) {
-      note(`  ${agentsMd} already contains the current TLDR ruleset`);
-    } else {
-      atomicWrite(agentsMd, next, 0o644);
-      process.stdout.write(`  refreshed TLDR ruleset in ${agentsMd}\n`);
-    }
-    return;
-  }
-  // No well-formed block. Legacy unfenced sentinel handling — only when there is
-  // no stray begin/end marker to confuse it.
-  const hasStrayMarker = existing.includes(OPENCODE_AGENTS_MD_BEGIN) || existing.includes(OPENCODE_AGENTS_MD_END);
-  if (!hasStrayMarker && existing.includes(OPENCODE_AGENTS_MD_SENTINEL)) {
-    note(`  ${agentsMd} contains a legacy (un-fenced) TLDR block — leaving as-is`);
-    note('  re-run with --force to replace it with a fenced block');
-    if (opts.force) {
-      atomicWrite(agentsMd, fencedBlock, 0o644);
-      process.stdout.write(`  rewrote ${agentsMd} with fenced TLDR block\n`);
-    }
-    return;
-  }
-  // Malformed markers (end-before-begin, orphan begin/end) or plain user text:
-  // append a fresh, well-formed block rather than skipping. upsertFencedBlock
-  // appends when it finds no well-formed block, leaving stray markers intact.
-  atomicWrite(agentsMd, upsertFencedBlock(existing, OPENCODE_AGENTS_MD_BEGIN, OPENCODE_AGENTS_MD_END, ruleBody), 0o644);
-  process.stdout.write(`  appended TLDR ruleset to ${agentsMd}\n`);
-}
-
-// stripFencedBlocks / findFencedBlocks / upsertFencedBlock now live in
-// bin/lib/fenced.js (one data-loss-safe implementation, shared with openclaw.js).
-
-// Strip every fenced [beginMark..endMark] block from a file (nearest-preceding
-// pairing), preserving user content. Deletes the file if only whitespace
-// survives. Symlink-safe via atomicWrite. Returns true if it touched the file.
-function stripFencedFile(filePath, beginMark, endMark, opts, note) {
-  if (!fs.existsSync(filePath)) return false;
-  const body = fs.readFileSync(filePath, 'utf8');
-  const { text, removed } = stripFencedBlocks(body, beginMark, endMark);
-  if (!removed) return false;
-  let next = text.trimEnd();
-  next = next ? next + '\n' : '';
-  if (!opts.dryRun) {
-    if (next === '') { try { fs.unlinkSync(filePath); } catch (_) {} }
-    else atomicWrite(filePath, next, 0o644);
-  }
-  note(next === '' ? `  removed ${filePath}` : `  stripped TLDR block from ${filePath}`);
-  return true;
-}
-
-// Remove the fenced TLDR block(s) from an AGENTS.md-style file, preserving user
-// content above and below. Deletes the file if nothing else survives. Falls
-// back to legacy unfenced-sentinel handling. Returns true if it touched a file.
-function stripFencedRuleset(agentsMd, opts, note) {
-  if (stripFencedFile(agentsMd, OPENCODE_AGENTS_MD_BEGIN, OPENCODE_AGENTS_MD_END, opts, note)) return true;
-  // No well-formed fenced block — check the legacy unfenced sentinel.
-  if (!fs.existsSync(agentsMd)) return false;
-  const body = fs.readFileSync(agentsMd, 'utf8');
-  if (body.includes(OPENCODE_AGENTS_MD_SENTINEL)) {
-    if (body.trim() === '' || body.trim().startsWith(OPENCODE_AGENTS_MD_SENTINEL)) {
-      if (!opts.dryRun) { try { fs.unlinkSync(agentsMd); } catch (_) {} }
-      note(`  removed ${agentsMd}`);
-    } else {
-      note(`  left ${agentsMd} in place (legacy mixed content — strip TLDR block manually)`);
-    }
-    return true;
-  }
-  return false;
-}
-
-// ── Generic native install for AGENTS.md-convention agents ────────────────
-// For agents that auto-load a global AGENTS.md and auto-discover skills from a
-// directory. Writes the fenced ruleset into <dir>/<rules> (skipped when
-// rules:null) and copies the full TLDR skill suite (OPENCODE_SKILL_DIRS) into
-// <dir>/<skills>/<name>/. Driven by a provider's `native` config. Used by codex
-// (~/.codex), pi (~/.pi/agent), grok (~/.grok), antigravity (~/.gemini/config),
-// omp (~/.omp/agent), and cursor (~/.cursor, skill-only). Needs a local clone.
-// ── Native-agent hook wiring ──────────────────────────────────────────────
-// Codex, Cursor, Grok and Antigravity all ship real hook systems. We copy the
-// hook scripts to <dir>/hooks/tldr/ — two levels under the agent's skills dir,
-// so tldr-activate.js's `../../skills/tldr/SKILL.md` lookup resolves to the
-// skill suite we just installed — then merge our entries into the agent's hook
-// config, preserving anything the user or another tool already put there.
-const AGENT_HOOK_SCRIPTS = ['package.json', 'tldr-config.js', 'tldr-instructions.js', 'tldr-activate.js', 'tldr-mode-tracker.js', 'tldrcrew-model-overrides.js'];
-
-// Pi has no JSON hook file — extensions are JS modules registered through its
-// own package manifest. Copy the extension next to the shared hook scripts,
-// then let `pi install <dir>` write settings.json so we never hand-edit Pi's
-// package list.
-function copyHookScripts(repoRoot, dir) {
-  const hooksDir = path.join(dir, 'hooks', 'tldr');
-  fs.mkdirSync(hooksDir, { recursive: true });
-  for (const f of AGENT_HOOK_SCRIPTS) {
-    const src = path.join(repoRoot, 'src', 'hooks', f);
-    if (fs.existsSync(src)) fs.copyFileSync(src, path.join(hooksDir, f));
-  }
-  return hooksDir;
-}
-
-function installPiExtension(ctx, dir) {
-  const { note, warn, opts, repoRoot } = ctx;
-  const src = path.join(repoRoot, 'src', 'plugins', 'tldr-pi');
-  if (!fs.existsSync(src)) return;
-  const dest = path.join(dir, 'extensions', 'tldr');
-
-  if (opts.dryRun) {
-    note(`  would install Pi extension (+${AGENT_HOOK_SCRIPTS.length} shared modules) into ${dest}/`);
-    note(`  would run: pi install ${dest}`);
-    return;
-  }
-  try {
-    fs.mkdirSync(path.dirname(dest), { recursive: true });
-    fs.cpSync(src, dest, { recursive: true });
-    // Shared modules live INSIDE the extension: Pi warns about a global hooks/.
-    const lib = path.join(dest, 'lib');
-    fs.mkdirSync(lib, { recursive: true });
-    for (const f of AGENT_HOOK_SCRIPTS) {
-      const s = path.join(repoRoot, 'src', 'hooks', f);
-      if (fs.existsSync(s)) fs.copyFileSync(s, path.join(lib, f));
-    }
-    process.stdout.write(`  installed: ${dest}/\n`);
-    const r = runSpawn('pi', ['install', dest], null, false);
-    if ((r.status || 0) !== 0) {
-      warn('  `pi install` failed — register manually: pi install ' + dest);
-    }
-  } catch (e) {
-    warn('  Pi extension install failed: ' + ((e && e.message) || e));
-  }
-}
-
-function installAgentHooks(ctx, prov, dir) {
-  const { note, warn, opts, repoRoot } = ctx;
-  const h = prov.native && prov.native.hooks;
-  if (!h) return;
-
-  const hooksDir = path.join(dir, 'hooks', 'tldr');
-  const cfgPath = path.join(dir, h.file);
-  const q = (p) => JSON.stringify(p);
-  const activate = `${q(process.execPath)} ${q(path.join(hooksDir, 'tldr-activate.js'))} --config-dir=${q(dir)}` +
-                   (h.style === 'claude' ? '' : ` --format=${h.style}`);
-  const tracker = `${q(process.execPath)} ${q(path.join(hooksDir, 'tldr-mode-tracker.js'))} --config-dir=${q(dir)}`;
-
-  if (opts.dryRun) {
-    note(`  would install ${AGENT_HOOK_SCRIPTS.length} hook scripts into ${hooksDir}/`);
-    note(`  would merge TLDR hooks into ${cfgPath}`);
-    if (h.trust) note(`  ${h.trust}`);
-    return;
-  }
-
-  try {
-    copyHookScripts(repoRoot, dir);
-
-    let existing = {};
-    if (fs.existsSync(cfgPath)) {
-      try { existing = JSON.parse(SETTINGS.stripJsonComments(fs.readFileSync(cfgPath, 'utf8'))) || {}; }
-      catch (e) {
-        warn(`  ${cfgPath} is not valid JSON; leaving it alone (hooks not wired)`);
-        return;
-      }
-      // First-install backup only — repeat runs must not overwrite the only
-      // known-good copy with an already-merged file. COPYFILE_EXCL refuses a
-      // pre-existing destination, including a planted symlink.
-      const bak = cfgPath + '.bak';
-      if (!fs.existsSync(bak)) {
-        try { fs.copyFileSync(cfgPath, bak, fs.constants.COPYFILE_EXCL); } catch (_) {}
-      }
-    }
-
-    let next;
-    if (h.style === 'cursor')           next = AGENT_HOOKS.buildCursorStyle(existing, activate);
-    else if (h.style === 'antigravity') next = AGENT_HOOKS.buildAntigravityStyle(existing, activate);
-    else                                next = AGENT_HOOKS.buildClaudeStyle(existing, activate, tracker);
-
-    fs.mkdirSync(path.dirname(cfgPath), { recursive: true });
-    atomicWrite(cfgPath, JSON.stringify(next, null, 2) + '\n', 0o644);
-    process.stdout.write(`  hooks wired in ${cfgPath}\n`);
-    if (h.trust) note(`  ${h.trust}`);
-  } catch (e) {
-    warn(`  hook wiring failed for ${prov.label}: ` + ((e && e.message) || e));
-  }
-}
-
-function installNativeAgentsMd(ctx, prov) {
-  const { say, note, warn, opts, repoRoot, results } = ctx;
-  results.detected++;
-  say(`→ ${prov.label} detected`);
-  const n = prov.native;
-  const dir = expandHome(n.dir);
-  // `rules: null` means the agent has NO global always-on rules file (e.g.
-  // cursor-agent, which only honors per-project AGENTS.md/.cursor/rules); we
-  // still install the auto-discovered skills and point users at --with-init.
-  const rulesFile = n.rules === null ? null : path.join(dir, n.rules || 'AGENTS.md');
-  const skillsDir = path.join(dir, n.skills || 'skills');
-  const noRulesNote = n.hooks
-    ? '  no global rules file for this agent — always-on delivered via its sessionStart hook instead'
-    : '  no global always-on rules file for this agent — skills installed; use --with-init for a per-repo rule file';
-
-  if (!repoRoot) {
-    warn(`  ${prov.label} native install requires a local clone of the TLDR repo.`);
-    note('  Re-run from a clone: git clone https://github.com/' + REPO + ' && cd TLDR && node bin/install.js --only ' + prov.id);
-    results.failed.push([prov.id, 'native install requires local repo clone']);
-    process.stdout.write('\n');
-    return;
-  }
-  if (opts.dryRun) {
-    if (rulesFile) note(`  would write fenced TLDR ruleset to ${rulesFile}`);
-    else note(noRulesNote);
-    note(`  would copy ${OPENCODE_SKILL_DIRS.length} skill dirs into ${skillsDir}/`);
-    if (opts.withHooks) installAgentHooks(ctx, prov, dir);
-    if (opts.withHooks && prov.native.piExtension) installPiExtension(ctx, dir);
-    results.installed.push(prov.id);
-    process.stdout.write('\n');
-    return;
-  }
-  try {
-    fs.mkdirSync(dir, { recursive: true });
-    // Full TLDR skill suite (same canonical list opencode/hermes ship) so native
-    // agents auto-discover all skills, not just skills/tldr. Per-skill skip
-    // (unless --force) mirrors the opencode loop.
-    const skillSrcDir = path.join(repoRoot, 'skills');
-    for (const name of OPENCODE_SKILL_DIRS) {
-      const src = path.join(skillSrcDir, name);
-      const dest = path.join(skillsDir, name);
-      if (!fs.existsSync(src)) continue;
-      if (fs.existsSync(dest) && !opts.force) { note(`  skipped ${dest}/ (exists; --force to overwrite)`); continue; }
-      fs.cpSync(src, dest, { recursive: true });
-      process.stdout.write(`  installed: ${dest}/\n`);
-    }
-    if (rulesFile) writeFencedRuleset(rulesFile, repoRoot, opts, note);
-    else note(noRulesNote);
-    if (opts.withHooks) installAgentHooks(ctx, prov, dir);
-    if (opts.withHooks && prov.native.piExtension) installPiExtension(ctx, dir);
-    results.installed.push(prov.id);
-  } catch (e) {
-    warn(`  ${prov.label} install failed: ` + (e && e.message || e));
-    results.failed.push([prov.id, (e && e.message) || 'unknown error']);
-  }
-  process.stdout.write('\n');
-}
-
-function installOpencode(ctx) {
-  const { say, note, warn, opts, repoRoot, results } = ctx;
-  results.detected++;
-  say('→ opencode detected');
-
-  if (!repoRoot) {
-    warn('  opencode native install requires a local clone of the TLDR repo.');
-    note('  Re-run from a clone: git clone https://github.com/' + REPO + ' && cd TLDR && node bin/install.js --only opencode');
-    results.failed.push(['opencode', 'native install requires local repo clone']);
-    process.stdout.write('\n');
-    return;
-  }
-
-  const dir = opencodeConfigDir();
-  const pluginDir   = path.join(dir, 'plugins', 'tldr');
-  const commandsDir = path.join(dir, 'commands');
-  const agentsDir   = path.join(dir, 'agents');
-  const skillsDir   = path.join(dir, 'skills');
-  // opencode reads EITHER opencode.json OR opencode.jsonc. Patch whichever the
-  // user already has so we never create a second, competing config file that
-  // shadows theirs. Prefer an existing .jsonc; otherwise use/create .json.
-  const opencodeJsonc  = path.join(dir, 'opencode.jsonc');
-  const opencodeJsonP  = path.join(dir, 'opencode.json');
-  const opencodeJson = (fs.existsSync(opencodeJsonc) && !fs.existsSync(opencodeJsonP))
-    ? opencodeJsonc : opencodeJsonP;
-  const agentsMd     = path.join(dir, 'AGENTS.md');
-
-  if (opts.dryRun) {
-    note(`  would mkdir ${pluginDir}/, ${commandsDir}/, ${agentsDir}/, ${skillsDir}/`);
-    note(`  would copy plugin.js + package.json + tldr-config.cjs into ${pluginDir}/`);
-    note(`  would copy ${OPENCODE_COMMAND_FILES.length} command files into ${commandsDir}/`);
-    note(`  would copy ${OPENCODE_AGENT_FILES.length} tldrcrew agents into ${agentsDir}/`);
-    note(`  would copy ${OPENCODE_SKILL_DIRS.length} skill dirs into ${skillsDir}/`);
-    note(`  would patch ${opencodeJson} with "plugin" entry${opts.withMcpShrink ? ' + tldr-shrink MCP' : ''}`);
-    note(`  would write Tier-3 ruleset to ${agentsMd}`);
-    results.installed.push('opencode');
-    process.stdout.write('\n');
-    return;
-  }
-
-  try {
-    // 1. Plugin dir — copy plugin.js, package.json, tldr-config.js (sibling).
-    //    Same `--force` semantic as commands/agents/skills below: re-runs leave
-    //    user edits to plugin.js alone unless --force is passed.
-    fs.mkdirSync(pluginDir, { recursive: true });
-    const pluginSrc = path.join(repoRoot, 'src', 'plugins', 'tldr-opencode');
-    const pluginPayload = [
-      [path.join(pluginSrc, 'plugin.js'),    path.join(pluginDir, 'plugin.js')],
-      [path.join(pluginSrc, 'package.json'), path.join(pluginDir, 'package.json')],
-      // Renamed to .cjs because the plugin dir is "type": "module" — a bare .js
-      // sibling would be loaded as ESM and break the plugin's require() bridge.
-      [path.join(repoRoot, 'src', 'hooks', 'tldr-config.js'),
-       path.join(pluginDir, 'tldr-config.cjs')],
-    ];
-    for (const [src, dest] of pluginPayload) {
-      if (fs.existsSync(dest) && !opts.force) {
-        note(`  skipped ${dest} (exists; --force to overwrite)`);
-        continue;
-      }
-      fs.copyFileSync(src, dest);
-    }
-    process.stdout.write(`  installed: ${pluginDir}\n`);
-
-    // 2. Commands.
-    fs.mkdirSync(commandsDir, { recursive: true });
-    const cmdSrcDir = path.join(pluginSrc, 'commands');
-    for (const f of OPENCODE_COMMAND_FILES) {
-      const src = path.join(cmdSrcDir, f);
-      const dest = path.join(commandsDir, f);
-      if (fs.existsSync(dest) && !opts.force) { note(`  skipped ${dest} (exists; --force to overwrite)`); continue; }
-      fs.copyFileSync(src, dest);
-      process.stdout.write(`  installed: ${dest}\n`);
-    }
-
-    // 3. Subagents.
-    fs.mkdirSync(agentsDir, { recursive: true });
-    const agentSrcDir = path.join(repoRoot, 'agents');
-    for (const f of OPENCODE_AGENT_FILES) {
-      const src = path.join(agentSrcDir, f);
-      const dest = path.join(agentsDir, f);
-      if (!fs.existsSync(src)) continue;
-      if (fs.existsSync(dest) && !opts.force) { note(`  skipped ${dest} (exists; --force to overwrite)`); continue; }
-      fs.writeFileSync(dest, stripOpencodeAgentTools(fs.readFileSync(src, 'utf8')));
-      process.stdout.write(`  installed: ${dest}\n`);
-    }
-
-    // 4. Skills — opencode auto-discovers SKILL.md from ~/.config/opencode/skills/.
-    fs.mkdirSync(skillsDir, { recursive: true });
-    const skillSrcDir = path.join(repoRoot, 'skills');
-    for (const name of OPENCODE_SKILL_DIRS) {
-      const src = path.join(skillSrcDir, name);
-      const dest = path.join(skillsDir, name);
-      if (!fs.existsSync(src)) continue;
-      if (fs.existsSync(dest) && !opts.force) { note(`  skipped ${dest}/ (exists; --force to overwrite)`); continue; }
-      fs.cpSync(src, dest, { recursive: true });
-      process.stdout.write(`  installed: ${dest}/\n`);
-    }
-
-    // 5. AGENTS.md — Tier-3 always-on ruleset (fenced so --uninstall can strip
-    //    it cleanly even amid user content above/below). Shared writer.
-    writeFencedRuleset(agentsMd, repoRoot, opts, note);
-
-    // 6. opencode.json — add plugin entry; optional tldr-shrink MCP.
-    let cfg = SETTINGS.readSettings(opencodeJson);
-    if (cfg === null) {
-      warn(`  ${opencodeJson} unparseable; will not touch it. Edit manually then re-run.`);
-      results.failed.push(['opencode', 'opencode.json unparseable']);
-      process.stdout.write('\n');
-      return;
-    }
-    // Preserve the original on first install only — repeat installs would
-    // otherwise overwrite the only known-good copy with an already-merged file.
-    const opencodeBak = opencodeJson + '.bak';
-    if (fs.existsSync(opencodeJson) && !fs.existsSync(opencodeBak)) {
-      // COPYFILE_EXCL fails (EEXIST) on any pre-existing destination, including
-      // a planted symlink, so the backup never follows/clobbers a link target.
-      try { fs.copyFileSync(opencodeJson, opencodeBak, fs.constants.COPYFILE_EXCL); } catch (_) {}
-    }
-    if (!Array.isArray(cfg.plugin)) cfg.plugin = [];
-    if (!cfg.plugin.includes(OPENCODE_PLUGIN_REL)) {
-      cfg.plugin.push(OPENCODE_PLUGIN_REL);
-    }
-    if (opts.withMcpShrink) {
-      // opts.withMcpShrink is the array of upstream-cmd tokens parseArgs
-      // produced. tldr-shrink is a proxy — it exits without an upstream.
-      if (!cfg.mcp || typeof cfg.mcp !== 'object') cfg.mcp = {};
-      if (!cfg.mcp['tldr-shrink']) {
-        const launch = resolveMcpShrinkLaunch(repoRoot);
-        if (!launch) {
-          warn('  tldr-shrink unavailable (npm + local path both missing); skipped MCP wiring');
-        } else {
-          cfg.mcp['tldr-shrink'] = {
-            type: 'local',
-            command: [...launch, ...opts.withMcpShrink],
-            enabled: true,
-          };
-          process.stdout.write(`  registered tldr-shrink MCP server (wraps: ${opts.withMcpShrink.join(' ')})\n`);
-        }
-      }
-    }
-    SETTINGS.writeSettings(opencodeJson, cfg);
-    process.stdout.write(`  patched: ${opencodeJson}\n`);
-
-    results.installed.push('opencode');
-  } catch (e) {
-    warn('  opencode install failed: ' + (e && e.message || e));
-    results.failed.push(['opencode', (e && e.message) || 'unknown error']);
-  }
-  process.stdout.write('\n');
-}
-
 // ── OpenClaw native install ───────────────────────────────────────────────
 // Drops skills/tldr/ into the OpenClaw workspace and appends a small
 // auto-injected bootstrap block to the workspace SOUL.md. Always-on behavior
@@ -1012,150 +487,13 @@ function installOpenclaw(ctx) {
   process.stdout.write('\n');
 }
 
-// ── Hermes Agent native install ─────────────────────────────────────────────
-// Hermes reads its live instructions from <HERMES_HOME>/SOUL.md (default
-// ~/.hermes/SOUL.md). We MERGE the TLDR ruleset (TLDR.md) into SOUL.md between
-// managed markers — the SAME markers the prompt-only `install.sh --with-hermes`
-// path uses — so both installers converge on one file, stay idempotent against
-// each other, and never double-insert. Uninstall strips exactly the marked
-// block, preserving any user-authored content above and below.
-//
-// Interop note: install.sh honors only $HOME/.hermes; we additionally respect
-// HERMES_HOME (matches the full-installer convention and makes the path
-// testable). When HERMES_HOME is unset both resolve to ~/.hermes, so real-world
-// default installs remain byte-interoperable via the shared markers.
-const HERMES_MARK_BEGIN = '<!-- TLDR.MD START -->';
-const HERMES_MARK_END = '<!-- TLDR.MD END -->';
-
-function hermesConfigDir() {
-  return process.env.HERMES_HOME || path.join(os.homedir(), '.hermes');
-}
-
-function hermesSoulPath() {
-  return path.join(hermesConfigDir(), 'SOUL.md');
-}
-
-function hermesSkillsRoot() {
-  return path.join(hermesConfigDir(), 'skills', 'productivity');
-}
-
-function resolveHermesSkillSrc(repoRoot, skillDir) {
-  const primary = path.join(repoRoot, 'skills', skillDir);
-  return fs.existsSync(primary) ? primary : null;
-}
-
-// The managed block body is TLDR.md (repo root) — the same source install.sh
-// resolves as PROMPT_PATH. Returns null when there's no local clone on disk.
-function loadHermesRuleset(repoRoot) {
-  if (!repoRoot) return null;
-  try { return fs.readFileSync(path.join(repoRoot, 'TLDR.md'), 'utf8'); }
-  catch (_) { return null; }
-}
-
-// Compute the next SOUL.md contents for an install. Mirrors the merge algorithm
-// in install.sh's `install_hermes` python block, but always wraps the ruleset
-// in the managed markers (install.sh writes raw on a fresh file) so our own
-// --uninstall can strip cleanly. Idempotency uses the same `promptBody in text`
-// short-circuit as install.sh, so it also recognizes install.sh's raw write.
-function mergeHermesSoul(existing, promptText) {
-  const promptBody = promptText.replace(/\n+$/, '');           // python rstrip("\n")
-  const managed = `${HERMES_MARK_BEGIN}\n${promptBody}\n${HERMES_MARK_END}`;
-
-  if (existing === null || existing.trim() === '') {
-    return { action: 'installed', text: managed + '\n' };
-  }
-  if (existing.includes(promptBody)) {
-    return { action: 'unchanged', text: null };
-  }
-  const begin = existing.indexOf(HERMES_MARK_BEGIN);
-  const end = existing.indexOf(HERMES_MARK_END);
-  if (begin !== -1 && end !== -1 && begin < end) {
-    const before = existing.slice(0, begin);
-    const after = existing.slice(end + HERMES_MARK_END.length);
-    let next = before.replace(/\s+$/, '') + '\n\n' + managed;   // before.rstrip()
-    if (after.trim()) next += '\n\n' + after.replace(/^\n+/, ''); // after.lstrip("\n")
-    else next += '\n';
-    return { action: 'updated', text: next };
-  }
-  return { action: 'merged', text: existing.replace(/\s+$/, '') + '\n\n' + managed + '\n' };
-}
-
-function installHermes(ctx) {
-  const { say, note, warn, opts, repoRoot, results } = ctx;
-  results.detected++;
-  say('→ Hermes Agent detected');
-
-  const promptText = loadHermesRuleset(repoRoot);
-  if (!promptText) {
-    warn('  Hermes native install requires a local clone of the TLDR repo (TLDR.md missing).');
-    note('  Re-run from a clone: git clone https://github.com/' + REPO + ' && cd TLDR && node bin/install.js --only hermes');
-    results.failed.push(['hermes', 'native install requires local repo clone']);
-    process.stdout.write('\n');
-    return;
-  }
-
-  const soul = hermesSoulPath();
-  const skillsRoot = hermesSkillsRoot();
-
-  if (opts.dryRun) {
-    note(`  would merge TLDR.md ruleset into ${soul}`);
-    note(`  (between ${HERMES_MARK_BEGIN} / ${HERMES_MARK_END} markers)`);
-    note(`  would mkdir ${skillsRoot}/`);
-    note(`  would copy ${HERMES_SKILL_DIRS.length} skill dirs into ${skillsRoot}/`);
-    results.installed.push('hermes');
-    process.stdout.write('\n');
-    return;
-  }
-
-  try {
-    const existing = fs.existsSync(soul) ? fs.readFileSync(soul, 'utf8') : null;
-    const r = mergeHermesSoul(existing, promptText);
-    if (r.action === 'unchanged') {
-      note(`  ${soul} already contains the current TLDR ruleset`);
-    } else {
-      // atomicWrite (temp + rename) replaces a planted symlink with a real file
-      // instead of following it and writing THROUGH to an out-of-tree target.
-      atomicWrite(soul, r.text, 0o644);
-      process.stdout.write(`  ${r.action}: ${soul}\n`);
-    }
-
-    // Also copy the TLDR skill suite into ~/.hermes/skills/productivity/
-    // (same pattern as caveman HERMES_SKILL_DIRS).
-    fs.mkdirSync(skillsRoot, { recursive: true });
-    for (const skillDir of HERMES_SKILL_DIRS) {
-      const srcDir = resolveHermesSkillSrc(repoRoot, skillDir);
-      const destDir = path.join(skillsRoot, skillDir);
-      if (srcDir) {
-        if (fs.existsSync(destDir)) fs.rmSync(destDir, { recursive: true, force: true });
-        fs.cpSync(srcDir, destDir, { recursive: true });
-        note(`  copied ${skillDir} → ${destDir}`);
-      } else {
-        warn(`  skill dir not found: skills/${skillDir}`);
-      }
-    }
-
-    results.installed.push('hermes');
-  } catch (e) {
-    warn('  hermes install failed: ' + (e && e.message || e));
-    results.failed.push(['hermes', (e && e.message) || 'unknown error']);
-  }
-  process.stdout.write('\n');
-}
-
 // ── Hooks installer ────────────────────────────────────────────────────────
 // Replaces src/hooks/install.sh + src/hooks/install.ps1.
 async function installHooks(ctx) {
-  const { note, warn, opts, repoRoot, configDir } = ctx;
+  const { warn, note, repoRoot, configDir, io } = ctx;
   const hooksDir = path.join(configDir, 'hooks');
   const settingsPath = path.join(configDir, 'settings.json');
   const sourceDir = repoRoot ? path.join(repoRoot, 'src', 'hooks') : null;
-
-  if (opts.dryRun) {
-    note(`  would mkdir -p ${hooksDir}`);
-    for (const f of HOOK_FILES) note(`  would install ${path.join(hooksDir, f)}`);
-    note(`  would merge SessionStart + UserPromptSubmit + statusline into ${settingsPath}`);
-    return 'ok';
-  }
 
   // All file + settings writes below can throw ENOENT/EACCES/EROFS on a
   // read-only or otherwise unwritable config dir. Wrap them so we return a
@@ -1163,42 +501,43 @@ async function installHooks(ctx) {
   // stack trace and aborting the whole multi-agent run.
   let settings;
   try {
-    fs.mkdirSync(hooksDir, { recursive: true });
+    io.mkdirp(hooksDir);
 
     // Copy or download each hook file. Local-clone-first for offline installs.
     // Downloaded files (the rare detached-script / curl fallback) are verified
     // against the SHA-256 manifest published alongside them
     // (src/hooks/checksums.sha256); a mismatch aborts before the file is wired
     // into settings.json. Local copies are trusted — they come from the same
-    // clone as this script.
+    // clone as this script. Dry runs plan only: no network fetch, so a
+    // download is recorded as "would write" without its content check.
     let checksums; // undefined = not yet loaded; null = unavailable
-    let warnedNoChecksums = false;
     for (const f of HOOK_FILES) {
       const dest = path.join(hooksDir, f);
       if (sourceDir && fs.existsSync(path.join(sourceDir, f))) {
-        fs.copyFileSync(path.join(sourceDir, f), dest);
+        io.copyFile(path.join(sourceDir, f), dest);
       } else {
-        try { await downloadTo(`${HOOKS_REMOTE}/${f}`, dest); }
+        let body;
+        try { body = await io.fetch(`${HOOKS_REMOTE}/${f}`); }
         catch (e) { return `download ${f} failed: ${e.message}`; }
-        if (checksums === undefined) checksums = await loadRemoteHookChecksums();
-        if (checksums) {
+        if (body) { // null in a dry run: nothing to verify
+          if (checksums === undefined) checksums = await loadRemoteChecksums(HOOKS_REMOTE);
+          // Fail closed: a download that cannot be verified is never installed.
+          if (!checksums) return `integrity manifest unavailable — refusing to install unverified ${f}`;
           const want = checksums.get(f);
-          const got = sha256File(dest);
+          const got = sha256Hex(body);
           if (!want || want !== got) {
-            try { fs.unlinkSync(dest); } catch (_) {}
             return `integrity check failed for ${f} (expected ${want || '<not in manifest>'}, got ${got}) — ` +
                    `refusing to install a hook that does not match the published manifest`;
           }
-        } else if (!warnedNoChecksums) {
-          warnedNoChecksums = true;
-          warn('  note: integrity manifest unavailable — downloaded hooks installed unverified.');
         }
+        io.writeFile(dest, body);
       }
-      process.stdout.write(`  installed: ${dest}\n`);
+      io.report(`  installed: ${dest}`);
     }
 
-    // chmod statusline (no-op on Windows)
-    try { fs.chmodSync(path.join(hooksDir, 'tldr-statusline.sh'), 0o755); } catch (_) {}
+    // chmod statusline (no-op on Windows). Routed through run so a dry run
+    // prints it; a missing file fails the spawn, which is ignored as before.
+    if (!IS_WIN) io.run('chmod', ['755', path.join(hooksDir, 'tldr-statusline.sh')]);
 
     // Merge into settings.json
     settings = SETTINGS.readSettings(settingsPath);
@@ -1217,10 +556,11 @@ async function installHooks(ctx) {
     // the already-merged file, destroying recovery.
     const bak = settingsPath + '.bak';
     if (fs.existsSync(settingsPath) && !fs.existsSync(bak)) {
-      // COPYFILE_EXCL: refuse a pre-existing destination (incl. a planted
-      // symlink) instead of following it and clobbering the link target.
-      try { fs.copyFileSync(settingsPath, bak, fs.constants.COPYFILE_EXCL); } catch (_) {}
+      // copyFileExcl is COPYFILE_EXCL: refuse a pre-existing destination (incl.
+      // a planted symlink) instead of following it and clobbering the target.
+      io.copyFileExcl(settingsPath, bak);
     }
+    const before = JSON.stringify(settings);
 
     const node = process.execPath;
     const activate = path.join(hooksDir, 'tldr-activate.js');
@@ -1254,24 +594,37 @@ async function installHooks(ctx) {
       : `bash "${statusline}"`;
     if (!settings.statusLine) {
       settings.statusLine = { type: 'command', command: slCmd };
-      process.stdout.write('  statusline badge configured.\n');
+      io.report('  statusline badge configured.');
     } else {
       const existing = typeof settings.statusLine === 'string'
         ? settings.statusLine
         : (settings.statusLine.command || '');
       if (existing.includes(statusline) || existing.includes('tldr-statusline')) {
-        process.stdout.write('  statusline badge already configured.\n');
+        io.report('  statusline badge already configured.');
       } else {
-        process.stdout.write('  NOTE: existing statusline detected — TLDR badge NOT added.\n');
-        process.stdout.write('        See src/hooks/README.md to add the badge to your existing statusline.\n');
+        io.report('  NOTE: existing statusline detected — TLDR badge NOT added.');
+        io.report('        See src/hooks/README.md to add the badge to your existing statusline.');
       }
     }
 
     // Defensive validation before write — Claude Code Zod will discard the
     // entire settings.json if any single hook is malformed (#249-class footgun).
+    // Serialised the same way as SETTINGS.writeSettings (JSON + newline, 0600)
+    // so the write can go through io.
     SETTINGS.validateHookFields(settings, warn);
-    SETTINGS.writeSettings(settingsPath, settings);
-    process.stdout.write(`  hooks wired in ${settingsPath}\n`);
+    // Nothing to change: leave the file (and any JSONC comments in it) as is.
+    if (fs.existsSync(settingsPath) && JSON.stringify(settings) === before) {
+      io.report(`  hooks already wired in ${settingsPath} (file untouched)`);
+      return 'ok';
+    }
+    // A commented file is patched in place so its comments survive; any
+    // patch the module can't prove safe falls back to a full rewrite.
+    const hadComments = SETTINGS.hasJsoncComments(settingsPath);
+    const originalText = hadComments ? fs.readFileSync(settingsPath, 'utf8') : null;
+    keepJsoncComments(settingsPath, io, note);
+    const patched = hadComments ? patchJsonc(originalText, settings, ['hooks', 'statusLine']) : null;
+    io.atomicWrite(settingsPath, patched !== null ? patched : JSON.stringify(settings, null, 2) + '\n', 0o600);
+    io.report(`  hooks wired in ${settingsPath}`);
     return 'ok';
   } catch (e) {
     warn('  hook install failed: ' + ((e && e.message) || e));
@@ -1312,11 +665,7 @@ function installMcpShrink(ctx) {
   // opts.withMcpShrink is always an array of upstream-cmd tokens by the
   // time we get here; parseArgs rejects bare --with-mcp-shrink.
   const upstream = opts.withMcpShrink;
-  const r = runSpawn(
-    'claude',
-    ['mcp', 'add', 'tldr-shrink', '--', ...launch, ...upstream],
-    null, opts.dryRun
-  );
+  const r = ctx.io.run('claude', ['mcp', 'add', 'tldr-shrink', '--', ...launch, ...upstream]);
   if ((r.status || 0) === 0) {
     note(`    registered, wrapping: ${upstream.join(' ')}`);
     note(`    Edit ~/.claude.json mcpServers["tldr-shrink"] to change the upstream,`);
@@ -1327,31 +676,52 @@ function installMcpShrink(ctx) {
   return { kind: 'fail', why: 'claude mcp add failed' };
 }
 
+// A rewrite drops JSONC comments; keep the commented original once, beside it.
+function keepJsoncComments(settingsPath, io, note) {
+  if (!SETTINGS.hasJsoncComments(settingsPath)) return;
+  io.copyFileExcl(settingsPath, settingsPath + '.jsonc.bak');
+  note(`  ${path.basename(settingsPath)} has comments; original kept as ${settingsPath}.jsonc.bak`);
+}
+// Uninstall rewrite of a JSON config. A commented original is patched in place,
+// touching only the top-level keys that changed, so its comments survive. When
+// patchJsonc declines (it cannot remove a key), fall back to a full rewrite.
+function rewriteUninstalled(originalText, before, after) {
+  if (originalText !== null) {
+    const changed = Object.keys({ ...before, ...after })
+      .filter(k => JSON.stringify(before[k]) !== JSON.stringify(after[k]));
+    const patched = patchJsonc(originalText, after, changed);
+    if (patched !== null) return patched;
+  }
+  return JSON.stringify(after, null, 2) + '\n';
+}
+
 // ── Init writers (per-repo rule files) ────────────────────────────────────
 async function runInit(ctx) {
-  const { note, warn, opts, repoRoot } = ctx;
+  const { warn, opts, repoRoot, io } = ctx;
   const local = repoRoot && path.join(repoRoot, 'src/tools/tldr-init.js');
   const args = [process.cwd()];
-  if (opts.dryRun) args.push('--dry-run');
   if (opts.force)  args.push('--force');
   if (local && fs.existsSync(local)) {
-    const r = runSpawn(process.execPath, [local, ...args], null, opts.dryRun);
+    const r = io.run(process.execPath, [local, ...args]);
     return (r.status || 0) === 0;
   }
-  // Curl-pipe fallback
-  if (opts.dryRun) {
-    note(`  would download ${INIT_SCRIPT_URL} and run it on ${process.cwd()}`);
-    return true;
-  }
+  // Curl-pipe fallback: every step goes through io, so a dry run plans it.
   try {
-    const tmpDir = createSecureTempDir('tldr-init-');
+    const body = await io.fetch(INIT_SCRIPT_URL);
+    if (body) { // null in a dry run: nothing to verify
+      const sums = await loadRemoteChecksums(TOOLS_REMOTE);
+      const want = sums && sums.get('tldr-init.js');
+      if (!want || want !== sha256Hex(body)) {
+        warn('  tldr-init.js failed integrity check or manifest unavailable; not running it.');
+        return false;
+      }
+    }
+    const tmpDir = io.tempDir('tldr-init-');
     const tmpFile = path.join(tmpDir, 'tldr-init.js');
-    await downloadTo(INIT_SCRIPT_URL, tmpFile);
-    const r = child_process.spawnSync(process.execPath, [tmpFile, ...args], { stdio: 'inherit' });
-    try {
-      fs.unlinkSync(tmpFile);
-      safeRmdir(tmpDir);
-    } catch (_) {}
+    io.writeFile(tmpFile, body);
+    const r = io.run(process.execPath, [tmpFile, ...args]);
+    io.unlink(tmpFile);
+    io.rm(tmpDir);
     return (r.status || 0) === 0;
   } catch (e) {
     warn('  ' + e.message);
@@ -1374,16 +744,15 @@ function assertDownloadUrl(url) {
   return url;
 }
 
-async function downloadTo(url, dest, redirects = 3) {
+// Network fetch only; the caller decides where the bytes go (ctx.io.writeFile).
+async function downloadBuffer(url, redirects = 3) {
   assertDownloadUrl(url);
-
-  const buf = await fetchCapped(url, redirects);
-  fs.writeFileSync(dest, buf);
+  return fetchCapped(url, redirects);
 }
 
 // Fetch with the same limits the curl/https pair used to enforce separately:
 // 512 KiB hard cap, 30s timeout, max 3 redirects. Redirects are followed
-// MANUALLY so every hop re-enters downloadTo's host/protocol allowlist — a
+// MANUALLY so every hop re-enters downloadBuffer's host/protocol allowlist — a
 // redirect cannot walk us off ALLOWED_DOWNLOAD_HOSTS.
 async function fetchCapped(url, redirects = 3) {
   const MAX_BYTES = 512 * 1024; // hook files and manifests are tiny
@@ -1410,19 +779,18 @@ async function fetchCapped(url, redirects = 3) {
 }
 
 // ── Integrity verification for downloaded hooks ─────────────────────────────
-function sha256File(p) {
-  return crypto.createHash('sha256').update(fs.readFileSync(p)).digest('hex');
+function sha256Hex(buf) {
+  return crypto.createHash('sha256').update(buf).digest('hex');
 }
 
-// Download + parse the hook integrity manifest published next to the hook
-// files. Returns Map<basename, sha256hex>, or null when the manifest is
-// unavailable — the caller treats null as "cannot verify" and warns rather
-// than aborting, for back-compat with checkouts that predate the manifest.
+// Download + parse the integrity manifest published next to the files in
+// `base`. Returns Map<basename, sha256hex>, or null when the manifest is
+// unavailable — callers treat null as "cannot verify" and refuse to install.
 // Parses the standard `sha256sum` text format: "<64-hex>  <path>" (two
 // spaces, or " *<path>" binary marker).
-async function loadRemoteHookChecksums() {
+async function loadRemoteChecksums(base) {
   try {
-    const url = assertDownloadUrl(`${HOOKS_REMOTE}/checksums.sha256`);
+    const url = assertDownloadUrl(`${base}/checksums.sha256`);
     const txt = (await fetchCapped(url)).toString('utf8');
     const map = new Map();
     for (const line of txt.split('\n')) {
@@ -1437,7 +805,9 @@ async function loadRemoteHookChecksums() {
 
 // ── Uninstall ─────────────────────────────────────────────────────────────
 function uninstall(ctx) {
-  const { say, note, warn, ok, opts, configDir } = ctx;
+  const { say, note, warn, ok, opts, configDir, io } = ctx;
+  // Real runs report what they removed; dry runs already print "would remove".
+  const removed = (p) => { if (!io.dryRun) note(`  removed ${p}`); };
   say('🦉 TLDR uninstall');
 
   if (opts.dryRun) note('  (dry run — nothing will be removed)');
@@ -1448,8 +818,11 @@ function uninstall(ctx) {
   if (fs.existsSync(settingsPath)) {
     const settings = SETTINGS.readSettings(settingsPath);
     if (settings) {
+      const originalText = SETTINGS.hasJsoncComments(settingsPath) ? fs.readFileSync(settingsPath, 'utf8') : null;
+      const before = JSON.parse(JSON.stringify(settings));
+      keepJsoncComments(settingsPath, io, note);
       let removed = 0;
-      for (const marker of ['tldr-activate', 'tldr-mode-tracker', 'tldr-stats']) {
+      for (const marker of CLAUDE_HOOK_MARKERS) {
         removed += SETTINGS.removeTldrHooks(settings, marker);
       }
       // Drop our statusline if it points at our script
@@ -1458,8 +831,8 @@ function uninstall(ctx) {
         if (cmd.includes('tldr-statusline')) delete settings.statusLine;
       }
       SETTINGS.validateHookFields(settings, warn);
-      if (!opts.dryRun) SETTINGS.writeSettings(settingsPath, settings);
-      ok(`  removed ${removed} TLDR hook entr${removed === 1 ? 'y' : 'ies'} from settings.json`);
+      io.atomicWrite(settingsPath, rewriteUninstalled(originalText, before, settings), 0o600);
+      if (!io.dryRun) ok(`  removed ${removed} TLDR hook entr${removed === 1 ? 'y' : 'ies'} from settings.json`);
     }
   }
 
@@ -1467,8 +840,8 @@ function uninstall(ctx) {
     for (const f of HOOK_FILES) {
       const p = path.join(hooksDir, f);
       if (!fs.existsSync(p)) continue;
-      if (!opts.dryRun) { try { fs.unlinkSync(p); } catch (_) {} }
-      note(`  removed ${p}`);
+      io.unlink(p);
+      removed(p);
     }
     // Don't rmdir hooksDir — other plugins may use it.
   }
@@ -1479,7 +852,7 @@ function uninstall(ctx) {
   if (hasCmd('claude')) {
     const probe = captureSpawn('claude', ['plugin', 'list']);
     if (probe.status === 0 && /tldr/i.test(probe.stdout || '')) {
-      const r = runSpawn('claude', ['plugin', 'uninstall', 'tldr@tldr'], null, opts.dryRun);
+      const r = io.run('claude', ['plugin', 'uninstall', 'tldr@tldr']);
       if ((r.status || 0) === 0) ok('  removed claude plugin');
     } else {
       note('  claude plugin not installed — skipping');
@@ -1505,7 +878,7 @@ function uninstall(ctx) {
     // non-zero exit (server may have never been registered).
     const mcpHelp = captureSpawn('claude', ['mcp', '--help']);
     if (mcpHelp.status === 0) {
-      runSpawn('claude', ['mcp', 'remove', 'tldr-shrink'], null, opts.dryRun);
+      io.run('claude', ['mcp', 'remove', 'tldr-shrink']);
     }
   }
 
@@ -1513,7 +886,7 @@ function uninstall(ctx) {
   if (hasCmd('gemini')) {
     const probe = captureSpawn('gemini', ['extensions', 'list']);
     if (probe.status === 0 && /tldr/i.test(probe.stdout || '')) {
-      runSpawn('gemini', ['extensions', 'uninstall', 'tldr'], null, opts.dryRun);
+      io.run('gemini', ['extensions', 'uninstall', 'tldr']);
     } else {
       note('  gemini extension not installed — skipping');
     }
@@ -1535,6 +908,8 @@ function uninstall(ctx) {
     if (fs.existsSync(ocJson)) {
       const cfg = SETTINGS.readSettings(ocJson);
       if (cfg) {
+        const ocBefore = JSON.parse(JSON.stringify(cfg));
+        const ocOriginal = SETTINGS.hasJsoncComments(ocJson) ? fs.readFileSync(ocJson, 'utf8') : null;
         if (Array.isArray(cfg.plugin)) {
           cfg.plugin = cfg.plugin.filter(p => p !== OPENCODE_PLUGIN_REL);
           if (cfg.plugin.length === 0) delete cfg.plugin;
@@ -1543,35 +918,35 @@ function uninstall(ctx) {
           delete cfg.mcp['tldr-shrink'];
           if (Object.keys(cfg.mcp).length === 0) delete cfg.mcp;
         }
-        if (!opts.dryRun) SETTINGS.writeSettings(ocJson, cfg);
+        io.atomicWrite(ocJson, rewriteUninstalled(ocOriginal, ocBefore, cfg), 0o600);
         ok(`  pruned TLDR entries from ${ocJson}`);
       }
     }
-    if (!opts.dryRun) { try { fs.rmSync(ocPluginDir, { recursive: true, force: true }); } catch (_) {} }
-    note(`  removed ${ocPluginDir}`);
+    io.rm(ocPluginDir);
+    removed(ocPluginDir);
     // Commands, agents, skills — only files matching our manifest (don't
     // sweep the parent dirs; user may have other entries there).
     for (const f of OPENCODE_COMMAND_FILES) {
       const p = path.join(ocDir, 'commands', f);
-      if (fs.existsSync(p) && !opts.dryRun) { try { fs.unlinkSync(p); } catch (_) {} }
+      if (fs.existsSync(p)) io.unlink(p);
     }
     for (const f of OPENCODE_AGENT_FILES) {
       const p = path.join(ocDir, 'agents', f);
-      if (fs.existsSync(p) && !opts.dryRun) { try { fs.unlinkSync(p); } catch (_) {} }
+      if (fs.existsSync(p)) io.unlink(p);
     }
     for (const name of OPENCODE_SKILL_DIRS) {
       const p = path.join(ocDir, 'skills', name);
-      if (fs.existsSync(p) && !opts.dryRun) { try { fs.rmSync(p, { recursive: true, force: true }); } catch (_) {} }
+      if (fs.existsSync(p)) io.rm(p);
     }
     // AGENTS.md — strip the fenced TLDR block(s), preserving user content above
     // and below, via the shared nearest-preceding-BEGIN stripper (data-loss-safe
     // on orphan/duplicate markers). Falls back to legacy unfenced-sentinel
     // handling for installs that pre-date the marker fence.
     const ocAgentsMd = path.join(ocDir, 'AGENTS.md');
-    stripFencedRuleset(ocAgentsMd, opts, note);
+    RULES.stripFencedRuleset(ocAgentsMd, { io, note });
     // opencode flag file
     const ocFlag = path.join(ocDir, '.tldr-active');
-    if (fs.existsSync(ocFlag) && !opts.dryRun) { try { fs.unlinkSync(ocFlag); } catch (_) {} }
+    if (fs.existsSync(ocFlag)) io.unlink(ocFlag);
   }
 
   // OpenClaw native install — strip skill folder + SOUL.md marker block.
@@ -1593,15 +968,15 @@ function uninstall(ctx) {
   // markers). Probed by SOUL.md existence; if absent (or no marker block), the
   // stripper is a no-op. Also remove skill folders installHermes copied.
   const hermesSoul = hermesSoulPath();
-  stripFencedFile(hermesSoul, HERMES_MARK_BEGIN, HERMES_MARK_END, opts, note);
+  RULES.stripFencedFile(hermesSoul, HERMES_MARK_BEGIN, HERMES_MARK_END, { io, note });
   const hermesRoot = hermesSkillsRoot();
   if (fs.existsSync(hermesRoot)) {
     let prunedHermes = false;
     for (const name of HERMES_SKILL_DIRS) {
       const p = path.join(hermesRoot, name);
       if (fs.existsSync(p)) {
-        if (!opts.dryRun) { try { fs.rmSync(p, { recursive: true, force: true }); } catch (_) {} }
-        note(`  removed ${p}`);
+        io.rm(p);
+        removed(p);
         prunedHermes = true;
       }
     }
@@ -1612,28 +987,31 @@ function uninstall(ctx) {
   // uninstall doesn't orphan it. Guarded; no-op when absent.
   const hermesLegacy = path.join(hermesConfigDir(), 'skills', 'tldr');
   if (fs.existsSync(hermesLegacy)) {
-    if (!opts.dryRun) { try { fs.rmSync(hermesLegacy, { recursive: true, force: true }); } catch (_) {} }
-    note(`  removed ${hermesLegacy}`);
+    io.rm(hermesLegacy);
+    removed(hermesLegacy);
     ok('  pruned legacy TLDR skill dir from Hermes');
   }
 
   // Flag file
   const flag = path.join(configDir, '.tldr-active');
-  if (fs.existsSync(flag) && !opts.dryRun) { try { fs.unlinkSync(flag); } catch (_) {} }
+  if (fs.existsSync(flag)) io.unlink(flag);
 
   // Native AGENTS.md-convention installs (codex/pi/grok/antigravity/omp/cursor)
   // — strip the fenced TLDR block from each agent's rules file and remove every
   // skill dir the install copied (the full OPENCODE_SKILL_DIRS suite).
-  for (const prov of PROVIDERS.filter(p => p.native)) {
-    const ndir = expandHome(prov.native.dir);
+  // Visit the env-relocated dir AND the default one, so an uninstall run without
+  // DSH_HOME still cleans an install made with it (and vice versa).
+  const nativeTargets = PROVIDERS.filter(p => p.native).flatMap(prov =>
+    [...new Set([nativeDir(prov.native), expandHome(prov.native.dir)])].map(ndir => ({ prov, ndir })));
+  for (const { prov, ndir } of nativeTargets) {
     const rulesFile = prov.native.rules === null ? null : path.join(ndir, prov.native.rules || 'AGENTS.md');
     const skillsDir = path.join(ndir, prov.native.skills || 'skills');
-    let touched = rulesFile ? stripFencedRuleset(rulesFile, opts, note) : false;
+    let touched = rulesFile ? RULES.stripFencedRuleset(rulesFile, { io, note }) : false;
     for (const name of OPENCODE_SKILL_DIRS) {
       const skillDir = path.join(skillsDir, name);
       if (fs.existsSync(skillDir)) {
-        if (!opts.dryRun) { try { fs.rmSync(skillDir, { recursive: true, force: true }); } catch (_) {} }
-        note(`  removed ${skillDir}`);
+        io.rm(skillDir);
+        removed(skillDir);
         touched = true;
       }
     }
@@ -1644,27 +1022,26 @@ function uninstall(ctx) {
       const cfgPath = path.join(ndir, prov.native.hooks.file);
       if (fs.existsSync(cfgPath)) {
         try {
-          const cfg = JSON.parse(SETTINGS.stripJsonComments(fs.readFileSync(cfgPath, 'utf8'))) || {};
-          if (prov.native.hooks.style === 'antigravity') {
-            delete cfg.tldr;
-          } else if (cfg.hooks && typeof cfg.hooks === 'object') {
-            for (const ev of Object.keys(cfg.hooks)) {
-              const pruned = prov.native.hooks.style === 'cursor'
-                ? AGENT_HOOKS.pruneFlat(cfg.hooks[ev])
-                : AGENT_HOOKS.pruneGrouped(cfg.hooks[ev]);
-              if (pruned.length) cfg.hooks[ev] = pruned;
-              else delete cfg.hooks[ev];
-            }
-          }
-          if (!opts.dryRun) atomicWrite(cfgPath, JSON.stringify(cfg, null, 2) + '\n', 0o644);
-          note(`  pruned TLDR hooks from ${cfgPath}`);
+          const text = fs.readFileSync(cfgPath, 'utf8');
+          const cfg = JSON.parse(SETTINGS.stripJsonComments(text)) || {};
+          const before = JSON.parse(JSON.stringify(cfg));
+          const originalText = SETTINGS.hasJsoncComments(cfgPath) ? text : null;
+          if (originalText !== null) keepJsoncComments(cfgPath, io, note);
+          const style = AGENT_HOOKS.STYLES[prov.native.hooks.style];
+          style.prune(cfg);
+          // Undo what install changed beyond our entries (e.g. zcode hooks.enabled).
+          // The sidecar goes with the hooks dir removed below.
+          const priorPath = style.priorFile && path.join(ndir, 'hooks', 'tldr', style.priorFile);
+          if (priorPath && fs.existsSync(priorPath)) style.restorePrior(cfg, fs.readFileSync(priorPath, 'utf8').trim());
+          io.atomicWrite(cfgPath, rewriteUninstalled(originalText, before, cfg), 0o644);
+          if (!io.dryRun) note(`  pruned TLDR hooks from ${cfgPath}`);
           touched = true;
         } catch (_) { /* unparseable — leave the user's file alone */ }
       }
       const hookScripts = path.join(ndir, 'hooks', 'tldr');
       if (fs.existsSync(hookScripts)) {
-        if (!opts.dryRun) { try { fs.rmSync(hookScripts, { recursive: true, force: true }); } catch (_) {} }
-        note(`  removed ${hookScripts}`);
+        io.rm(hookScripts);
+        removed(hookScripts);
         touched = true;
       }
     }
@@ -1673,22 +1050,18 @@ function uninstall(ctx) {
       if (fs.existsSync(extDir)) {
         // `pi remove` drops the settings.json entry; deleting the dir alone
         // would leave Pi pointing at a missing package.
-        if (!opts.dryRun) {
-          runSpawn('pi', ['remove', extDir], null, false);
-          try { fs.rmSync(extDir, { recursive: true, force: true }); } catch (_) {}
-        }
-        note(`  removed ${extDir}`);
+        io.run('pi', ['remove', extDir]);
+        io.rm(extDir);
+        removed(extDir);
         touched = true;
       }
       // Older installs put shared modules in <dir>/hooks/tldr/; Pi warns about a
       // global hooks/ dir, so remove it (and the dir itself when we emptied it).
       const piHooks = path.join(ndir, 'hooks', 'tldr');
       if (fs.existsSync(piHooks)) {
-        if (!opts.dryRun) {
-          try { fs.rmSync(piHooks, { recursive: true, force: true }); } catch (_) {}
-          try { fs.rmdirSync(path.join(ndir, 'hooks')); } catch (_) { /* non-empty: leave it */ }
-        }
-        note(`  removed ${piHooks}`);
+        io.rm(piHooks);
+        if (!io.dryRun) { try { fs.rmdirSync(path.join(ndir, 'hooks')); } catch (_) { /* non-empty: leave it */ } }
+        removed(piHooks);
         touched = true;
       }
     }
@@ -1800,7 +1173,7 @@ EXAMPLES
   npx -y github:0p9b/TLDR -- --uninstall
   tldr update                                          # from clone or ~/.tldr/src
   tldr update --check                                  # report only
-  node bin/install.js update --ref v0.20.0
+  node bin/install.js update --ref v0.21.0
 
   Issues: https://github.com/${REPO}/issues
 `);
@@ -1850,6 +1223,9 @@ async function main() {
     ok:   (s) => process.stdout.write(c.green(s) + '\n'),
     results: { installed: [], skipped: [], failed: [], detected: 0 },
   };
+  ctx.io = opts.dryRun
+    ? dryIO({ note: ctx.note, run: (cmd, args) => runSpawn(cmd, args, null, true) })
+    : realIO({ run: (cmd, args) => runSpawn(cmd, args, null, false), download: (u) => downloadBuffer(u) });
 
   // Uninstall only edits settings.json — it never interpolates configDir into a
   // shell command — so it runs before the shell-safety guard below.
@@ -1900,13 +1276,13 @@ async function main() {
     // no repo clone is available; openclaw bails when the workspace dir is
     // missing without --force).
     if (!explicit(prov.id) && !detectMatch(prov.detect)) continue;
-    if (prov.id === 'claude')   { await installClaude(ctx); continue; }
-    if (prov.id === 'gemini')   { installGemini(ctx); continue; }
-    if (prov.id === 'opencode') { installOpencode(ctx); continue; }
+    if (prov.id === 'claude')   { await installClaude(ctx, { REPO, captureSpawn, installHooks, installMcpShrink }); continue; }
+    if (prov.id === 'gemini')   { installGemini(ctx, { REPO, captureSpawn }); continue; }
+    if (prov.id === 'opencode') { installOpencodeWith(ctx, { resolveMcpShrinkLaunch }); continue; }
     if (prov.id === 'openclaw') { installOpenclaw(ctx); continue; }
     if (prov.id === 'hermes')   { installHermes(ctx); continue; }
-    if (prov.native)            { installNativeAgentsMd(ctx, prov); continue; }
-    if (prov.profile)           { installViaSkills(ctx, prov); continue; }
+    if (prov.native)            { installNative(ctx, prov); continue; }
+    if (prov.profile)           { installViaSkills(ctx, prov, { REPO }); continue; }
   }
 
   // Auto-detect fallback if nothing matched
@@ -1914,7 +1290,7 @@ async function main() {
     ctx.say('→ no known agents detected — running npx-skills auto-detect fallback');
     // --yes --all for the same reason as installViaSkills above (issue #370):
     // skip the interactive skill picker so curl|bash actually installs.
-    const r = runSpawn('npx', ['-y', 'skills', 'add', REPO, '--yes', '--all'], null, opts.dryRun);
+    const r = ctx.io.run('npx', ['-y', 'skills', 'add', REPO, '--yes', '--all']);
     if ((r.status || 0) === 0) ctx.results.installed.push('skills-auto');
     else ctx.results.failed.push(['skills-auto', 'npx skills add (auto) failed']);
     process.stdout.write('\n');
