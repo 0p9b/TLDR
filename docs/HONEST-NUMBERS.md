@@ -19,12 +19,12 @@ files, or the model's thinking tokens.
 |---|---|---|---|
 | Prose-output reduction (**historical**) | ~60–75% typical; −82.1% aggregate on the v0.13.1 run; −77% to −87% per agent | multi-harness CLI benches; `tiktoken o200k_base`; prose outside code fences only | [`data/benchmarks.md`](../data/benchmarks.md) |
 | Input reduction from the prompt | 0% | it is an output-style instruction | — |
-| Input cost the prompt **adds**, per turn | ~470 tokens (prompt-only install: `TLDR.md` is 1,892 bytes) up to ~1–1.5k tokens (skill + hook installs: [`skills/tldr/SKILL.md`](../skills/tldr/SKILL.md) is ~3.3 KB, plus skill-list entries and session-start rule injection) | file sizes at ≈4 chars/token | repo files |
+| Input cost the prompt **adds**, per turn | ~555 tokens (prompt-only install: `TLDR.md` is 2,218 bytes) up to ~1–1.5k tokens (skill + hook installs: [`skills/tldr/SKILL.md`](../skills/tldr/SKILL.md) is ~3.3 KB, plus skill-list entries and session-start rule injection) | file sizes at ≈4 chars/token | repo files |
 | Accuracy under TLDR | **not measured** | the bench suite is style-focused, not correctness-focused | [`data/philosophy.md`](../data/philosophy.md), §6.5 |
 | Latency | **not measured** | — | — |
 
 **Every reduction number above is historical.** The benched prompts were
-the v0.13–v0.18 generations. The shipped `TLDR.md` (1,892 bytes) and
+the v0.13–v0.18 generations. The shipped `TLDR.md` (2,218 bytes) and
 `commands/tldr.md` were later tightened to a 1-sentence / 3-word-default /
 6-word-max profile and have **not** been rerun through the full suite. The
 same caveat heads [`data/benchmarks.md`](../data/benchmarks.md) and

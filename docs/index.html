@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TLDR — Verdict first. Filler never.</title>
-<meta name="description" content="TLDR makes AI coding agents answer verdict-first: a 1,892-byte prompt plus a multi-agent installer for Claude Code, Codex, Gemini, Cursor and 30+ agent CLIs. Prose gets shorter; tools, code, and safety stay exact.">
+<meta name="description" content="TLDR makes AI coding agents answer verdict-first: a 2,218-byte prompt plus a multi-agent installer for Claude Code, Codex, Gemini, Cursor and 40+ agent CLIs. Prose gets shorter; tools, code, and safety stay exact.">
 <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
 <link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png">
 <link rel="icon" type="image/svg+xml" href="assets/tldr-mascot.svg">
@@ -12,7 +12,7 @@
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://0p9b.github.io/TLDR/">
 <meta property="og:title" content="TLDR — Verdict first. Filler never.">
-<meta property="og:description" content="Verdict-first output for AI coding agents. Tiny prompt + installer for 30+ agent CLIs. Honest numbers included.">
+<meta property="og:description" content="Verdict-first output for AI coding agents. Tiny prompt + installer for 40+ agent CLIs. Honest numbers included.">
 <meta property="og:image" content="https://raw.githubusercontent.com/0p9b/TLDR/main/docs/assets/social-preview.png">
 <meta name="twitter:card" content="summary_large_image">
 <!-- Self-contained: system font stacks only. Rendering this page contacts no
@@ -310,7 +310,7 @@ code, pre, .mono { font-family: var(--mono); }
     <div>
       <span class="hero-badge"><span class="dot" aria-hidden="true"></span> 0p9b / TLDR · MIT</span>
       <h1>Verdict first.<br><em>Filler never.</em></h1>
-      <p class="hero-sub">TLDR is an output-style instruction for AI coding agents: a <strong>1,892-byte prompt</strong> plus an installer for <strong>Claude Code, Codex, Gemini, Cursor and 30+ agent CLIs</strong>. Prose gets shorter. Tools, code, paths, and safety text stay exact.</p>
+      <p class="hero-sub">TLDR is an output-style instruction for AI coding agents: a <strong>2,218-byte prompt</strong> plus an installer for <strong>Claude Code, Codex, Gemini, Cursor and 40+ agent CLIs</strong>. Prose gets shorter. Tools, code, paths, and safety text stay exact.</p>
       <div class="cmd">
         <span class="prompt-char" aria-hidden="true">❯</span>
         <code id="hero-cmd">npx -y github:0p9b/TLDR</code>
@@ -335,7 +335,7 @@ code, pre, .mono { font-family: var(--mono); }
 
 <section class="stats" aria-label="Key facts">
   <div class="container stats-inner">
-    <div class="stat"><div class="n">1,892 B</div><div class="l">the whole prompt</div></div>
+    <div class="stat"><div class="n">2,218 B</div><div class="l">the whole prompt</div></div>
     <div class="stat"><div class="n">37</div><div class="l">agent CLIs supported</div></div>
     <div class="stat"><div class="n">0</div><div class="l">dependencies</div></div>
     <div class="stat"><div class="n">$0</div><div class="l">MIT licensed</div></div>
@@ -404,7 +404,7 @@ code, pre, .mono { font-family: var(--mono); }
 <section class="section container reveal" id="rules">
   <span class="kicker">03 · How it works</span>
   <h2>One small prompt, strict shapes.</h2>
-  <p class="lede">The entire mechanism is <a href="https://github.com/0p9b/TLDR/blob/main/TLDR.md" target="_blank" rel="noopener"><code>TLDR.md</code></a> — 1,892 bytes of hard caps and answer shapes, with optional skill, hook, and slash-command layers on top for agents that support them.</p>
+  <p class="lede">The entire mechanism is <a href="https://github.com/0p9b/TLDR/blob/main/TLDR.md" target="_blank" rel="noopener"><code>TLDR.md</code></a> — 2,218 bytes of hard caps and answer shapes, with optional skill, hook, and slash-command layers on top for agents that support them.</p>
 
   <div class="bento">
     <div class="wide">
@@ -473,7 +473,7 @@ code, pre, .mono { font-family: var(--mono); }
 
     <div class="tab-panel active" id="t-npx" role="tabpanel">
       <div class="cmd"><span class="prompt-char" aria-hidden="true">❯</span><code>npx -y github:0p9b/TLDR -- --all</code><button class="copy-btn" data-copy="npx -y github:0p9b/TLDR -- --all" aria-label="Copy npx install command">Copy</button></div>
-      <p class="note">Node ≥ 18. Auto-detects installed agents; <code>--all</code> adds hooks + per-repo init + optional extras. <code>node bin/install.js --list</code> prints the 37-agent matrix.</p>
+      <p class="note">Node ≥ 18. Auto-detects installed agents; <code>--all</code> adds hooks + per-repo init + optional extras. <code>node bin/install.js --list</code> prints the 41-agent matrix.</p>
     </div>
 
     <div class="tab-panel" id="t-sh" role="tabpanel">
