@@ -72,7 +72,7 @@ if [ "$FORCE" -eq 0 ]; then
       process.exit(
         hasHook('SessionStart', 'tldr-activate') &&
         hasHook('UserPromptSubmit', 'tldr-mode-tracker') &&
-        !!settings.statusLine
+        (process.env.TLDR_STATUSLINE !== '1' || !!settings.statusLine)
           ? 0
           : 1
       );
@@ -194,7 +194,9 @@ TLDR_SETTINGS="$SETTINGS" TLDR_HOOKS_DIR="$HOOKS_DIR" node -e "
   }
 
   // Statusline — wire TLDR badge (report if skipped)
-  if (!settings.statusLine) {
+  if (process.env.TLDR_STATUSLINE !== '1') {
+    // Statusline badge is opt-in: set TLDR_STATUSLINE=1 to wire it.
+  } else if (!settings.statusLine) {
     settings.statusLine = {
       type: 'command',
       command: 'bash \"' + managedStatusLinePath + '\"'

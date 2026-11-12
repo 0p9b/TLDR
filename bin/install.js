@@ -73,6 +73,7 @@ function parseArgs(argv) {
   const opts = {
     dryRun: false, force: false, skipSkills: false,
     withHooks: 'auto',
+    withStatusline: false,
     all: false, minimal: false, listOnly: false, noColor: false,
     only: [], uninstall: false, nonInteractive: false,
     configDir: null, help: false,
@@ -89,6 +90,7 @@ function parseArgs(argv) {
       case '--force': opts.force = true; break;
       case '--skip-skills': opts.skipSkills = true; break;
       case '--with-hooks': opts.withHooks = true; explicitToggle.withHooks = true; break;
+      case '--with-statusline': opts.withStatusline = true; break;
       case '--no-hooks': opts.withHooks = false; explicitToggle.withHooks = false; break;
       case '--all': opts.all = true; break;
       case '--minimal': opts.minimal = true; break;
@@ -439,7 +441,7 @@ function installOpenclaw(ctx) {
 // ── Hooks installer ────────────────────────────────────────────────────────
 // Replaces src/hooks/install.sh + src/hooks/install.ps1.
 async function installHooks(ctx) {
-  const { warn, note, repoRoot, configDir, io } = ctx;
+  const { warn, note, repoRoot, configDir, io, opts } = ctx;
   const hooksDir = path.join(configDir, 'hooks');
   const settingsPath = path.join(configDir, 'settings.json');
   const sourceDir = repoRoot ? path.join(repoRoot, 'src', 'hooks') : null;
@@ -541,7 +543,9 @@ async function installHooks(ctx) {
     const slCmd = IS_WIN
       ? `${psHost} -NoProfile -ExecutionPolicy Bypass -File "${path.join(hooksDir, 'tldr-statusline.ps1')}"`
       : `bash "${statusline}"`;
-    if (!settings.statusLine) {
+    if (!opts.withStatusline) {
+      // Statusline badge is opt-in (--with-statusline); default is no statusLine.
+    } else if (!settings.statusLine) {
       settings.statusLine = { type: 'command', command: slCmd };
       io.report('  statusline badge configured.');
     } else {
@@ -997,7 +1001,8 @@ FLAGS
   --all                 Turn on hooks.
   --minimal             Just the plugin/extension install.
   --with-hooks          Claude Code: install SessionStart/UserPromptSubmit hooks
-                        + statusline badge. (Default ON.)
+                        (Default ON.)
+  --with-statusline     Also wire the TLDR statusline badge. (Default OFF.)
   --no-hooks            Skip the hooks installer.
   --uninstall, -u       Remove TLDR from this machine.
   --config-dir <path>   Claude Code config dir for hook files + settings.json.

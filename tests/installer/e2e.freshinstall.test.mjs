@@ -149,9 +149,7 @@ test('fresh install populates hooks dir and settings.json (skipped without `clau
       'SessionStart hook missing or wrong marker');
     assert.ok(SETTINGS.hasTldrHook(settings, 'UserPromptSubmit', 'tldr-mode-tracker'),
       'UserPromptSubmit hook missing or wrong marker');
-    assert.ok(settings.statusLine, 'statusLine not set');
-    assert.match(getStatuslineCommand(settings), /tldr-statusline/,
-      'statusLine command does not reference TLDR');
+    assert.ok(!settings.statusLine, 'statusLine must not be set by default (opt-in)');
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }

@@ -60,38 +60,6 @@ function run({ argv = process.argv, env = process.env } = {}) {
   const { getInstructions } = require('./tldr-instructions');
   let output = getInstructions(mode);
 
-  // 3. Detect missing statusline config — nudge Claude to help set it up.
-  //    Claude-only: no other agent has a statusLine setting to configure.
-  try {
-    if (FORMAT !== 'text' || argValue('config-dir') || env.TLDR_CONFIG_DIR) throw new Error('skip');
-    let hasStatusline = false;
-    if (fs.existsSync(settingsPath)) {
-      const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
-      if (settings.statusLine) {
-        hasStatusline = true;
-      }
-    }
-
-    if (!hasStatusline) {
-      const isWindows = process.platform === 'win32';
-      const scriptName = isWindows ? 'tldr-statusline.ps1' : 'tldr-statusline.sh';
-      const scriptPath = path.join(__dirname, scriptName);
-      const command = isWindows
-        ? `powershell -ExecutionPolicy Bypass -File "${scriptPath}"`
-        : `bash "${scriptPath}"`;
-      const statusLineSnippet =
-        '"statusLine": { "type": "command", "command": ' + JSON.stringify(command) + ' }';
-      output += "\n\n" +
-        "STATUSLINE SETUP NEEDED: The TLDR plugin includes a statusline badge showing active mode " +
-        "(e.g. [TLDR], [TLDR:ULTRA]). It is not configured yet. " +
-        "To enable, add this to " + path.join(claudeDir, 'settings.json') + ": " +
-        statusLineSnippet + " " +
-        "Proactively offer to set this up for the user on first interaction.";
-    }
-  } catch (e) {
-    // Silent fail — don't block session start over statusline detection
-  }
-
   return emit(output);
 }
 

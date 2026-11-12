@@ -42,7 +42,7 @@ test('first install over a commented settings.json keeps its comments and wires 
     const parsed = JSON.parse(SETTINGS_STRIP(out));
     assert.equal(parsed.model, 'opus');
     assert.ok(parsed.hooks && parsed.hooks.SessionStart, 'hooks wired');
-    assert.ok(parsed.statusLine, 'statusLine wired');
+    assert.ok(!parsed.statusLine, 'statusLine not wired by default (opt-in)');
     assert.ok(fs.existsSync(file + '.jsonc.bak'), 'commented original kept as .jsonc.bak');
     assert.equal(fs.readFileSync(file + '.jsonc.bak', 'utf8'), original);
   } finally {
