@@ -35,7 +35,7 @@ function runInstaller(args, hermesHome) {
   // Fully sandbox every config root the installer/uninstaller might touch so a
   // test `--uninstall` can never mutate the developer's real ~/.claude,
   // ~/.config/opencode, or ~/.hermes.
-  return spawnSync('node', [INSTALLER, ...args, '--non-interactive', '--no-mcp-shrink'], {
+  return spawnSync('node', [INSTALLER, ...args, '--non-interactive'], {
     env: {
       ...process.env,
       HOME: hermesHome,

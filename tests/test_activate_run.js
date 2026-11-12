@@ -10,9 +10,6 @@ const assert = require('assert');
 const { run } = require('../src/hooks/tldr-activate');
 const { readFlag } = require('../src/hooks/tldr-config');
 
-// Stub so tests never write into src/agents via tldrcrew-model-overrides.
-const noOverrides = () => {};
-
 let passed = 0;
 let failed = 0;
 
@@ -41,7 +38,7 @@ const flagIn = (dir) => path.join(dir, '.tldr-active');
 
 test('text format (default) emits the raw ruleset and writes the flag', (dir) => {
   const out = withDefaultMode('full', () =>
-    run({ argv: argvFor(dir), env: {}, applyOverrides: noOverrides }));
+    run({ argv: argvFor(dir), env: {} }));
   assert.strictEqual(typeof out, 'string');
   assert.ok(out.startsWith('TLDR MODE ACTIVE — level: full'), out.slice(0, 80));
   assert.strictEqual(readFlag(flagIn(dir)), 'full');
@@ -49,7 +46,7 @@ test('text format (default) emits the raw ruleset and writes the flag', (dir) =>
 
 test('--format=cursor wraps the ruleset in {"additional_context": ...}', (dir) => {
   const out = withDefaultMode('full', () =>
-    run({ argv: argvFor(dir, '--format=cursor'), env: {}, applyOverrides: noOverrides }));
+    run({ argv: argvFor(dir, '--format=cursor'), env: {} }));
   const parsed = JSON.parse(out);
   assert.deepStrictEqual(Object.keys(parsed), ['additional_context']);
   assert.match(parsed.additional_context, /^TLDR MODE ACTIVE — level: full/);
@@ -57,7 +54,7 @@ test('--format=cursor wraps the ruleset in {"additional_context": ...}', (dir) =
 
 test('--format=antigravity wraps the ruleset in injectSteps/ephemeralMessage', (dir) => {
   const out = withDefaultMode('full', () =>
-    run({ argv: argvFor(dir, '--format=antigravity'), env: {}, applyOverrides: noOverrides }));
+    run({ argv: argvFor(dir, '--format=antigravity'), env: {} }));
   const parsed = JSON.parse(out);
   assert.strictEqual(parsed.injectSteps.length, 1);
   assert.match(parsed.injectSteps[0].ephemeralMessage, /^TLDR MODE ACTIVE — level: full/);
@@ -65,7 +62,7 @@ test('--format=antigravity wraps the ruleset in injectSteps/ephemeralMessage', (
 
 test('TLDR_HOOK_FORMAT selects the envelope when --format is absent', (dir) => {
   const out = withDefaultMode('full', () =>
-    run({ argv: argvFor(dir), env: { TLDR_HOOK_FORMAT: 'cursor' }, applyOverrides: noOverrides }));
+    run({ argv: argvFor(dir), env: { TLDR_HOOK_FORMAT: 'cursor' } }));
   assert.ok('additional_context' in JSON.parse(out));
 });
 
@@ -73,7 +70,7 @@ test('--config-dir decides where the flag lands, not CLAUDE_CONFIG_DIR', (dir) =
   const other = fs.mkdtempSync(path.join(os.tmpdir(), 'tldr-activate-other-'));
   try {
     withDefaultMode('ultra', () =>
-      run({ argv: argvFor(dir), env: { CLAUDE_CONFIG_DIR: other }, applyOverrides: noOverrides }));
+      run({ argv: argvFor(dir), env: { CLAUDE_CONFIG_DIR: other } }));
     assert.strictEqual(readFlag(flagIn(dir)), 'ultra');
     assert.strictEqual(fs.existsSync(flagIn(other)), false, 'CLAUDE_CONFIG_DIR must not be used');
   } finally {
@@ -83,20 +80,20 @@ test('--config-dir decides where the flag lands, not CLAUDE_CONFIG_DIR', (dir) =
 
 test('--config-dir suppresses the statusline setup nudge', (dir) => {
   const out = withDefaultMode('full', () =>
-    run({ argv: argvFor(dir), env: {}, applyOverrides: noOverrides }));
+    run({ argv: argvFor(dir), env: {} }));
   assert.strictEqual(out.includes('STATUSLINE SETUP NEEDED'), false);
 });
 
 test('without --config-dir, CLAUDE_CONFIG_DIR is the flag dir and a missing statusLine is nudged', (dir) => {
   const out = withDefaultMode('full', () =>
-    run({ argv: ['node', 'tldr-activate.js'], env: { CLAUDE_CONFIG_DIR: dir }, applyOverrides: noOverrides }));
+    run({ argv: ['node', 'tldr-activate.js'], env: { CLAUDE_CONFIG_DIR: dir } }));
   assert.strictEqual(readFlag(flagIn(dir)), 'full');
   assert.match(out, /STATUSLINE SETUP NEEDED/);
 });
 
 test('default mode off writes no flag and emits OK in text format', (dir) => {
   const out = withDefaultMode('off', () =>
-    run({ argv: argvFor(dir), env: {}, applyOverrides: noOverrides }));
+    run({ argv: argvFor(dir), env: {} }));
   assert.strictEqual(out, 'OK');
   assert.strictEqual(fs.existsSync(flagIn(dir)), false);
 });
@@ -104,16 +101,9 @@ test('default mode off writes no flag and emits OK in text format', (dir) => {
 test('default mode off removes a stale flag and emits an empty cursor envelope', (dir) => {
   fs.writeFileSync(flagIn(dir), 'full');
   const out = withDefaultMode('off', () =>
-    run({ argv: argvFor(dir, '--format=cursor'), env: {}, applyOverrides: noOverrides }));
+    run({ argv: argvFor(dir, '--format=cursor'), env: {} }));
   assert.strictEqual(fs.existsSync(flagIn(dir)), false);
   assert.strictEqual(out, JSON.stringify({ additional_context: '' }));
-});
-
-test('independent mode writes the flag and emits the short activation line', (dir) => {
-  const out = withDefaultMode('commit', () =>
-    run({ argv: argvFor(dir), env: {}, applyOverrides: noOverrides }));
-  assert.strictEqual(readFlag(flagIn(dir)), 'commit');
-  assert.strictEqual(out, 'TLDR MODE ACTIVE — level: commit. Behavior defined by /tldr-commit skill.');
 });
 
 test('missing SKILL.md falls back to the embedded ruleset and never throws', (dir) => {
@@ -123,37 +113,18 @@ test('missing SKILL.md falls back to the embedded ruleset and never throws', (di
   try {
     const hookDir = path.join(root, 'hooks', 'tldr');
     fs.mkdirSync(hookDir, { recursive: true });
-    for (const f of ['tldr-activate.js', 'tldr-config.js', 'tldr-instructions.js', 'tldrcrew-model-overrides.js']) {
+    for (const f of ['tldr-activate.js', 'tldr-config.js', 'tldr-instructions.js']) {
       fs.copyFileSync(path.join(__dirname, '..', 'src', 'hooks', f), path.join(hookDir, f));
     }
     const { run: runNoSkill } = require(path.join(hookDir, 'tldr-activate.js'));
     const out = withDefaultMode('full', () =>
-      runNoSkill({ argv: argvFor(dir), env: {}, applyOverrides: noOverrides }));
+      runNoSkill({ argv: argvFor(dir), env: {} }));
     assert.match(out, /^TLDR MODE ACTIVE — level: full/);
     assert.match(out, /Respond in TLDR style/, 'embedded fallback ruleset expected');
     assert.strictEqual(readFlag(flagIn(dir)), 'full');
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
-});
-
-test('applyOverrides receives CLAUDE_PLUGIN_ROOT and the env', (dir) => {
-  let seen;
-  withDefaultMode('full', () =>
-    run({
-      argv: argvFor(dir),
-      env: { CLAUDE_PLUGIN_ROOT: '/plugin/root' },
-      applyOverrides: (root, env) => { seen = { root, env }; },
-    }));
-  assert.strictEqual(seen.root, '/plugin/root');
-  assert.strictEqual(seen.env.CLAUDE_PLUGIN_ROOT, '/plugin/root');
-});
-
-test('a throwing applyOverrides does not block activation', (dir) => {
-  const out = withDefaultMode('full', () =>
-    run({ argv: argvFor(dir), env: {}, applyOverrides: () => { throw new Error('boom'); } }));
-  assert.match(out, /^TLDR MODE ACTIVE — level: full/);
-  assert.strictEqual(readFlag(flagIn(dir)), 'full');
 });
 
 console.log(`\n${passed} passed, ${failed} failed`);

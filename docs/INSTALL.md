@@ -34,7 +34,7 @@ What it does:
 
 - Auto-detects every supported agent installed on your machine (Claude Code, Cursor, Codex, etc.).
 - For each one, runs that agent's native install path (plugin / extension / rule file / `npx skills add`).
-- Wires Claude Code hooks and statusline badge on top. (`tldr-shrink` MCP middleware is opt-in via `--with-mcp-shrink="<upstream cmd>"` — see flag table below.)
+- Wires Claude Code hooks and statusline badge on top.
 - Skips anything you don't have. Safe to re-run. ~30 seconds end-to-end.
 
 Want to preview before installing? Use `--dry-run`:
@@ -61,11 +61,10 @@ If you want to install for one agent (or want to know exactly what command runs 
 | **Prime Agent** | `node bin/install.js --only prime` | Yes (global `~/.prime/agent/AGENTS.md` + skill) |
 | **dsh** | `node bin/install.js --only dsh` | Yes (global `~/.dsh/AGENTS.md` + skill) |
 | **ZCode** | `node bin/install.js --only zcode` | Yes (global `~/.zcode/AGENTS.md` + skill) |
-| **Cursor** | `node bin/install.js --only cursor` *(or `npx -y github:0p9b/TLDR -- --only cursor`)* | Skill (`/tldr`) at `~/.cursor/skills/`; cursor-agent has no global rules file, so always-on is per-repo via `--with-init` |
-| **Windsurf** | `npx skills add 0p9b/TLDR -a windsurf` | Per-session by default; `--with-init` for an always-on rule file |
-| **Cline** | native (`~/.cline/CLINE.md` + `~/.cline/skills/`) | Always-on; `--with-init` also writes per-repo `.clinerules/` |
-| **smolcoder** | `node bin/install.js --with-init` (run inside the repo) | Per-repo root `AGENTS.md` (smolcoder has no global instruction file) |
-| **GitHub Copilot** *(soft probe)* | `npx -y github:0p9b/TLDR -- --only copilot --with-init` | Repo-wide instructions via `--with-init` |
+| **Cursor** | `node bin/install.js --only cursor` *(or `npx -y github:0p9b/TLDR -- --only cursor`)* | Skill (`/tldr`) at `~/.cursor/skills/`; cursor-agent has no global rules file, so always-on needs a manual rule file (see Always-on rules) |
+| **Windsurf** | `npx skills add 0p9b/TLDR -a windsurf` | Per-session by default; copy the rule file by hand for always-on |
+| **Cline** | native (`~/.cline/CLINE.md` + `~/.cline/skills/`) | Always-on |
+| **GitHub Copilot** *(soft probe)* | `curl` the rule body into `.github/copilot-instructions.md` | Repo-wide instructions (see Always-on rules) |
 | **Continue** | `npx skills add 0p9b/TLDR -a continue` | No — say `/tldr` |
 | **Kilo Code** | `npx skills add 0p9b/TLDR -a kilo` | No |
 | **Roo Code** | `npx skills add 0p9b/TLDR -a roo` | No |
@@ -121,13 +120,10 @@ Useful flags:
 
 | Flag | What |
 |---|---|
-| `--all` | Plugin + hooks + statusline + per-repo rule files in `$PWD`. (MCP shrink is opt-in — see `--with-mcp-shrink` below.) |
-| `--minimal` | Plugin / extension only. No hooks, no MCP shrink, no per-repo rules. |
+| `--all` | Plugin + hooks + statusline. |
+| `--minimal` | Plugin / extension only. No hooks. |
 | `--only <id>` | One agent only. Repeatable: `--only claude --only cursor`. |
 | `--dry-run` | Print every command. Write nothing. |
-| `--with-init` | Drop always-on rule files into the current repo (`.cursor/`, `.windsurf/`, `.clinerules/`, `.github/copilot-instructions.md`, `.opencode/AGENTS.md`, `AGENTS.md`). OpenClaw uses its native installer path instead. |
-| `--with-mcp-shrink="<upstream cmd>"` | Register `tldr-shrink` MCP proxy wrapping the given upstream MCP server. **Off by default.** A value is required — tldr-shrink is a proxy and exits immediately without one. Example: `--with-mcp-shrink="npx @modelcontextprotocol/server-filesystem /tmp"`. Uses `npx -y @0point9bar/tldr-shrink` when published; from a clone, falls back to `src/mcp-servers/tldr-shrink` if `npm view` fails. |
-| `--no-mcp-shrink` | Skip MCP-shrink registration. (Default.) |
 | `--with-hooks` / `--no-hooks` | Force-on or force-off the Claude Code hook installer. (Default: on.) |
 | `--skip-skills` | Don't run the npx-skills auto-detect fallback when nothing else matched. |
 | `--config-dir <path>` | Claude Code config dir for hook files + `settings.json`. **Does NOT scope** `claude plugin install`, `gemini extensions install`, opencode (`XDG_CONFIG_HOME`), or openclaw (`OPENCLAW_WORKSPACE`) — those use their own paths. Default: `$CLAUDE_CONFIG_DIR` or `~/.claude`. `~` is expanded. |
@@ -139,18 +135,14 @@ Useful flags:
 
 ## Always-on rules
 
-For agents without a hook system (Cursor, Windsurf, Cline, Copilot, and friends), the always-on path is a static rule file. Two ways:
+For agents without a hook system (Cursor, Windsurf, Cline, Copilot, and friends), the always-on path is a static rule file. Pull the rule body in by hand:
 
 ```bash
-# Drop rule files into the current repo
-node bin/install.js --with-init
-
-# Or pull the rule body straight in (manual)
 curl -fsSL https://raw.githubusercontent.com/0p9b/TLDR/main/src/rules/tldr-activate.md \
   > .cursor/rules/tldr.mdc   # or .windsurf/rules/tldr.md, .clinerules/tldr.md, .github/copilot-instructions.md
 ```
 
-`--with-init` writes the rule into every supported per-agent location it can detect (`.cursor/rules/`, `.windsurf/rules/`, `.clinerules/`, `.github/copilot-instructions.md`, `.opencode/AGENTS.md`, `AGENTS.md`). OpenClaw is intentionally excluded from default per-repo init because it writes global workspace state; install it explicitly with `--only openclaw`. Single source: [`src/rules/tldr-activate.md`](../src/rules/tldr-activate.md).
+Single source: [`src/rules/tldr-activate.md`](../src/rules/tldr-activate.md).
 
 ## Verify
 
@@ -204,9 +196,9 @@ npx -y github:0p9b/TLDR -- --uninstall
 What it removes:
 
 - TLDR hook entries from `$CLAUDE_CONFIG_DIR/settings.json` (default `~/.claude/`; matched by TLDR hook script paths).
-- Hook files in `$CLAUDE_CONFIG_DIR/hooks/` (`tldr-activate.js`, `tldr-mode-tracker.js`, `tldr-stats.js`, `tldr-config.js`, `tldr-statusline.{sh,ps1}`, plus the dir's `package.json` marker).
+- Hook files in `$CLAUDE_CONFIG_DIR/hooks/` (`tldr-activate.js`, `tldr-mode-tracker.js`, `tldr-config.js`, `tldr-statusline.{sh,ps1}`, plus the dir's `package.json` marker).
 - The Claude Code plugin and the Gemini CLI extension (if installed).
-- The opencode native plugin (`~/.config/opencode/plugins/tldr/`, the `plugin` and `mcp.tldr-shrink` entries from `opencode.json`, our skill/agent/command files, the TLDR block from `AGENTS.md`, and the opencode flag file).
+- The opencode native plugin (`~/.config/opencode/plugins/tldr/`, the `plugin` entry from `opencode.json`, our skill/command files, the TLDR block from `AGENTS.md`, and the opencode flag file).
 - The OpenClaw workspace skill folder and the marker-fenced block from `~/.openclaw/workspace/SOUL.md` (when present).
 - The Hermes managed block from `~/.hermes/SOUL.md` and TLDR skill dirs under `~/.hermes/skills/productivity/` (when present).
 - The `.tldr-active` flag file.
@@ -214,7 +206,6 @@ What it removes:
 What it does **not** remove:
 
 - Skills installed via `npx skills add` — the `skills` CLI manages those. Run `npx skills remove 0p9b/TLDR` (or use your IDE's skill manager).
-- Per-repo rule files written by `--with-init` (`.cursor/rules/`, `.windsurf/rules/`, `.clinerules/`, `.github/copilot-instructions.md`, `.opencode/AGENTS.md`, `AGENTS.md`). Delete by hand if you want.
 
 ## Troubleshooting
 
@@ -257,9 +248,6 @@ Use the rule-file-only path. Hooks are Claude Code-specific; everything else wor
 ```bash
 # Just install for one agent, no Claude hooks
 node bin/install.js --only cursor
-
-# Or write rule files into the current repo only (no global state)
-node bin/install.js --with-init --only cursor --only windsurf
 ```
 
 This drops `.cursor/rules/tldr.mdc` (and friends) into your repo. No hooks, no global config, nothing outside the repo.
@@ -274,11 +262,10 @@ The installer doesn't phone home. It writes to:
 
 - `$CLAUDE_CONFIG_DIR` (default `~/.claude/`) — hooks, flag file, `settings.json` merge.
 - Each agent's own config location — Cursor's `.cursor/rules/`, Windsurf's `.windsurf/rules/`, opencode's `~/.config/opencode/`, etc.
-- Your current working directory (only with `--with-init`) — repo-local rule files.
 - `~/.openclaw/workspace/` (only with `--only openclaw`) — OpenClaw's global workspace skill + SOUL.md bootstrap.
 - `~/.hermes/SOUL.md` and `~/.hermes/skills/productivity/` (only with Hermes / `--only hermes`) — ruleset merge + skill suite copy.
 
-No telemetry. No analytics. Run from a clone or via npx, the installer's own code makes no network calls — files are copied locally. One exception: run detached from any checkout (the rare curl-fallback path), it downloads the hook files from raw.githubusercontent.com pinned to an immutable release tag and verifies each against a SHA-256 manifest before wiring anything. Network requests also happen indirectly through the per-agent CLIs it shells out to — `claude plugin marketplace add`, `claude plugin install`, `gemini extensions install`, `npm view @0point9bar/tldr-shrink`, and `npx -y skills add`. Each fetches from its own registry (Anthropic / GitHub / npm). Source: [`bin/install.js`](../bin/install.js). After install: zero network calls, ever — full statement in [SECURITY.md → Privacy & Telemetry](../.github/SECURITY.md#privacy--telemetry).
+No telemetry. No analytics. Run from a clone or via npx, the installer's own code makes no network calls — files are copied locally. One exception: run detached from any checkout (the rare curl-fallback path), it downloads the hook files from raw.githubusercontent.com pinned to an immutable release tag and verifies each against a SHA-256 manifest before wiring anything. Network requests also happen indirectly through the per-agent CLIs it shells out to — `claude plugin marketplace add`, `claude plugin install`, `gemini extensions install`, and `npx -y skills add`. Each fetches from its own registry (Anthropic / GitHub / npm). Source: [`bin/install.js`](../bin/install.js). After install: zero network calls, ever — full statement in [SECURITY.md → Privacy & Telemetry](../.github/SECURITY.md#privacy--telemetry).
 
 ---
 

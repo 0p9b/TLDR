@@ -88,21 +88,5 @@ test('clearFlag unlinks a symlink flag without touching its target', (tmp) => {
   assert.strictEqual(fs.existsSync(p), false);
 });
 
-test('tldr-stats reads the flag from TLDR_CONFIG_DIR, not ~/.claude', (tmp) => {
-  const cfg = path.join(tmp, 'agent-cfg');
-  safeWriteFlag(path.join(cfg, '.tldr-active'), 'ultra');
-  const sess = path.join(tmp, 'session.jsonl');
-  fs.writeFileSync(sess, JSON.stringify({
-    type: 'assistant',
-    timestamp: new Date().toISOString(),
-    message: { role: 'assistant', usage: { input_tokens: 1, output_tokens: 1 }, content: [{ type: 'text', text: 'ok' }] },
-  }) + '\n');
-  const r = spawnSync('node', [path.join(__dirname, '..', 'src', 'hooks', 'tldr-stats.js'), '--session-file', sess], {
-    env: { ...process.env, HOME: tmp, TLDR_CONFIG_DIR: cfg, CLAUDE_CONFIG_DIR: path.join(tmp, 'nope') },
-    encoding: 'utf8',
-  });
-  assert.ok(!/not active/i.test(r.stdout), `flag not read from TLDR_CONFIG_DIR: ${r.stdout}${r.stderr}`);
-});
-
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

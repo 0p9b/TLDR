@@ -64,7 +64,7 @@ for path, needles in SAFETY_VARIANTS:
 
 # Standalone fallback rulesets MUST carry the core numeric caps AND a safety
 # carve-out. tldr-activate.js's fallback ships whenever SKILL.md is missing
-# (standalone hook install); tldr-init.js and openclaw.js embed their own copies
+# (standalone hook install); openclaw.js embeds its own copy
 # for npx/curl runs with no repo on disk. A copy that quietly loses the
 # 1-sentence / 3-word / 6-word defaults or the Auto-Clarity safety line silently
 # weakens every standalone install, so pin each with the wording it actually uses.
@@ -75,17 +75,6 @@ FALLBACK_RULESETS = [
             "Default: 1 sentence.",
             "Default target: 3 words.",
             "Default maximum: 6 words.",
-            "Auto-Clarity",
-            "security warnings",
-            "irreversible action",
-        ],
-    ),
-    (
-        ROOT / "src" / "tools" / "tldr-init.js",
-        [
-            "1 sentence default",
-            "3-word target",
-            "6-word hard max",
             "Auto-Clarity",
             "security warnings",
             "irreversible action",

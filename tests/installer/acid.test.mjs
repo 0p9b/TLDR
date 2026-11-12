@@ -54,7 +54,7 @@ function run(args, home, extra = {}) {
   // Spawn the absolute node (process.execPath), never bare 'node': the uninstall
   // runs use a PATH stripped of claude/gemini and on some boxes node is
   // colocated with them.
-  return spawnSync(process.execPath, [INSTALLER, ...args, '--non-interactive', '--no-mcp-shrink'], {
+  return spawnSync(process.execPath, [INSTALLER, ...args, '--non-interactive'], {
     env: sandboxEnv(home, extra),
     encoding: 'utf8',
   });

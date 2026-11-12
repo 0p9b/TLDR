@@ -23,7 +23,7 @@ MODE=$(printf '%s' "$MODE" | tr -cd 'a-z0-9-')
 
 # Whitelist. Anything else → render nothing rather than echo attacker bytes.
 case "$MODE" in
-  off|lite|full|ultra|wenyan-lite|wenyan|wenyan-full|wenyan-ultra|commit|review|compress) ;;
+  off|lite|full|ultra|wenyan-lite|wenyan|wenyan-full|wenyan-ultra) ;;
   *) exit 0 ;;
 esac
 
@@ -34,24 +34,3 @@ else
   printf '\033[38;5;172m[TLDR:%s]\033[0m' "$SUFFIX"
 fi
 
-# Savings suffix: on by default. Opt out via TLDR_STATUSLINE_SAVINGS=0.
-# Reads a pre-rendered string written by tldr-stats.js so we don't shell out
-# to node on every keystroke. Refuses symlinks and strips control bytes —
-# same hardening as the flag file (a local attacker could plant a file with
-# ANSI escape codes otherwise). Until /tldr-stats has run at least once,
-# the suffix file is absent and nothing is rendered — so the default is safe
-# for fresh installs (no fake number, no crash).
-if [ "${TLDR_STATUSLINE_SAVINGS:-1}" != "0" ]; then
-  SAVINGS_FILE="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/.tldr-statusline-suffix"
-  if [ -f "$SAVINGS_FILE" ] && [ ! -L "$SAVINGS_FILE" ]; then
-    # Strip C0 controls AND 0x7f (DEL); then whitelist the whole string against
-    # the exact format the writer (tldr-stats.js) ever emits — "⛏ <num>[.<num>][k|M]".
-    # A blacklist alone leaves the C1 range (incl. single-byte CSI 0x9b) intact,
-    # so a planted suffix file could re-inject terminal control on every refresh.
-    # Do NOT byte-strip 0x80-0x9f — that would corrupt the legitimate ⛏ glyph.
-    SAVINGS=$(head -c 64 "$SAVINGS_FILE" 2>/dev/null | tr -d '\000-\037\177')
-    if printf '%s' "$SAVINGS" | LC_ALL=C.UTF-8 grep -qE '^⛏ [0-9]+(\.[0-9]+)?[kM]?$'; then
-      printf ' \033[38;5;172m%s\033[0m' "$SAVINGS"
-    fi
-  fi
-fi

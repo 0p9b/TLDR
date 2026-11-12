@@ -30,16 +30,10 @@ const rows = [
   ['/tldr stop',               undefined,            CLEAR],
   ['/tldr disable',            undefined,            CLEAR],
   ['/tldr bogus',              undefined,            null],
-  ['/tldr commit',             undefined,            null],  // independent modes aren't /tldr args
+  ['/tldr commit',             undefined,            null],  // independent modes are not /tldr args
   ['/tldr tldr',               undefined,            null],  // only the opencode template maps this
   ['/tldr:tldr ultra',         undefined,            SET('ultra')],
   ['/TLDR ULTRA',              undefined,            SET('ultra')],
-  // independent skills
-  ['/tldr-commit',             undefined,            SET('commit')],
-  ['/tldr-review',             undefined,            SET('review')],
-  ['/tldr-compress foo.md',    undefined,            SET('compress')],
-  ['/tldr:tldr-compress',      undefined,            SET('compress')],
-  ['/tldr-stats --all',        undefined,            null],
   // natural language
   ['activate tldr',            undefined,            SET('full')],
   ['talk like TLDR please',    undefined,            SET('full')],
@@ -91,7 +85,7 @@ for (const [prompt, want] of [['/tldr', CLEAR], ['activate tldr', null]]) {
   }
 }
 
-// independent default (commit): bare /tldr and NL activation fall back to full.
+// removed mode as default: bare /tldr and NL activation fall back to full.
 process.env.TLDR_DEFAULT_MODE = 'review';
 for (const prompt of ['/tldr', 'activate tldr']) {
   try {

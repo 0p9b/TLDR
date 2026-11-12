@@ -33,7 +33,7 @@ Terse, high-signal responses for AI coding agents — less filler, same accuracy
 | Path | What you get | Best for |
 |------|----------------|----------|
 | **[`TLDR.md`](TLDR.md) + [`install.sh`](install.sh)** | Copies the system prompt (and `/tldr` command) into standard agent config locations | Quick global rules file, no Node required |
-| **[`bin/install.js`](bin/install.js)** (via `npx`) | Detects installed agents; plugins, hooks, skills, optional MCP shrink | Claude Code, Cursor, Codex, Gemini, 30+ agents — see **[docs/INSTALL.md](docs/INSTALL.md)** |
+| **[`bin/install.js`](bin/install.js)** (via `npx`) | Detects installed agents; plugins, hooks, skills | Claude Code, Cursor, Codex, Gemini, 30+ agents — see **[docs/INSTALL.md](docs/INSTALL.md)** |
 
 > Historical prompt variants and benchmarks: [`data/changelog.md`](data/changelog.md), [`data/progression.md`](data/progression.md).
 
@@ -110,8 +110,7 @@ From a clone:
 ```bash
 git clone https://github.com/0p9b/TLDR.git && cd TLDR
 node bin/install.js          # detected agents
-node bin/install.js --all    # hooks + per-repo init (mcp-shrink needs upstream — opt in)
-node bin/install.js --with-mcp-shrink="npx @modelcontextprotocol/server-filesystem /tmp"
+node bin/install.js --all    # hooks
 node bin/install.js --list   # agent matrix
 ```
 

@@ -92,7 +92,7 @@ function pathWithout(binNames) {
 // process.execPath is immune to PATH mangling (and to the symlink case where
 // the PATH entry for node is not dirname(process.execPath)).
 function runInstaller(args, configDir, extraEnv = {}) {
-  return spawnSync(process.execPath, [INSTALLER, ...args, '--config-dir', configDir, '--non-interactive', '--no-mcp-shrink'], {
+  return spawnSync(process.execPath, [INSTALLER, ...args, '--config-dir', configDir, '--non-interactive'], {
     env: sandboxEnv({ CLAUDE_CONFIG_DIR: configDir, ...extraEnv }),
     encoding: 'utf8',
   });
@@ -279,7 +279,7 @@ test('openclaw install writes skill folder + SOUL.md bootstrap', () => {
   const ws = path.join(dir, 'ws');
   fs.mkdirSync(ws);
   try {
-    const r = spawnSync(process.execPath, [INSTALLER, '--only', 'openclaw', '--non-interactive', '--no-mcp-shrink', '--config-dir', dir], {
+    const r = spawnSync(process.execPath, [INSTALLER, '--only', 'openclaw', '--non-interactive', '--config-dir', dir], {
       env: sandboxEnv({ OPENCLAW_WORKSPACE: ws, CLAUDE_CONFIG_DIR: dir }),
       encoding: 'utf8',
     });
@@ -318,7 +318,7 @@ test('openclaw install is idempotent: skill frontmatter not double-prepended, SO
   fs.mkdirSync(ws);
   try {
     const env = sandboxEnv({ OPENCLAW_WORKSPACE: ws, CLAUDE_CONFIG_DIR: dir });
-    const args = ['--only', 'openclaw', '--non-interactive', '--no-mcp-shrink', '--config-dir', dir];
+    const args = ['--only', 'openclaw', '--non-interactive', '--config-dir', dir];
     spawnSync(process.execPath, [INSTALLER, ...args], { env, encoding: 'utf8' });
     spawnSync(process.execPath, [INSTALLER, ...args], { env, encoding: 'utf8' });
 
@@ -344,7 +344,7 @@ test('openclaw install preserves user content in SOUL.md (append, not overwrite)
   const userContent = '# my workspace\n\nfoo bar baz\n';
   fs.writeFileSync(path.join(ws, 'SOUL.md'), userContent);
   try {
-    spawnSync(process.execPath, [INSTALLER, '--only', 'openclaw', '--non-interactive', '--no-mcp-shrink', '--config-dir', dir], {
+    spawnSync(process.execPath, [INSTALLER, '--only', 'openclaw', '--non-interactive', '--config-dir', dir], {
       env: sandboxEnv({ OPENCLAW_WORKSPACE: ws, CLAUDE_CONFIG_DIR: dir }),
       encoding: 'utf8',
     });
@@ -365,11 +365,11 @@ test('openclaw uninstall removes skill folder + strips SOUL.md block, preserving
   fs.writeFileSync(path.join(ws, 'SOUL.md'), userContent);
   try {
     const env = sandboxEnv({ OPENCLAW_WORKSPACE: ws, CLAUDE_CONFIG_DIR: dir });
-    spawnSync(process.execPath, [INSTALLER, '--only', 'openclaw', '--non-interactive', '--no-mcp-shrink', '--config-dir', dir], { env, encoding: 'utf8' });
+    spawnSync(process.execPath, [INSTALLER, '--only', 'openclaw', '--non-interactive', '--config-dir', dir], { env, encoding: 'utf8' });
 
     // Strip claude/gemini from PATH so uninstall doesn't touch real plugins.
     const cleanPath = pathWithout(['claude', 'gemini']);
-    const r = spawnSync(process.execPath, [INSTALLER, '--uninstall', '--non-interactive', '--no-mcp-shrink', '--config-dir', dir], {
+    const r = spawnSync(process.execPath, [INSTALLER, '--uninstall', '--non-interactive', '--config-dir', dir], {
       env: { ...env, PATH: cleanPath },
       encoding: 'utf8',
     });
@@ -381,26 +381,6 @@ test('openclaw uninstall removes skill folder + strips SOUL.md block, preserving
     assert.doesNotMatch(soulAfter, /<!-- tldr-end -->/, 'TLDR end marker survived uninstall');
     assert.match(soulAfter, /# my workspace/, 'user heading wiped during uninstall');
     assert.match(soulAfter, /foo bar baz/, 'user content wiped during uninstall');
-  } finally {
-    fs.rmSync(dir, { recursive: true, force: true });
-  }
-});
-
-test('tldr-init.js --only openclaw routes through the same helper', () => {
-  const dir = freshTmpDir();
-  const ws = path.join(dir, 'ws');
-  fs.mkdirSync(ws);
-  try {
-    const initScript = path.join(REPO_ROOT, 'src', 'tools', 'tldr-init.js');
-    const r = spawnSync(process.execPath, [initScript, dir, '--only', 'openclaw'], {
-      env: sandboxEnv({ OPENCLAW_WORKSPACE: ws, CLAUDE_CONFIG_DIR: dir }),
-      encoding: 'utf8',
-    });
-    assert.equal(r.status, 0, `tldr-init failed: ${r.stderr || r.stdout}`);
-    assert.ok(fs.existsSync(path.join(ws, 'skills', 'tldr', 'SKILL.md')), 'skill missing via init route');
-    assert.ok(fs.existsSync(path.join(ws, 'SOUL.md')), 'SOUL.md missing via init route');
-    const soulRaw = fs.readFileSync(path.join(ws, 'SOUL.md'), 'utf8');
-    assert.match(soulRaw, /Respond in TLDR style/, 'sentinel missing via init route');
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }

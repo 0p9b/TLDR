@@ -48,7 +48,7 @@ function atomicWrite(dest, content, mode = 0o600) {
 /**
  * Resolve a user-supplied target directory safely.
  * Returns the realpath if it exists, otherwise a resolved path.
- * Does NOT throw on traversal for tldr-init (user explicitly chooses target),
+ * Does NOT throw on traversal (user explicitly chooses target),
  * but we still resolve symlinks in the path for predictability.
  */
 function resolveSafeTarget(target) {

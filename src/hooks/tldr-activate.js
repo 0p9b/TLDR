@@ -6,7 +6,7 @@
 //   2. Emits TLDR ruleset as hidden SessionStart context
 //   3. Detects missing statusline config and emits setup nudge
 //
-// run({argv, env, applyOverrides}) is the testable interface: it returns the
+// run({argv, env}) is the testable interface: it returns the
 // exact string the hook prints to stdout. The process-level wiring at the bottom
 // is the only code that touches process.argv / process.env / process.stdout.
 
@@ -14,18 +14,7 @@ const fs = require('fs');
 const path = require('path');
 const { getDefaultMode, safeWriteFlag, clearFlag, resolveFlagDir } = require('./tldr-config');
 
-// Default override applier: loaded lazily so a missing module never breaks the
-// hook. Tests inject a stub so they never write into src/agents.
-function defaultApplyOverrides(pluginRoot, env) {
-  const { applyOverrides } = require('./tldrcrew-model-overrides');
-  applyOverrides(pluginRoot, env);
-}
-
-// Modes that have their own independent skill files — not TLDR intensity levels.
-// For these, emit a short activation line; the skill itself handles behavior.
-const INDEPENDENT_MODES = new Set(['commit', 'review', 'compress']);
-
-function run({ argv = process.argv, env = process.env, applyOverrides = defaultApplyOverrides } = {}) {
+function run({ argv = process.argv, env = process.env } = {}) {
   // TLDR_CONFIG_DIR lets non-Claude agents (codex/cursor/grok/antigravity) keep
   // their own mode flag; falls back to Claude's dir so existing installs are
   // unaffected.
@@ -50,16 +39,6 @@ function run({ argv = process.argv, env = process.env, applyOverrides = defaultA
   const flagPath = path.join(claudeDir, '.tldr-active');
   const settingsPath = path.join(claudeDir, 'settings.json');
 
-  // Apply per-agent model overrides from env vars before emitting rules.
-  // Best-effort: any error is swallowed so SessionStart is never blocked.
-  // Plugin installs run this hook from <plugin_root>/src/hooks/ and keep agents
-  // at <plugin_root>/agents/, so prefer CLAUDE_PLUGIN_ROOT when Claude Code sets
-  // it. Standalone installs fall back to the parent of the hooks dir
-  // ($CLAUDE_CONFIG_DIR), where agents/ may hold user-managed copies.
-  try {
-    applyOverrides(env.CLAUDE_PLUGIN_ROOT || path.resolve(__dirname, '..'), env);
-  } catch (e) {}
-
   const mode = getDefaultMode();
 
   // "off" mode — skip activation entirely, don't write flag or emit rules
@@ -78,10 +57,6 @@ function run({ argv = process.argv, env = process.env, applyOverrides = defaultA
   //
   //    Reads SKILL.md at runtime so edits to the source of truth propagate
   //    automatically — no hardcoded duplication to go stale.
-  if (INDEPENDENT_MODES.has(mode)) {
-    return emit('TLDR MODE ACTIVE — level: ' + mode + '. Behavior defined by /tldr-' + mode + ' skill.');
-  }
-
   const { getInstructions } = require('./tldr-instructions');
   let output = getInstructions(mode);
 

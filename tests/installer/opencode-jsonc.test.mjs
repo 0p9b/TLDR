@@ -58,10 +58,10 @@ function sandbox() {
   };
 }
 
-// `node bin/install.js --only opencode --non-interactive --no-mcp-shrink`
+// `node bin/install.js --only opencode --non-interactive`
 function runInstall(sb) {
   const r = spawnSync(process.execPath,
-    [INSTALLER, '--only', 'opencode', '--non-interactive', '--no-mcp-shrink'],
+    [INSTALLER, '--only', 'opencode', '--non-interactive'],
     { env: sb.env, encoding: 'utf8' });
   assert.notEqual(r.status, 2, `argv error: ${r.stderr}`);
   return r;

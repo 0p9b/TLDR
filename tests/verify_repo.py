@@ -135,8 +135,7 @@ def verify_synced_files() -> None:
 
 def verify_hook_checksums() -> None:
     section("Hook Checksums")
-    for sub in ("hooks", "tools"):
-        _verify_manifest(sub)
+    _verify_manifest("hooks")
 
 
 def _verify_manifest(sub: str) -> None:
@@ -182,14 +181,11 @@ def verify_manifests_and_syntax() -> None:
     run(["node", "--check", "src/hooks/tldr-config.js"])
     run(["node", "--check", "src/hooks/tldr-activate.js"])
     run(["node", "--check", "src/hooks/tldr-mode-tracker.js"])
-    run(["node", "--check", "src/hooks/tldrcrew-model-overrides.js"])
     run(["node", "--check", "bin/install.js"])
-    run(["node", "--check", "bin/lib/opencode-agent.js"])
     run(["node", "--check", "bin/lib/settings.js"])
     run(["bash", "-n", "src/hooks/tldr-statusline.sh"])
 
     ensure((ROOT / "commands/tldr.toml").exists(), "commands/tldr.toml missing — bare /tldr TOML command not represented")
-    ensure((ROOT / "bin/lib/opencode-agent.js").exists(), "opencode agent sanitizer missing")
 
     print("JSON manifests and JS/bash syntax OK")
 

@@ -10,7 +10,7 @@ import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
 const {
-  HOOK_FILES, SKILL_DIRS, OPENCODE_AGENT_FILES, OPENCODE_COMMAND_FILES, OPENCODE_PLUGIN_REL,
+  HOOK_FILES, SKILL_DIRS, OPENCODE_COMMAND_FILES, OPENCODE_PLUGIN_REL,
   CLAUDE_HOOK_MARKERS, OPENCLAW_SKILL_NAME, OPENCLAW_SOUL_MARK_BEGIN, OPENCLAW_SOUL_MARK_END,
   OPENCLAW_BOOTSTRAP_REL,
 } = require('../../bin/lib/manifest.js');
@@ -59,7 +59,7 @@ test('update.js and openclaw.js define no literal copy of skill dir names', () =
 test('update.js and openclaw.js define no literal copy of hook, marker, opencode, or plugin names', () => {
   const names = [
     ...HOOK_FILES.filter(f => f !== 'package.json'),
-    ...CLAUDE_HOOK_MARKERS, ...OPENCODE_AGENT_FILES, ...OPENCODE_COMMAND_FILES,
+    ...CLAUDE_HOOK_MARKERS, ...OPENCODE_COMMAND_FILES,
   ];
   for (const { file, src } of consumers) {
     const hit = names.filter(n => quotedIn(src, n));

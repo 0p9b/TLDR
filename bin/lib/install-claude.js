@@ -4,9 +4,9 @@
 // helpers and constants from install.js come in through `deps`, not imports,
 // so this module owns no process state.
 
-// `deps`: { REPO, captureSpawn, installHooks, installMcpShrink }
+// `deps`: { REPO, captureSpawn, installHooks }
 async function installClaude(ctx, deps) {
-  const { REPO, captureSpawn, installHooks, installMcpShrink } = deps;
+  const { REPO, captureSpawn, installHooks } = deps;
   const { say, note, warn, ok, opts, results } = ctx;
   results.detected++;
   say('→ Claude Code detected');
@@ -35,14 +35,6 @@ async function installClaude(ctx, deps) {
     if (r === 'ok') results.installed.push('claude-hooks');
     else if (r === 'skip') results.skipped.push(['claude-hooks', 'already wired']);
     else results.failed.push(['claude-hooks', r]);
-  }
-
-  if (opts.withMcpShrink) {
-    say('  → wiring tldr-shrink MCP proxy (--with-mcp-shrink)');
-    const r = installMcpShrink(ctx);
-    if (r.kind === 'ok')   results.installed.push('tldr-shrink');
-    if (r.kind === 'skip') results.skipped.push(['tldr-shrink', r.why]);
-    if (r.kind === 'fail') results.failed.push(['tldr-shrink', r.why]);
   }
 
   process.stdout.write('\n');

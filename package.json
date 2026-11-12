@@ -24,7 +24,6 @@
   "files": [
     "bin/",
     "src/",
-    "agents/",
     "skills/",
     "commands/",
     "README.md",

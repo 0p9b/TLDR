@@ -9,7 +9,6 @@ const SKILL_DIRS = [
   'tldr',
 ];
 
-const OPENCODE_AGENT_FILES = ['tldrcrew-investigator.md', 'tldrcrew-builder.md', 'tldrcrew-reviewer.md'];
 const OPENCODE_COMMAND_FILES = ['tldr.md'];
 const OPENCODE_PLUGIN_REL = './plugins/tldr/plugin.js';
 
@@ -22,18 +21,16 @@ const HOOK_FILES = [
   'tldr-instructions.js',
   'tldr-activate.js',
   'tldr-mode-tracker.js',
-  'tldr-stats.js',
   'tldr-statusline.sh',
   'tldr-statusline.ps1',
-  'tldrcrew-model-overrides.js',
 ];
 
 // Command markers identifying our entries in Claude's settings.json hooks.
-const CLAUDE_HOOK_MARKERS = ['tldr-activate', 'tldr-mode-tracker', 'tldr-stats'];
+const CLAUDE_HOOK_MARKERS = ['tldr-activate', 'tldr-mode-tracker'];
 
 // Scripts copied for native agents that have their own hook system (no
-// statusline, no stats).
-const AGENT_HOOK_SCRIPTS = HOOK_FILES.filter(f => !/^tldr-(stats|statusline)/.test(f));
+// statusline).
+const AGENT_HOOK_SCRIPTS = HOOK_FILES.filter(f => !/^tldr-statusline/.test(f));
 
 // OpenClaw: skill folder under <workspace>/skills/, the fenced block appended to
 // <workspace>/SOUL.md, and the bootstrap snippet source (repo-relative).
@@ -44,7 +41,6 @@ const OPENCLAW_BOOTSTRAP_REL = 'src/rules/tldr-openclaw-bootstrap.md';
 
 module.exports = {
   SKILL_DIRS,
-  OPENCODE_AGENT_FILES,
   OPENCODE_COMMAND_FILES,
   OPENCODE_PLUGIN_REL,
   HOOK_FILES,

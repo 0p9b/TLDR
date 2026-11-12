@@ -128,12 +128,12 @@ function installNative(ctx, prov) {
   const dir = nativeDir(n);
   // `rules: null` means the agent has NO global always-on rules file (e.g.
   // cursor-agent, which only honors per-project AGENTS.md/.cursor/rules); we
-  // still install the auto-discovered skills and point users at --with-init.
+  // still install the auto-discovered skills.
   const rulesFile = n.rules === null ? null : path.join(dir, n.rules || 'AGENTS.md');
   const skillsDir = path.join(dir, n.skills || 'skills');
   const noRulesNote = n.hooks
     ? '  no global rules file for this agent — always-on delivered via its sessionStart hook instead'
-    : '  no global always-on rules file for this agent — skills installed; use --with-init for a per-repo rule file';
+    : '  no global always-on rules file for this agent — skills installed';
 
   if (!repoRoot) {
     warn(`  ${prov.label} native install requires a local clone of the TLDR repo.`);
@@ -144,8 +144,8 @@ function installNative(ctx, prov) {
   }
   try {
     io.mkdirp(dir);
-    // Full TLDR skill suite so native agents auto-discover all skills, not just
-    // skills/tldr. Per-skill skip (unless --force) mirrors the opencode loop.
+    // TLDR skill(s) so native agents auto-discover them.
+    // Per-skill skip (unless --force) mirrors the opencode loop.
     for (const name of SKILL_DIRS) {
       const src = path.join(repoRoot, 'skills', name);
       const dest = path.join(skillsDir, name);

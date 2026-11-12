@@ -97,7 +97,7 @@ function runNode(mode) {
   fs.mkdirSync(home);
   const cfg = path.join(home, '.claude');
   const r = spawnSync(process.execPath, ['--require', path.join(tmp, 'stub.cjs'), path.join(tmp, 'bin', 'install.js'),
-    '--only', 'claude', '--with-hooks', '--non-interactive', '--no-mcp-shrink'], {
+    '--only', 'claude', '--with-hooks', '--non-interactive'], {
     env: { ...process.env, HOME: home, CLAUDE_CONFIG_DIR: cfg, XDG_CONFIG_HOME: path.join(home, '.config'), NO_COLOR: '1' },
     encoding: 'utf8',
   });

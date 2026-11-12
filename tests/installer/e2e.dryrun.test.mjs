@@ -36,7 +36,7 @@ function dryrunEnv(cfg) {
 test('dry-run --only claude prints plan and writes nothing', () => {
   const cfg = freshTmpDir();
   const r = spawnSync(process.execPath, [INSTALLER,
-    '--dry-run', '--only', 'claude', '--no-mcp-shrink', '--non-interactive',
+    '--dry-run', '--only', 'claude', '--non-interactive',
     '--config-dir', cfg,
   ], { encoding: 'utf8', env: dryrunEnv(cfg) });
   assert.equal(r.status, 0);

@@ -65,7 +65,7 @@ function loadConfig() {
 }
 const config = loadConfig();
 
-const { getDefaultMode, safeWriteFlag, readFlag, clearFlag, INDEPENDENT_MODES } = config;
+const { getDefaultMode, safeWriteFlag, readFlag, clearFlag } = config;
 
 const flagPath = join(config.getConfigDir('opencode'), '.tldr-active');
 
@@ -73,18 +73,6 @@ const flagPath = join(config.getConfigDir('opencode'), '.tldr-active');
 // opt-in flags on the shared parser in tldr-config.js.
 const parseModeChange = (prompt) =>
   config.parseModeChange(prompt, { unwrapQuotes: true, commandTemplate: true });
-
-// /tldr-stats: matches the typed command (optionally quote-wrapped by `run`)
-// and the expanded command body, which opencode substitutes for the command
-// before chat.message fires (see commands/tldr-stats.md).
-const STATS_RE = /^(\/tldr(?::tldr)?-stats\b|show tldr stats\b)/;
-const STATS_UNAVAILABLE = 'TLDR stats are not available in opencode: they read Claude Code session logs only.';
-const STATS_REPLY = 'Reply with exactly this text and nothing else:\n' + STATS_UNAVAILABLE;
-
-function isStatsCommand(text) {
-  const t = String(text).trim().replace(/^(["'`])([\s\S]*)\1$/, '$2').trim().toLowerCase();
-  return STATS_RE.test(t);
-}
 
 function applyModeChange(change) {
   if (!change) return;
@@ -130,13 +118,6 @@ export const TldrPlugin = async (_ctx) => {
     if (!output || !output.parts) return;
     for (const part of output.parts) {
       if (part && part.type === 'text' && part.text) {
-        if (isStatsCommand(part.text)) {
-          // opencode cannot block a prompt from a plugin, so the stats request
-          // is rewritten to a fixed reply. The stats module is not run here:
-          // it only reads Claude Code session logs, not opencode sessions.
-          part.text = STATS_REPLY;
-          continue;
-        }
         const change = parseModeChange(part.text);
         if (change) applyModeChange(change);
       }
@@ -149,7 +130,7 @@ export const TldrPlugin = async (_ctx) => {
   'experimental.chat.system.transform': async (_input, output) => {
     if (!output || !Array.isArray(output.system)) return;
     const active = readFlag(flagPath);
-    if (active && !INDEPENDENT_MODES.has(active)) {
+    if (active) {
       output.system.push('TLDR MODE ACTIVE (' + active + '). ' +
         'Drop articles/filler/pleasantries/hedging. Fragments OK. ' +
         'Code/commits/security: write normal.');

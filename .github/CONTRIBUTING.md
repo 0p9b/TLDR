@@ -21,7 +21,7 @@ the long tail). A single Node installer at `bin/install.js` detects which
 agents are on the user's machine and installs the right thing for each.
 
 Sources of truth live at the **top level** of the repo. There are no
-checked-in mirrors: `skills/`, `agents/`, and `commands/` are the only
+checked-in mirrors: `skills/` and `commands/` are the only
 copies, and the installer reads them directly.
 
 ---
@@ -31,13 +31,10 @@ copies, and the installer reads them directly.
 | I want to change... | Edit this file |
 |---|---|
 | TLDR behavior (intensity levels, voice, rules) | `skills/tldr/SKILL.md` |
-| tldrcrew subagent definitions | `agents/tldrcrew-investigator.md`, `agents/tldrcrew-builder.md`, `agents/tldrcrew-reviewer.md` |
 | Auto-activation rule body (Cursor/Windsurf/Cline/Copilot) | `src/rules/tldr-activate.md` |
 | Add support for a new agent | `bin/install.js` (PROVIDERS array) |
-| Per-repo init script (drops rule files into a user's repo) | `src/tools/tldr-init.js` |
 | Claude Code hooks | `src/hooks/tldr-activate.js`, `src/hooks/tldr-mode-tracker.js`, `src/hooks/tldr-config.js`, `src/hooks/tldr-statusline.sh`, `src/hooks/tldr-statusline.ps1` |
 | Settings.json read/write helpers | `bin/lib/settings.js` |
-| MCP shrink server | `src/mcp-servers/tldr-shrink/` |
 
 That's it. Every other markdown file with `SKILL.md` in the path is a copy.
 
@@ -95,14 +92,9 @@ python3 tests/check-doc-sync.py
 npm test
 
 # Additional standalone suites
-python3 -m unittest tests.test_compress_safety
 python3 -m unittest tests.test_hooks
-python3 -m unittest tests.test_validate_inline
-node tests/test_tldr_init.js
 node tests/test_symlink_flag.js
 node tests/test_repo_local_config.js
-node tests/test_tldr_stats.js
-node tests/test_mcp_shrink.js
 ```
 
 CI runs all of the above on every PR. If any test depends on a network or

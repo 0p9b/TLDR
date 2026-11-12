@@ -45,7 +45,7 @@ function shimOpencode() {
 // ~/.local/bin) that would also drop node, making a bare 'node' spawn die
 // ENOENT. process.execPath is immune to PATH mangling.
 function runInstaller(args, env) {
-  return spawnSync(process.execPath, [INSTALLER, ...args, '--non-interactive', '--no-mcp-shrink'], {
+  return spawnSync(process.execPath, [INSTALLER, ...args, '--non-interactive'], {
     env, encoding: 'utf8',
   });
 }
@@ -104,9 +104,6 @@ test('opencode fresh install drops plugin, commands, agents, skills, AGENTS.md, 
 
     for (const f of ['tldr.md']) {
       assert.ok(fs.existsSync(path.join(ocDir, 'commands', f)), `command ${f} missing`);
-    }
-    for (const f of ['tldrcrew-investigator.md', 'tldrcrew-builder.md', 'tldrcrew-reviewer.md']) {
-      assert.ok(fs.existsSync(path.join(ocDir, 'agents', f)), `agent ${f} missing`);
     }
     for (const name of ['tldr']) {
       assert.ok(fs.existsSync(path.join(ocDir, 'skills', name, 'SKILL.md')), `skill ${name}/SKILL.md missing`);
@@ -267,7 +264,6 @@ test('opencode uninstall removes plugin dir, command/agent/skill files, prunes o
     const ocDir = path.join(xdg, 'opencode');
     assert.equal(fs.existsSync(path.join(ocDir, 'plugins', 'tldr')), false, 'plugin dir survived');
     assert.equal(fs.existsSync(path.join(ocDir, 'commands', 'tldr.md')), false, 'tldr.md command survived');
-    assert.equal(fs.existsSync(path.join(ocDir, 'agents', 'tldrcrew-builder.md')), false, 'tldrcrew agent survived');
     assert.equal(fs.existsSync(path.join(ocDir, 'skills', 'tldr')), false, 'TLDR skill dir survived');
     assert.equal(fs.existsSync(path.join(ocDir, 'AGENTS.md')), false, 'AGENTS.md (we wrote it) survived');
 

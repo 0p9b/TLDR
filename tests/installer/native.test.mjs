@@ -51,7 +51,7 @@ function freshHome() {
 
 function runInstaller(args, home) {
   // Sandbox every config root the installer/uninstaller might touch.
-  return spawnSync('node', [INSTALLER, ...args, '--non-interactive', '--no-mcp-shrink'], {
+  return spawnSync('node', [INSTALLER, ...args, '--non-interactive'], {
     env: {
       ...process.env,
       HOME: home,

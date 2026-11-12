@@ -61,7 +61,7 @@ test('installOpencode (real io) installs plugin, commands, agents, skills, rules
   const prev = process.env.XDG_CONFIG_HOME; process.env.XDG_CONFIG_HOME = xdg;
   try {
     const c = ctxFor(realio());
-    quiet(() => installOpencode(c, { resolveMcpShrinkLaunch: () => null }));
+    quiet(() => installOpencode(c));
     assert.deepEqual(c.results.installed, ['opencode']);
     const d = path.join(xdg, 'opencode');
     assert.ok(fs.existsSync(path.join(d, 'plugins', 'tldr', 'plugin.js')));
@@ -69,21 +69,19 @@ test('installOpencode (real io) installs plugin, commands, agents, skills, rules
     assert.ok(fs.existsSync(path.join(d, 'AGENTS.md')));
     const cfg = JSON.parse(fs.readFileSync(path.join(d, 'opencode.json'), 'utf8'));
     assert.ok(cfg.plugin.length >= 1);
-    quiet(() => installOpencode(ctxFor(realio()), { resolveMcpShrinkLaunch: () => null }));
+    quiet(() => installOpencode(ctxFor(realio())));
     assert.equal(JSON.parse(fs.readFileSync(path.join(d, 'opencode.json'), 'utf8')).plugin.length, cfg.plugin.length, 'plugin entry not duplicated');
   } finally { if (prev === undefined) delete process.env.XDG_CONFIG_HOME; else process.env.XDG_CONFIG_HOME = prev; }
 });
 
-test('installOpencode (dry io) plans writes and creates nothing; --with-mcp-shrink uses the injected resolver', () => {
+test('installOpencode (dry io) plans writes and creates nothing', () => {
   const xdg = path.join(tmp(), 'cfg');
   const prev = process.env.XDG_CONFIG_HOME; process.env.XDG_CONFIG_HOME = xdg;
   try {
     const io = dryIO({ note: () => {}, run: () => ({ status: 0 }) });
-    const c = ctxFor(io, { withMcpShrink: ['echo', 'hi'] });
-    let asked = 0;
-    quiet(() => installOpencode(c, { resolveMcpShrinkLaunch: () => { asked++; return ['npx', '-y', 'pkg']; } }));
+    const c = ctxFor(io);
+    quiet(() => installOpencode(c));
     assert.equal(fs.existsSync(xdg), false);
-    assert.equal(asked, 1);
     assert.ok(io.plan.some(p => p.op === 'write'));
   } finally { if (prev === undefined) delete process.env.XDG_CONFIG_HOME; else process.env.XDG_CONFIG_HOME = prev; }
 });

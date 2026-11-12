@@ -115,7 +115,7 @@ test('zcode: restorePrior undoes enabled after prune, including a deleted hooks 
 
 // End-to-end: the real installer, sandboxed HOME, prior hooks.enabled restored on uninstall.
 function zcodeRun(home, args) {
-  return spawnSync(process.execPath, [path.join(root, 'bin', 'install.js'), ...args, '--only', 'zcode', '--non-interactive', '--no-mcp-shrink'], {
+  return spawnSync(process.execPath, [path.join(root, 'bin', 'install.js'), ...args, '--only', 'zcode', '--non-interactive'], {
     env: {
       ...process.env,
       HOME: home,
@@ -198,10 +198,10 @@ test('every STYLES.format is a real envelope in tldr-activate (the two cannot dr
   const act = require('../../src/hooks/tldr-activate.js');
   const cfg = fs.mkdtempSync(path.join(os.tmpdir(), 'tldr-env-'));
   const env = { ...process.env, TLDR_CONFIG_DIR: cfg, TLDR_DEFAULT_MODE: 'full' };
-  const plain = act.run({ argv: [`--config-dir=${cfg}`], env, applyOverrides: () => {} });
+  const plain = act.run({ argv: [`--config-dir=${cfg}`], env });
   for (const [name, st] of Object.entries(H.STYLES)) {
     if (!st.format) continue;
-    const out = act.run({ argv: [`--config-dir=${cfg}`, `--format=${st.format}`], env, applyOverrides: () => {} });
+    const out = act.run({ argv: [`--config-dir=${cfg}`, `--format=${st.format}`], env });
     assert.notEqual(out, plain, `${name}: --format=${st.format} fell through to plain text`);
     assert.doesNotThrow(() => JSON.parse(out), `${name}: envelope is JSON`);
   }

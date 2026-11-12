@@ -16,8 +16,7 @@ const crypto = require('crypto');
 
 const VALID_MODES = [
   'off', 'lite', 'full', 'ultra',
-  'wenyan-lite', 'wenyan', 'wenyan-full', 'wenyan-ultra',
-  'commit', 'review', 'compress'
+  'wenyan-lite', 'wenyan', 'wenyan-full', 'wenyan-ultra'
 ];
 
 // app is the config-dir basename: 'tldr' for the hook stack, 'opencode' for
@@ -35,10 +34,6 @@ function getConfigDir(app = 'tldr') {
   return path.join(os.homedir(), '.config', app);
 }
 
-// Modes handled by their own slash commands (/tldr-commit, ...): not
-// selectable via /tldr <arg>.
-const INDEPENDENT_MODES = new Set(['commit', 'review', 'compress']);
-
 const SET = (mode) => ({ action: 'set', mode });
 const CLEAR = { action: 'clear' };
 
@@ -47,12 +42,11 @@ const CLEAR = { action: 'clear' };
 function argToChange(arg) {
   if (!arg) {
     const mode = getDefaultMode();
-    // An independent default (commit/review/compress) is not a /tldr level.
-    return mode === 'off' ? CLEAR : SET(INDEPENDENT_MODES.has(mode) ? 'full' : mode);
+    return mode === 'off' ? CLEAR : SET(mode);
   }
   if (arg === 'off' || arg === 'stop' || arg === 'disable') return CLEAR;
   if (arg === 'wenyan-full') return SET('wenyan'); // canonical alias
-  if (VALID_MODES.includes(arg) && !INDEPENDENT_MODES.has(arg)) return SET(arg);
+  if (VALID_MODES.includes(arg)) return SET(arg);
   return null;
 }
 
@@ -95,17 +89,14 @@ function parseModeChange(promptRaw, { unwrapQuotes = false, commandTemplate = fa
        /\btldr\s+mode\s+(on|please)\b/.test(prompt)) &&
       !/\b(stop|disable|turn off|deactivate)\b/.test(prompt)) {
     const mode = getDefaultMode();
-    if (mode !== 'off') change = SET(INDEPENDENT_MODES.has(mode) ? 'full' : mode);
+    if (mode !== 'off') change = SET(mode);
   }
 
   if (prompt.startsWith('/tldr')) {
     const parts = prompt.split(/\s+/);
     // Marketplace installs namespace commands: "/tldr:tldr ultra".
     const cmd = parts[0].replace(/^\/tldr:/, '/');
-    if (cmd === '/tldr-commit') change = SET('commit');
-    else if (cmd === '/tldr-review') change = SET('review');
-    else if (cmd === '/tldr-compress') change = SET('compress');
-    else if (cmd === '/tldr') change = argToChange(parts[1] || '') || change;
+    if (cmd === '/tldr') change = argToChange(parts[1] || '') || change;
   }
 
   if (/\b(stop|disable|deactivate|turn off)\b.*\btldr\b/.test(prompt) ||
@@ -332,86 +323,4 @@ function readFlag(flagPath) {
   }
 }
 
-// Symlink-safe append. Same parent-dir + symlink-target rules as safeWriteFlag,
-// but opens with O_APPEND so concurrent writers from different sessions don't
-// clobber each other. Used for the lifetime stats log
-// ($CLAUDE_CONFIG_DIR/.tldr-history.jsonl).
-//
-// Silent-fails on any filesystem error.
-function appendFlag(filePath, line) {
-  const debug = process.env.TLDR_DEBUG === '1';
-  try {
-    const dir = path.dirname(filePath);
-    fs.mkdirSync(dir, { recursive: true });
-
-    let realDir;
-    try {
-      const lstat = fs.lstatSync(dir);
-      if (lstat.isSymbolicLink()) {
-        realDir = fs.realpathSync(dir);
-        const realStat = fs.statSync(realDir);
-        if (!realStat.isDirectory()) return;
-        if (typeof process.getuid === 'function') {
-          if (realStat.uid !== process.getuid()) {
-            if (debug) process.stderr.write(`[tldr] appendFlag: symlink target ${realDir} owned by uid ${realStat.uid}\n`);
-            return;
-          }
-        } else {
-          const home = os.homedir();
-          const normalized = path.resolve(realDir).toLowerCase();
-          const normalizedHome = path.resolve(home).toLowerCase();
-          if (!normalized.startsWith(normalizedHome + path.sep) && normalized !== normalizedHome) return;
-        }
-      } else {
-        realDir = dir;
-      }
-    } catch (e) {
-      return;
-    }
-
-    const realPath = path.join(realDir, path.basename(filePath));
-    try {
-      if (fs.lstatSync(realPath).isSymbolicLink()) return;
-    } catch (e) {
-      if (e.code !== 'ENOENT') return;
-    }
-
-    const O_NOFOLLOW = typeof fs.constants.O_NOFOLLOW === 'number' ? fs.constants.O_NOFOLLOW : 0;
-    const flags = fs.constants.O_WRONLY | fs.constants.O_CREAT | fs.constants.O_APPEND | O_NOFOLLOW;
-    let fd;
-    try {
-      fd = fs.openSync(realPath, flags, 0o600);
-      fs.writeSync(fd, String(line).replace(/\n$/, '') + '\n');
-      try { fs.fchmodSync(fd, 0o600); } catch (e) { /* best-effort on Windows */ }
-    } finally {
-      if (fd !== undefined) fs.closeSync(fd);
-    }
-  } catch (e) {
-    // Silent fail — history is best-effort
-  }
-}
-
-// Symlink-safe history read. Returns lines (untrimmed) or empty array on any
-// anomaly. Caller is responsible for parsing JSON. Does NOT enforce a size cap
-// the way readFlag does — history is expected to grow with use.
-function readHistory(filePath) {
-  try {
-    const st = fs.lstatSync(filePath);
-    if (st.isSymbolicLink() || !st.isFile()) return [];
-    const O_NOFOLLOW = typeof fs.constants.O_NOFOLLOW === 'number' ? fs.constants.O_NOFOLLOW : 0;
-    const flags = fs.constants.O_RDONLY | O_NOFOLLOW;
-    let fd;
-    let raw;
-    try {
-      fd = fs.openSync(filePath, flags);
-      raw = fs.readFileSync(fd, 'utf8');
-    } finally {
-      if (fd !== undefined) fs.closeSync(fd);
-    }
-    return raw.split('\n').filter(line => line.trim());
-  } catch (e) {
-    return [];
-  }
-}
-
-module.exports = { parseModeChange, INDEPENDENT_MODES, getDefaultMode, getConfigDir, resolveFlagDir, flagPath, clearFlag, getConfigPath, findRepoConfigPath, VALID_MODES, safeWriteFlag, readFlag, appendFlag, readHistory };
+module.exports = { parseModeChange, getDefaultMode, getConfigDir, resolveFlagDir, flagPath, clearFlag, getConfigPath, findRepoConfigPath, VALID_MODES, safeWriteFlag, readFlag };

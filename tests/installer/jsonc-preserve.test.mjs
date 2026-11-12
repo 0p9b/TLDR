@@ -18,7 +18,7 @@ test('first install over a commented settings.json keeps its comments and wires 
   const cfg = path.join(home, '.claude');
   fs.mkdirSync(cfg, { recursive: true });
   const env = { ...process.env, HOME: home, CLAUDE_CONFIG_DIR: cfg, XDG_CONFIG_HOME: path.join(home, '.config'), NO_COLOR: '1' };
-  const run = () => spawnSync(process.execPath, [INSTALLER, '--only', 'claude', '--with-hooks', '--non-interactive', '--no-mcp-shrink'], { env, encoding: 'utf8' });
+  const run = () => spawnSync(process.execPath, [INSTALLER, '--only', 'claude', '--with-hooks', '--non-interactive'], { env, encoding: 'utf8' });
   try {
     const file = path.join(cfg, 'settings.json');
     const original = [
@@ -54,7 +54,7 @@ test('reinstall leaves a commented, already-wired settings.json byte-identical',
   const home = fs.mkdtempSync(path.join(os.tmpdir(), 'tldr-jsonc-'));
   const cfg = path.join(home, '.claude');
   const env = { ...process.env, HOME: home, CLAUDE_CONFIG_DIR: cfg, XDG_CONFIG_HOME: path.join(home, '.config'), NO_COLOR: '1' };
-  const run = () => spawnSync(process.execPath, [INSTALLER, '--only', 'claude', '--with-hooks', '--non-interactive', '--no-mcp-shrink'], { env, encoding: 'utf8' });
+  const run = () => spawnSync(process.execPath, [INSTALLER, '--only', 'claude', '--with-hooks', '--non-interactive'], { env, encoding: 'utf8' });
   try {
     assert.notEqual(run().status, 2);
     const file = path.join(cfg, 'settings.json');
@@ -72,7 +72,7 @@ test('reinstall leaves a commented, already-wired settings.json byte-identical',
 // ── uninstall: comment-preserving rewrite (patchJsonc) with JSON fallback ──
 function uninstallIn(home, cfg) {
   const env = { ...process.env, HOME: home, CLAUDE_CONFIG_DIR: cfg, XDG_CONFIG_HOME: path.join(home, '.config'), NO_COLOR: '1', PATH: '/usr/bin:/bin' };
-  return spawnSync(process.execPath, [INSTALLER, '--uninstall', '--non-interactive', '--no-mcp-shrink', '--config-dir', cfg], { env, encoding: 'utf8' });
+  return spawnSync(process.execPath, [INSTALLER, '--uninstall', '--non-interactive', '--config-dir', cfg], { env, encoding: 'utf8' });
 }
 
 test('uninstall keeps unrelated comments in a commented settings.json and removes TLDR hooks', () => {

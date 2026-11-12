@@ -116,31 +116,8 @@ class ModeTrackerTests(unittest.TestCase):
         self.send("/tldr off")
         self.assertIsNone(self.flag_value())
 
-    # ── independent one-shot modes ───────────────────────────────────────
-
-    def test_commit_sets_independent_mode(self):
-        self.send("/tldr-commit")
-        self.assertEqual(self.flag_value(), "commit")
-
-    def test_namespaced_compress_recognized(self):
-        # TLDR namespaces the compress and stats commands (the plugin form
-        # Claude Code uses for marketplace installs). Commit/review are NOT
-        # namespaced, so only compress is asserted here.
-        self.send("/tldr:tldr-compress")
-        self.assertEqual(self.flag_value(), "compress")
-
-    def test_no_reinforcement_during_independent_turn(self):
-        # Independent modes (commit/review/compress) suppress the base-TLDR
-        # per-turn reminder — the skill drives its own behavior.
-        self.flag.write_text("full")
-        r = self.send("/tldr-commit")
-        self.assertEqual(self.flag_value(), "commit")
-        self.assertNotIn("TLDR MODE ACTIVE", r.stdout)
-
     def test_stop_tldr_deactivates_independent_mode(self):
         self.flag.write_text("ultra")
-        self.send("/tldr-commit")
-        self.assertEqual(self.flag_value(), "commit")
         self.send("stop tldr")
         self.assertIsNone(self.flag_value())
         # Nothing resurrects the mode on a later ordinary prompt (TLDR keeps no

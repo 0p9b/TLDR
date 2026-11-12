@@ -68,16 +68,10 @@ you are paying to use it.**
 
 ## Measure it yourself
 
-1. **`/tldr-stats`** (Claude Code) reads your real session log and prints
-   actual input/output token counts. The "saved" line is an **estimate**:
-   it extrapolates what the output would have been without TLDR using a
-   fixed benchmark ratio (0.65, `full` mode only — lite/ultra/wenyan show
-   no estimate). Real usage, estimated baseline; the output labels it
-   `est.` for exactly that reason.
-2. **The only fully honest test is an A/B**: run the same task with and
+1. **The only fully honest test is an A/B**: run the same task with and
    without TLDR and compare your provider's own usage/billing page. That
    number outranks anything this repo prints.
-3. **Reproduce numbers yourself**: the eval harness in
+2. **Reproduce numbers yourself**: the eval harness in
    [`evals/`](../evals/README.md)
    (`evals/llm_run.py` to generate, `evals/measure.py` to read). No eval
    snapshot is committed to this repository — every number you quote

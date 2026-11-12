@@ -24,7 +24,7 @@ $HooksDir = Join-Path $ClaudeDir "hooks"
 $Settings = Join-Path $ClaudeDir "settings.json"
 $RepoUrl = "https://raw.githubusercontent.com/0p9b/TLDR/main/src/hooks"
 
-$HookFiles = @("package.json", "tldr-config.js", "tldr-instructions.js", "tldr-activate.js", "tldr-mode-tracker.js", "tldr-stats.js", "tldr-statusline.sh", "tldr-statusline.ps1", "tldrcrew-model-overrides.js")
+$HookFiles = @("package.json", "tldr-config.js", "tldr-instructions.js", "tldr-activate.js", "tldr-mode-tracker.js", "tldr-statusline.sh", "tldr-statusline.ps1")
 
 # Resolve source — works from repo clone or remote
 $ScriptDir = if ($PSScriptRoot) { $PSScriptRoot } else { $null }

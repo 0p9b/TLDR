@@ -37,7 +37,7 @@ HOOKS_DIR="$CLAUDE_DIR/hooks"
 SETTINGS="$CLAUDE_DIR/settings.json"
 REPO_URL="https://raw.githubusercontent.com/0p9b/TLDR/main/src/hooks"
 
-HOOK_FILES=("package.json" "tldr-config.js" "tldr-instructions.js" "tldr-activate.js" "tldr-mode-tracker.js" "tldr-stats.js" "tldr-statusline.sh" "tldr-statusline.ps1" "tldrcrew-model-overrides.js")
+HOOK_FILES=("package.json" "tldr-config.js" "tldr-instructions.js" "tldr-activate.js" "tldr-mode-tracker.js" "tldr-statusline.sh" "tldr-statusline.ps1")
 
 # Resolve source — works from repo clone or curl pipe
 SCRIPT_DIR=""

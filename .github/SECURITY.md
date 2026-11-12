@@ -26,14 +26,13 @@ This repo ships prompt files and two installers: **`install.sh`** (prompt-only) 
 Once installed, nothing in TLDR touches the network. Verified against the code (audit it yourself — every file is in this repo):
 
 - **The skill itself** (`skills/tldr/SKILL.md`) is a markdown prompt. It contains no code.
-- **The hooks** (`src/hooks/*.js`, statusline scripts) are local Node/shell scripts. They read and write local files only (flag file, session log, statusline savings file). No `http`/`https`/`fetch` anywhere in them.
-- **`tldr-shrink`** (MCP middleware) spawns the MCP server *you* configure, locally, and compresses its output in-process. It makes no network calls of its own; any network activity belongs to the server you wrapped.
+- **The hooks** (`src/hooks/*.js`, statusline scripts) are local Node/shell scripts. They read and write local files only (flag file, session log). No `http`/`https`/`fetch` anywhere in them.
 
 ### At install time: exactly these network requests, nothing else
 
 - `curl … install.sh | bash` (or `irm … install.ps1 | iex`) fetches the shim from raw.githubusercontent.com, which delegates to `npx -y github:0p9b/TLDR` — npm fetches this repo from GitHub.
-- The installer shells out to per-agent CLIs which fetch from their own registries: `claude plugin marketplace add` / `claude plugin install` (Anthropic/GitHub), `gemini extensions install`, `npm view @0point9bar/tldr-shrink`, `npx -y skills add` (npm).
-- **Rare fallback:** if the installer runs detached from a repo checkout, it downloads the hook files from raw.githubusercontent.com **pinned to an immutable release tag** and verifies each against a published SHA-256 manifest before wiring anything (a mismatch aborts). From a normal clone or npx run, files are copied locally — offline installs work. For unpublished `tldr-shrink`, a clone install falls back to `src/mcp-servers/tldr-shrink` with no registry fetch.
+- The installer shells out to per-agent CLIs which fetch from their own registries: `claude plugin marketplace add` / `claude plugin install` (Anthropic/GitHub), `gemini extensions install`, `npx -y skills add` (npm).
+- **Rare fallback:** if the installer runs detached from a repo checkout, it downloads the hook files from raw.githubusercontent.com **pinned to an immutable release tag** and verifies each against a published SHA-256 manifest before wiring anything (a mismatch aborts). From a normal clone or npx run, files are copied locally — offline installs work.
 
 Nothing is uploaded in any of these steps. Details and the full list of paths written: [docs/INSTALL.md → Privacy](../docs/INSTALL.md#privacy).
 

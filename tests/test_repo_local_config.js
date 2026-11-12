@@ -95,10 +95,10 @@ test('env var beats repo-local config', (tmp) => {
 });
 
 test('repo-local config beats user config', (tmp) => {
-  // user config at XDG_CONFIG_HOME points to 'commit'
+  // user config at XDG_CONFIG_HOME points to 'ultra'
   fs.mkdirSync(path.join(tmpHome, 'tldr'), { recursive: true });
   fs.writeFileSync(path.join(tmpHome, 'tldr', 'config.json'),
-    JSON.stringify({ defaultMode: 'commit' }));
+    JSON.stringify({ defaultMode: 'ultra' }));
   // repo-local points to 'lite'
   fs.mkdirSync(path.join(tmp, '.tldr'));
   fs.writeFileSync(path.join(tmp, '.tldr', 'config.json'),
@@ -114,10 +114,10 @@ test('repo-local config beats user config', (tmp) => {
 test('falls through to user config when repo config absent', (tmp) => {
   fs.mkdirSync(path.join(tmpHome, 'tldr'), { recursive: true });
   fs.writeFileSync(path.join(tmpHome, 'tldr', 'config.json'),
-    JSON.stringify({ defaultMode: 'review' }));
+    JSON.stringify({ defaultMode: 'lite' }));
   process.chdir(tmp);
   try {
-    assert.strictEqual(getDefaultMode(), 'review');
+    assert.strictEqual(getDefaultMode(), 'lite');
   } finally {
     fs.rmSync(path.join(tmpHome, 'tldr'), { recursive: true, force: true });
   }

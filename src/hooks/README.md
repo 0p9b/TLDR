@@ -17,14 +17,13 @@ If you installed TLDR standalone (without the plugin), the unified Node installe
 
 - Fires on every user prompt, checks for `/tldr` commands and natural-language activation/deactivation phrases ("talk like TLDR", "stop tldr", "normal mode")
 - Writes the active mode to the flag file when a TLDR command is detected; deletes it on deactivation
-- Emits a small per-turn reinforcement reminder when the flag is set to a non-independent mode (`lite`/`full`/`ultra`/`wenyan*`)
-- Supports: `lite`, `full`, `ultra`, `wenyan`, `wenyan-lite`, `wenyan-full`, `wenyan-ultra`, `commit`, `review`, `compress`
+- Emits a small per-turn reinforcement reminder when the flag is set (`lite`/`full`/`ultra`/`wenyan*`)
+- Supports: `lite`, `full`, `ultra`, `wenyan`, `wenyan-lite`, `wenyan-full`, `wenyan-ultra`
 
 ### `tldr-statusline.sh` / `tldr-statusline.ps1` — Statusline badge script
 
 - Reads `$CLAUDE_CONFIG_DIR/.tldr-active` (default `~/.claude/.tldr-active`) and outputs a colored badge
 - Shows `[TLDR]`, `[TLDR:ULTRA]`, `[TLDR:WENYAN]`, etc.
-- Appends the lifetime savings suffix `⛏ 12.4k` from `$CLAUDE_CONFIG_DIR/.tldr-statusline-suffix` (written by `tldr-stats.js` on each `/tldr-stats` run; absent until the first run, so fresh installs render no fake number). Opt out with `TLDR_STATUSLINE_SAVINGS=0`.
 
 ## Statusline Badge
 
@@ -103,6 +102,6 @@ node bin/install.js --uninstall
 ```
 
 Or manually:
-1. Remove the TLDR hook files from `$CLAUDE_CONFIG_DIR/hooks/` (default `~/.claude/hooks/`): `tldr-activate.js`, `tldr-mode-tracker.js`, `tldr-stats.js`, `tldr-config.js`, `tldrcrew-model-overrides.js`, and `tldr-statusline.{sh,ps1}`.
+1. Remove the TLDR hook files from `$CLAUDE_CONFIG_DIR/hooks/` (default `~/.claude/hooks/`): `tldr-activate.js`, `tldr-mode-tracker.js`, `tldr-config.js`, and `tldr-statusline.{sh,ps1}`.
 2. Remove the SessionStart, UserPromptSubmit, and statusLine entries from `$CLAUDE_CONFIG_DIR/settings.json`.
-3. Delete `$CLAUDE_CONFIG_DIR/.tldr-active` (and `$CLAUDE_CONFIG_DIR/.tldr-statusline-suffix` if you ran `/tldr-stats`).
+3. Delete `$CLAUDE_CONFIG_DIR/.tldr-active`.

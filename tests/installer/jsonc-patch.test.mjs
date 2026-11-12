@@ -226,7 +226,7 @@ test('comments inside mcp survive when an entry is added', () => {
   const obj = {
     mcp: {
       existing: { type: 'local', command: ['x'] },
-      'tldr-shrink': { type: 'local', command: ['node', 'shrink.js'] },
+      'other-server': { type: 'local', command: ['node', 'other.js'] },
     },
   };
   const out = patchJsonc(src, obj, ['mcp']);

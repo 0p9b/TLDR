@@ -30,7 +30,7 @@ const listing = (stdout, status = 0) => () => ({ status, stdout });
 test('installClaude: fresh install runs marketplace add + plugin install with injected REPO', async () => {
   const { calls, run } = recorder(0);
   const c = ctxFor(run);
-  await quiet(() => installClaude(c, { REPO, captureSpawn: listing(''), installHooks: null, installMcpShrink: null }));
+  await quiet(() => installClaude(c, { REPO, captureSpawn: listing(''), installHooks: null }));
   assert.deepEqual(calls, [
     ['claude', ['plugin', 'marketplace', 'add', REPO]],
     ['claude', ['plugin', 'install', 'tldr@tldr']],
@@ -41,7 +41,7 @@ test('installClaude: fresh install runs marketplace add + plugin install with in
 test('installClaude: already-installed plugin is skipped without running the CLI', async () => {
   const { calls, run } = recorder(0);
   const c = ctxFor(run);
-  await quiet(() => installClaude(c, { REPO, captureSpawn: listing('tldr@tldr 0.20.0'), installHooks: null, installMcpShrink: null }));
+  await quiet(() => installClaude(c, { REPO, captureSpawn: listing('tldr@tldr 0.20.0'), installHooks: null }));
   assert.equal(calls.length, 0);
   assert.deepEqual(c.results.skipped, [['claude', 'plugin already installed']]);
 });
@@ -49,7 +49,7 @@ test('installClaude: already-installed plugin is skipped without running the CLI
 test('installClaude: a failed plugin install is recorded as failed, not installed', async () => {
   const { run } = recorder(1);
   const c = ctxFor(run);
-  await quiet(() => installClaude(c, { REPO, captureSpawn: listing(''), installHooks: null, installMcpShrink: null }));
+  await quiet(() => installClaude(c, { REPO, captureSpawn: listing(''), installHooks: null }));
   assert.equal(c.results.failed[0][0], 'claude');
   assert.deepEqual(c.results.installed, []);
 });

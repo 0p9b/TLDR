@@ -25,7 +25,7 @@ function sandboxHome() {
 }
 
 function install(home, id) {
-  const r = spawnSync(process.execPath, [INSTALLER, '--only', id, '--with-hooks', '--non-interactive', '--no-mcp-shrink'], {
+  const r = spawnSync(process.execPath, [INSTALLER, '--only', id, '--with-hooks', '--non-interactive'], {
     env: {
       ...process.env,
       HOME: home,
