@@ -10,7 +10,7 @@
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
-const { readFlag, appendFlag, readHistory, safeWriteFlag } = require('./tldr-config');
+const { readFlag, appendFlag, readHistory, safeWriteFlag, flagPath, resolveFlagDir } = require('./tldr-config');
 
 // Mean per-task savings from benchmarks/results/*.json (avg_savings: 65 across
 // 10 tasks, sonnet-4-20250514). Only 'full' has measured data; lite / ultra /
@@ -56,15 +56,21 @@ function formatUsd(amount) {
   return `$${amount.toFixed(4)}`;
 }
 
-function findRecentSession(claudeDir) {
+// Bounded so a huge or slow projects tree cannot stall the prompt hook: stops
+// after maxEntries visited paths or maxMs wall clock and returns the best
+// candidate seen so far (or null).
+function findRecentSession(claudeDir, { maxEntries = 2000, maxMs = 3000 } = {}) {
   const projectsDir = path.join(claudeDir, 'projects');
   let entries;
   try { entries = fs.readdirSync(projectsDir, { withFileTypes: true }); }
   catch { return null; }
 
+  const deadline = Date.now() + maxMs;
+  let visited = 0;
   let best = null;
   const stack = entries.map(e => path.join(projectsDir, e.name));
   while (stack.length) {
+    if (visited > maxEntries || Date.now() >= deadline) break;
     const p = stack.pop();
     let st;
     try { st = fs.lstatSync(p); } catch { continue; }
@@ -73,8 +79,9 @@ function findRecentSession(claudeDir) {
       try {
         for (const child of fs.readdirSync(p)) stack.push(path.join(p, child));
       } catch {}
-    } else if (p.endsWith('.jsonl') && (!best || st.mtimeMs > best.mtime)) {
-      best = { file: p, mtime: st.mtimeMs };
+    } else if (p.endsWith('.jsonl')) {
+      visited++; // only session files spend the entry budget; the deadline bounds dir walks
+      if (!best || st.mtimeMs > best.mtime) best = { file: p, mtime: st.mtimeMs };
     }
   }
   return best ? best.file : null;
@@ -291,8 +298,18 @@ function formatStats({ outputTokens, cacheReadTokens, turns, mode, model, sessio
     (footer ? footer + '\n' : '');
 }
 
-function main() {
-  const args = process.argv.slice(2);
+// Error the CLI reports on stderr before exiting with `exitCode`.
+class StatsError extends Error {
+  constructor(message, exitCode) {
+    super(message);
+    this.exitCode = exitCode;
+  }
+}
+
+// Returns the text the CLI prints for `args` (process.argv.slice(2) shape).
+// Throws StatsError on the CLI's error paths. Like the CLI, it still records
+// the session snapshot in the lifetime log.
+function report(args) {
   const i = args.indexOf('--session-file');
   const sessionFileArg = i !== -1 ? args[i + 1] : null;
   const share = args.includes('--share');
@@ -301,29 +318,29 @@ function main() {
   const sinceArg = sinceIdx !== -1 ? args[sinceIdx + 1] : null;
 
   const claudeDir = process.env.CLAUDE_CONFIG_DIR || path.join(os.homedir(), '.claude');
-  const historyPath = path.join(claudeDir, '.tldr-history.jsonl');
+  // Sessions live under Claude's dir; TLDR's own state follows the flag-dir chain
+  // (--config-dir / TLDR_CONFIG_DIR), the same dir the mode flag is read from.
+  const stateDir = resolveFlagDir({ argv: args });
+  const historyPath = path.join(stateDir, '.tldr-history.jsonl');
 
   // Lifetime aggregation paths short-circuit before we need a live session.
   if (all || sinceArg) {
     const sinceMs = parseDuration(sinceArg);
     if (sinceArg && sinceMs === null) {
-      process.stderr.write(`tldr-stats: --since takes Nh or Nd (e.g. 7d, 24h), got: ${sinceArg}\n`);
-      process.exit(2);
+      throw new StatsError(`tldr-stats: --since takes Nh or Nd (e.g. 7d, 24h), got: ${sinceArg}\n`, 2);
     }
     const agg = aggregateHistory(historyPath, sinceMs);
-    process.stdout.write(formatHistory({ ...agg, since: sinceArg || null }));
-    return;
+    return formatHistory({ ...agg, since: sinceArg || null });
   }
 
   const sessionFile = sessionFileArg || findRecentSession(claudeDir);
 
   if (!sessionFile) {
-    process.stderr.write('tldr-stats: no Claude Code session found.\n');
-    process.exit(1);
+    throw new StatsError('tldr-stats: no Claude Code session found.\n', 1);
   }
 
   const parsed = parseSession(sessionFile);
-  const mode = readFlag(path.join(claudeDir, '.tldr-active'));
+  const mode = readFlag(flagPath());
 
   // Append a snapshot of this session's totals to the lifetime log. Multiple
   // /tldr-stats calls in one session emit multiple lines for the same
@@ -347,20 +364,28 @@ function main() {
     // user-owned, same symlink-clobber surface as the .tldr-active flag.
     const agg = aggregateHistory(historyPath, null);
     const suffix = agg.estSavedTokens > 0 ? `⛏ ${humanizeTokens(agg.estSavedTokens)}` : '';
-    safeWriteFlag(path.join(claudeDir, '.tldr-statusline-suffix'), suffix);
+    safeWriteFlag(path.join(stateDir, '.tldr-statusline-suffix'), suffix);
   }
 
   if (share) {
-    process.stdout.write(formatShare({ ...parsed, mode }) + '\n');
+    return formatShare({ ...parsed, mode }) + '\n';
   } else {
     const scanDirs = [claudeDir, process.cwd()].filter((d, i, a) => a.indexOf(d) === i);
     const compressed = summarizeCompressed(findCompressedPairs(scanDirs));
-    process.stdout.write(formatStats({ ...parsed, mode, sessionPath: sessionFile, compressed }));
+    return formatStats({ ...parsed, mode, sessionPath: sessionFile, compressed });
   }
 }
 
-if (require.main === module) main();
+if (require.main === module) {
+  try {
+    process.stdout.write(report(process.argv.slice(2)));
+  } catch (e) {
+    if (!(e instanceof StatsError)) throw e;
+    process.stderr.write(e.message);
+    process.exit(e.exitCode);
+  }
+}
 
 module.exports = {
-  formatStats, priceForModel, findCompressedPairs, humanizeTokens,
+  report, formatStats, priceForModel, findCompressedPairs, humanizeTokens, findRecentSession,
 };

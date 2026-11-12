@@ -35,6 +35,110 @@ function getConfigDir(app = 'tldr') {
   return path.join(os.homedir(), '.config', app);
 }
 
+// Modes handled by their own slash commands (/tldr-commit, ...): not
+// selectable via /tldr <arg>.
+const INDEPENDENT_MODES = new Set(['commit', 'review', 'compress']);
+
+const SET = (mode) => ({ action: 'set', mode });
+const CLEAR = { action: 'clear' };
+
+// Level argument of /tldr <arg> -> change, or null for an unknown arg (the
+// flag is never overwritten on a typo).
+function argToChange(arg) {
+  if (!arg) {
+    const mode = getDefaultMode();
+    // An independent default (commit/review/compress) is not a /tldr level.
+    return mode === 'off' ? CLEAR : SET(INDEPENDENT_MODES.has(mode) ? 'full' : mode);
+  }
+  if (arg === 'off' || arg === 'stop' || arg === 'disable') return CLEAR;
+  if (arg === 'wenyan-full') return SET('wenyan'); // canonical alias
+  if (VALID_MODES.includes(arg) && !INDEPENDENT_MODES.has(arg)) return SET(arg);
+  return null;
+}
+
+// The one prompt -> mode-change parser, shared by the Claude hook, the opencode
+// plugin and the Pi extension. Returns {action:'set', mode}, {action:'clear'},
+// or null when the prompt doesn't change state. Deactivation wins over any
+// activation in the same prompt.
+//
+// Agent quirks are opt-in:
+//   unwrapQuotes    opencode's non-interactive `run` wraps the message in
+//                   literal quotes ("/tldr ultra")
+//   commandTemplate opencode replaces a typed "/tldr <level>" with the command
+//                   file's body ("Activate tldr mode: <level> ...") before the
+//                   plugin sees it; that body also contains "stop tldr" and
+//                   "normal mode", so the template is recognised first
+function parseModeChange(promptRaw, { unwrapQuotes = false, commandTemplate = false } = {}) {
+  let prompt = String(promptRaw || '').trim();
+  if (unwrapQuotes) {
+    const wrapped = /^(["'`])([\s\S]*)\1$/.exec(prompt);
+    if (wrapped) prompt = wrapped[2].trim();
+  }
+  prompt = prompt.toLowerCase();
+  if (!prompt) return null;
+
+  if (commandTemplate) {
+    const tpl = /^activate tldr mode:[ \t]*(\S*)/.exec(prompt);
+    if (tpl) {
+      if (tpl[1] === 'tldr') return SET('full');
+      return argToChange(tpl[1]) || argToChange('');
+    }
+  }
+
+  let change = null;
+
+  // Natural-language activation ("activate TLDR", "talk like tldr").
+  // "tldr" must be the object of the verb ("start tldr", "activate tldr mode"),
+  // not a modifier inside a longer request ("start the tldr docs review").
+  if ((/\b(activate|enable|turn on|start|talk like)\s+(the\s+)?tldr(\s+mode)?\s*[.!?]*(\s+please)?\s*$/.test(prompt) ||
+       /^(tldr\s+mode|tldr\s+on)\b/.test(prompt) ||
+       /\btldr\s+mode\s+(on|please)\b/.test(prompt)) &&
+      !/\b(stop|disable|turn off|deactivate)\b/.test(prompt)) {
+    const mode = getDefaultMode();
+    if (mode !== 'off') change = SET(INDEPENDENT_MODES.has(mode) ? 'full' : mode);
+  }
+
+  if (prompt.startsWith('/tldr')) {
+    const parts = prompt.split(/\s+/);
+    // Marketplace installs namespace commands: "/tldr:tldr ultra".
+    const cmd = parts[0].replace(/^\/tldr:/, '/');
+    if (cmd === '/tldr-commit') change = SET('commit');
+    else if (cmd === '/tldr-review') change = SET('review');
+    else if (cmd === '/tldr-compress') change = SET('compress');
+    else if (cmd === '/tldr') change = argToChange(parts[1] || '') || change;
+  }
+
+  if (/\b(stop|disable|deactivate|turn off)\b.*\btldr\b/.test(prompt) ||
+      /\btldr\b.*\b(stop|disable|deactivate|turn off)\b/.test(prompt) ||
+      /^(?:back to |switch to |go to |return to )?normal mode\b/.test(prompt)) {
+    change = CLEAR;
+  }
+  return change;
+}
+
+// Where the mode flag (.tldr-active) lives for the current agent. One chain
+// for every hook, plugin and reader:
+//   --config-dir=<dir>  >  TLDR_CONFIG_DIR  >  CLAUDE_CONFIG_DIR  >  fallback
+// `fallback` defaults to ~/.claude; Pi passes its own agent dir.
+function resolveFlagDir({ argv = process.argv, env = process.env, fallback } = {}) {
+  const hit = argv.find(a => typeof a === 'string' && a.startsWith('--config-dir='));
+  return (hit ? hit.slice('--config-dir='.length) : '')
+    || env.TLDR_CONFIG_DIR
+    || env.CLAUDE_CONFIG_DIR
+    || fallback
+    || path.join(os.homedir(), '.claude');
+}
+
+function flagPath(opts) {
+  return path.join(resolveFlagDir(opts), '.tldr-active');
+}
+
+// Remove the flag. unlink never follows a symlink, so a planted link is removed
+// without touching its target. Silent on any error — the flag is best-effort.
+function clearFlag(p) {
+  try { fs.unlinkSync(p); } catch (e) { /* missing or unremovable */ }
+}
+
 function getConfigPath() {
   return path.join(getConfigDir(), 'config.json');
 }
@@ -310,4 +414,4 @@ function readHistory(filePath) {
   }
 }
 
-module.exports = { getDefaultMode, getConfigDir, getConfigPath, findRepoConfigPath, VALID_MODES, safeWriteFlag, readFlag, appendFlag, readHistory };
+module.exports = { parseModeChange, INDEPENDENT_MODES, getDefaultMode, getConfigDir, resolveFlagDir, flagPath, clearFlag, getConfigPath, findRepoConfigPath, VALID_MODES, safeWriteFlag, readFlag, appendFlag, readHistory };

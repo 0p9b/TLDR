@@ -24,66 +24,83 @@ function loadShared(name) {
   for (const rel of [join('lib', name), join('..', '..', 'hooks', name)]) {
     try { return require(join(here, rel)); } catch (e) { /* try next */ }
   }
-  return null;
+  // A missing shared module means a broken install: fail loudly at load time
+  // instead of running with silently different behavior.
+  throw new Error(`TLDR Pi extension: shared module ${name} not found next to ${here}`);
 }
 
 const config = loadShared('tldr-config.js');
 const instructions = loadShared('tldr-instructions.js');
 
-const VALID = new Set(config ? config.VALID_MODES : ['lite', 'full', 'ultra', 'wenyan']);
-const DEACTIVATE = /^\s*(stop tldr|normal mode|deactivate tldr)\s*$/i;
-
 export default function tldrExtension(pi) {
   // Pi keeps one process per session, so module state is session state.
-  let mode = config ? config.getDefaultMode() : 'full';
+  let mode = config.getDefaultMode();
 
-  const flagPath = () => {
-    const dir = process.env.TLDR_CONFIG_DIR || join(here, '..', '..');
-    return join(dir, '.tldr-active');
-  };
+  // Pi's own agent dir is the fallback; TLDR_CONFIG_DIR still wins.
+  const flagPath = () => join(
+    process.env.TLDR_CONFIG_DIR || join(here, '..', '..'),
+    '.tldr-active'
+  );
 
   function persist(next) {
     mode = next;
     // Best-effort: the statusline and other agents read this flag. A failure to
     // write must never break the session.
     try {
-      if (next === 'off') return;
-      if (config && config.safeWriteFlag) config.safeWriteFlag(flagPath(), next);
+      if (next === 'off') config.clearFlag(flagPath());
+      else config.safeWriteFlag(flagPath(), next);
     } catch (e) { /* non-fatal */ }
   }
 
   pi.registerCommand('tldr', {
-    description: 'Set TLDR mode: lite|full|ultra|wenyan|off (no arg = full)',
+    description: 'Set TLDR mode: lite|full|ultra|wenyan|off (no arg = default)',
     handler: async (args, ctx) => {
       const arg = String(args || '').trim().toLowerCase();
       if (arg === 'status') {
         ctx?.ui?.notify?.(`TLDR: ${mode}`, 'info');
         return;
       }
-      const next = arg === '' ? 'full' : arg;
-      if (next !== 'off' && !VALID.has(next)) {
-        ctx?.ui?.notify?.(`TLDR: unknown mode "${next}"`, 'error');
+      const change = config.parseModeChange(`/tldr ${arg}`);
+      if (!change) {
+        ctx?.ui?.notify?.(`TLDR: unknown mode "${arg}"`, 'error');
         return;
       }
-      persist(next);
-      ctx?.ui?.notify?.(next === 'off' ? 'TLDR off' : `TLDR: ${next}`, 'info');
+      persist(change.action === 'clear' ? 'off' : change.mode);
+      ctx?.ui?.notify?.(mode === 'off' ? 'TLDR off' : `TLDR: ${mode}`, 'info');
     },
   });
 
-  // Natural-language deactivation, matching the other agents' mode tracker.
+  // /tldr-stats: the Claude hook's report() reads Claude Code session logs and
+  // writes into Claude's state dir. Pi sessions are not those logs, so report()
+  // would show someone else's numbers. Answer with a short message instead.
+  pi.registerCommand('tldr-stats', {
+    description: 'TLDR token stats (Claude Code only; not available in Pi)',
+    handler: async (_args, ctx) => {
+      ctx?.ui?.notify?.(
+        'TLDR: /tldr-stats reads Claude Code session logs, which Pi does not write. Not available in Pi.',
+        'info'
+      );
+    },
+  });
+
+  // Natural-language toggles, resolved by the same parser as the other agents.
   pi.on('input', async (event) => {
     if (event?.source === 'extension') return;
-    if (mode !== 'off' && DEACTIVATE.test(String(event?.text || ''))) persist('off');
+    const change = config.parseModeChange(String(event?.text || ''));
+    if (!change) return;
+    const next = change.action === 'clear' ? 'off' : change.mode;
+    if (next !== mode) persist(next);
   });
 
   pi.on('session_start', async (_event, ctx) => {
-    mode = config ? config.getDefaultMode() : 'full';
+    mode = config.getDefaultMode();
+    persist(mode); // keep the shared flag in step with the injected mode
     if (mode !== 'off') ctx?.ui?.notify?.(`TLDR loaded: ${mode}`, 'info');
   });
 
   // The actual injection. Append so we never clobber Pi's own system prompt.
   pi.on('before_agent_start', async (event) => {
-    if (!mode || mode === 'off' || !instructions) return;
+    if (!mode || mode === 'off') return;
     const base = event?.systemPrompt ? `${event.systemPrompt}\n\n` : '';
     return { systemPrompt: `${base}${instructions.getInstructions(mode)}` };
   });

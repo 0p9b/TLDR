@@ -34,7 +34,7 @@
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { existsSync, unlinkSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 
@@ -65,91 +65,31 @@ function loadConfig() {
 }
 const config = loadConfig();
 
-const { getDefaultMode, safeWriteFlag, readFlag, VALID_MODES } = config;
-
-// Modes handled by independent skills — not selectable via /tldr <arg>.
-const INDEPENDENT_MODES = new Set(['commit', 'review', 'compress']);
+const { getDefaultMode, safeWriteFlag, readFlag, clearFlag, INDEPENDENT_MODES } = config;
 
 const flagPath = join(config.getConfigDir('opencode'), '.tldr-active');
 
-// Parse a prompt for slash-command activation or natural-language toggles.
-// Returns the new mode to write, the literal string 'off' to deactivate, or
-// null when the prompt doesn't change state. Mirrors tldr-mode-tracker.js.
-function parseModeChange(promptRaw) {
-  let prompt = (promptRaw || '').trim();
-  // opencode's non-interactive `run` path delivers the message wrapped in
-  // literal quote characters ("/tldr ultra"\n) — unwrap symmetric quotes
-  // so the slash-command branch still matches.
-  const wrapped = /^(["'`])([\s\S]*)\1$/.exec(prompt);
-  if (wrapped) prompt = wrapped[2].trim();
-  prompt = prompt.toLowerCase();
-  if (!prompt) return null;
+// opencode quirks (quote-wrapped `run` input, expanded command template) are
+// opt-in flags on the shared parser in tldr-config.js.
+const parseModeChange = (prompt) =>
+  config.parseModeChange(prompt, { unwrapQuotes: true, commandTemplate: true });
 
-  // Expanded /tldr command template. opencode replaces a typed
-  // "/tldr <level>" with the command file's body ("Activate tldr mode:
-  // $ARGUMENTS ...") before chat.message fires, so the literal slash-command
-  // branch below never sees it — recover the level argument from the
-  // template's first line instead. Must run FIRST: the template body also
-  // contains the phrases "stop tldr" and "normal mode", which would
-  // otherwise trip the deactivation regexes and turn every /tldr command
-  // into a deactivation.
-  const tpl = /^activate tldr mode:[ \t]*(\S*)/.exec(prompt);
-  if (tpl) {
-    const arg = tpl[1] || '';
-    if (arg === 'off' || arg === 'stop' || arg === 'disable') return 'off';
-    if (arg === 'tldr') return 'full';
-    if (arg === 'wenyan-full') return 'wenyan';
-    if (VALID_MODES.includes(arg) && !INDEPENDENT_MODES.has(arg)) return arg;
-    return getDefaultMode();
-  }
+// /tldr-stats: matches the typed command (optionally quote-wrapped by `run`)
+// and the expanded command body, which opencode substitutes for the command
+// before chat.message fires (see commands/tldr-stats.md).
+const STATS_RE = /^(\/tldr(?::tldr)?-stats\b|show tldr stats\b)/;
+const STATS_UNAVAILABLE = 'TLDR stats are not available in opencode: they read Claude Code session logs only.';
+const STATS_REPLY = 'Reply with exactly this text and nothing else:\n' + STATS_UNAVAILABLE;
 
-  // Natural-language deactivation — checked before activation so "stop talking
-  // like TLDR" doesn't trip the activation regex.
-  if (/\b(stop|disable|deactivate|turn off)\b.*\btldr\b/i.test(prompt) ||
-      /\btldr\b.*\b(stop|disable|deactivate|turn off)\b/i.test(prompt) ||
-      /\bnormal mode\b/i.test(prompt)) {
-    return 'off';
-  }
-
-  // Natural-language activation
-  if (/\b(activate|enable|turn on|start|talk like)\b.*\btldr\b/i.test(prompt) ||
-      /\btldr\b.*\b(mode|activate|enable|turn on|start)\b/i.test(prompt)) {
-    const mode = getDefaultMode();
-    return mode === 'off' ? null : mode;
-  }
-
-  // Slash-command parsing — opencode also expands command files, but if the
-  // user types the literal slash command we still want to flip the flag.
-  if (prompt.startsWith('/tldr')) {
-    const parts = prompt.split(/\s+/);
-    const cmd = parts[0];
-    const arg = parts[1] || '';
-
-    if (cmd === '/tldr-commit')   return 'commit';
-    if (cmd === '/tldr-review')   return 'review';
-    if (cmd === '/tldr-compress') return 'compress';
-
-    if (cmd === '/tldr') {
-      if (!arg)                                     return getDefaultMode();
-      if (arg === 'off' || arg === 'stop' || arg === 'disable') return 'off';
-      if (arg === 'tldr')                                      return 'full';
-      if (arg === 'wenyan-full')                   return 'wenyan';
-      if (VALID_MODES.includes(arg) && !INDEPENDENT_MODES.has(arg)) return arg;
-      // Unknown arg — leave flag alone. No silent overwrite.
-      return null;
-    }
-  }
-
-  return null;
+function isStatsCommand(text) {
+  const t = String(text).trim().replace(/^(["'`])([\s\S]*)\1$/, '$2').trim().toLowerCase();
+  return STATS_RE.test(t);
 }
 
-function applyModeChange(mode) {
-  if (!mode) return;
-  if (mode === 'off') {
-    try { if (existsSync(flagPath)) unlinkSync(flagPath); } catch (e) {}
-    return;
-  }
-  safeWriteFlag(flagPath, mode);
+function applyModeChange(change) {
+  if (!change) return;
+  if (change.action === 'clear') clearFlag(flagPath);
+  else safeWriteFlag(flagPath, change.mode);
 }
 
 // Session-start logic — extracted so the `event` dispatcher drives one shared
@@ -158,7 +98,7 @@ function applyModeChange(mode) {
 function handleSessionCreated() {
   const mode = getDefaultMode();
   if (mode === 'off') {
-    try { if (existsSync(flagPath)) unlinkSync(flagPath); } catch (e) {}
+    clearFlag(flagPath);
     return;
   }
   safeWriteFlag(flagPath, mode);
@@ -190,6 +130,13 @@ export const TldrPlugin = async (_ctx) => {
     if (!output || !output.parts) return;
     for (const part of output.parts) {
       if (part && part.type === 'text' && part.text) {
+        if (isStatsCommand(part.text)) {
+          // opencode cannot block a prompt from a plugin, so the stats request
+          // is rewritten to a fixed reply. The stats module is not run here:
+          // it only reads Claude Code session logs, not opencode sessions.
+          part.text = STATS_REPLY;
+          continue;
+        }
         const change = parseModeChange(part.text);
         if (change) applyModeChange(change);
       }

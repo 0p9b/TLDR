@@ -45,7 +45,8 @@ console.log('tldr-mode-tracker stdin error handling\n');
 // event that fires is the injected 'error' — isolating the handler under test.
 function runWithStdinError() {
   const harness =
-    `require(${JSON.stringify(HOOK_PATH)});` +
+    // isMain=true: the stdin wiring only starts when the hook is the entry script.
+    `require('module')._load(${JSON.stringify(HOOK_PATH)}, null, true);` +
     `setImmediate(() => process.stdin.emit('error', new Error('EPIPE (simulated)')));`;
   return spawnSync(process.execPath, ['-e', harness], {
     stdio: ['pipe', 'ignore', 'pipe'],

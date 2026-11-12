@@ -463,5 +463,71 @@ test('mode tracker forwards --share to stats script', (tmp) => {
   assert.match(parsed.reason, /^🦉 Saved 650 output tokens/);
 });
 
+test('report() returns the same text the CLI prints for a session file', (tmp) => {
+  const sess = makeSession(tmp, [
+    { type: 'assistant', message: { model: 'claude-sonnet-4-20250514', usage: { output_tokens: 350, cache_read_input_tokens: 40 } } },
+  ]);
+  const claudeDir = path.join(tmp, '.claude');
+  fs.writeFileSync(path.join(claudeDir, '.tldr-active'), 'full');
+  const env = { ...process.env, CLAUDE_CONFIG_DIR: claudeDir };
+  delete env.TLDR_CONFIG_DIR;
+  const { report } = require(STATS);
+  // report() reads the config dir from process.env at call time.
+  const prev = { TLDR_CONFIG_DIR: process.env.TLDR_CONFIG_DIR, CLAUDE_CONFIG_DIR: process.env.CLAUDE_CONFIG_DIR };
+  delete process.env.TLDR_CONFIG_DIR;
+  process.env.CLAUDE_CONFIG_DIR = claudeDir;
+  try {
+    for (const extra of [[], ['--share']]) {
+      const cli = execFileSync(process.execPath, [STATS, '--session-file', sess, ...extra], { encoding: 'utf8', env });
+      assert.ok(cli.trim(), 'CLI printed nothing');
+      assert.strictEqual(report(['--session-file', sess, ...extra]), cli);
+    }
+  } finally {
+    for (const [k, v] of Object.entries(prev)) {
+      if (v === undefined) delete process.env[k]; else process.env[k] = v;
+    }
+  }
+});
+
+test('findRecentSession stops at the entry budget and the deadline', (tmp) => {
+  const { findRecentSession } = require(STATS);
+  const claudeDir = path.join(tmp, '.claude');
+  const projDir = path.join(claudeDir, 'projects', 'p');
+  fs.mkdirSync(projDir, { recursive: true });
+  fs.writeFileSync(path.join(projDir, 's1.jsonl'), '{}');
+  fs.writeFileSync(path.join(projDir, 's2.jsonl'), '{}');
+  // Sanity: unbounded scan finds a session.
+  assert.ok(findRecentSession(claudeDir), 'default scan should find a session');
+  // Only session files spend the budget, so a tiny budget still returns the best seen so far.
+  assert.ok(findRecentSession(claudeDir, { maxEntries: 1 }), 'budget stops the scan but keeps the best candidate');
+  // A zero-ms deadline has already passed before the first visit.
+  assert.strictEqual(findRecentSession(claudeDir, { maxMs: 0 }), null);
+});
+
+test('findRecentSession with default limits returns the newest session', (tmp) => {
+  const { findRecentSession } = require(STATS);
+  const claudeDir = path.join(tmp, '.claude');
+  const oldFile = path.join(claudeDir, 'projects', 'a', 'old.jsonl');
+  const newFile = path.join(claudeDir, 'projects', 'b', 'deep', 'new.jsonl');
+  fs.mkdirSync(path.dirname(oldFile), { recursive: true });
+  fs.mkdirSync(path.dirname(newFile), { recursive: true });
+  fs.writeFileSync(oldFile, '{}');
+  fs.writeFileSync(newFile, '{}');
+  const now = Date.now() / 1000;
+  fs.utimesSync(oldFile, now - 1000, now - 1000);
+  fs.utimesSync(newFile, now, now);
+  assert.strictEqual(findRecentSession(claudeDir), newFile);
+});
+
+test('findRecentSession: many empty dirs do not hide the newest session', (tmp) => {
+  const { findRecentSession } = require(STATS);
+  const claudeDir = path.join(tmp, '.claude');
+  const f = path.join(claudeDir, 'projects', '-a', 'new.jsonl');
+  fs.mkdirSync(path.dirname(f), { recursive: true });
+  fs.writeFileSync(f, '{}');
+  for (let i = 0; i < 2100; i++) fs.mkdirSync(path.join(claudeDir, 'projects', '-z', 'd' + i), { recursive: true });
+  assert.strictEqual(findRecentSession(claudeDir), f);
+});
+
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);
