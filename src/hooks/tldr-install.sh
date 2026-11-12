@@ -37,7 +37,7 @@ HOOKS_DIR="$CLAUDE_DIR/hooks"
 SETTINGS="$CLAUDE_DIR/settings.json"
 REPO_URL="https://raw.githubusercontent.com/0p9b/TLDR/main/src/hooks"
 
-HOOK_FILES=("package.json" "tldr-config.js" "tldr-activate.js" "tldr-mode-tracker.js" "tldr-stats.js" "tldr-statusline.sh" "tldrcrew-model-overrides.js")
+HOOK_FILES=("package.json" "tldr-config.js" "tldr-instructions.js" "tldr-activate.js" "tldr-mode-tracker.js" "tldr-stats.js" "tldr-statusline.sh" "tldr-statusline.ps1" "tldrcrew-model-overrides.js")
 
 # Resolve source — works from repo clone or curl pipe
 SCRIPT_DIR=""
@@ -128,14 +128,14 @@ for hook in "${HOOK_FILES[@]}"; do
       CHECKSUMS_TRIED=1
       CHECKSUMS="$(curl -fsSL --proto '=https' --tlsv1.2 "$REPO_URL/checksums.sha256" 2>/dev/null || true)"
     fi
-    if [ -n "$CHECKSUMS" ]; then
-      want="$(printf '%s\n' "$CHECKSUMS" | awk -v h="$hook" '$2 ~ ("(^|/)" h "$") {print $1; exit}')"
-      got="$(sha256_of "$HOOKS_DIR/$hook")"
-      if [ -n "$want" ] && [ -n "$got" ] && [ "$want" != "$got" ]; then
-        rm -f "$HOOKS_DIR/$hook"
-        echo "  Integrity check failed for $hook (expected $want, got $got) — aborting." >&2
-        exit 1
-      fi
+    # Fail closed: no manifest, no manifest entry, or no hasher means no install.
+    want=""
+    [ -n "$CHECKSUMS" ] && want="$(printf '%s\n' "$CHECKSUMS" | awk -v h="$hook" '$2 ~ ("(^|/)" h "$") {print $1; exit}')"
+    got="$(sha256_of "$HOOKS_DIR/$hook")"
+    if [ -z "$want" ] || [ -z "$got" ] || [ "$want" != "$got" ]; then
+      rm -f "$HOOKS_DIR/$hook"
+      echo "  Integrity check failed for $hook (expected ${want:-<none>}, got ${got:-<none>}) — aborting." >&2
+      exit 1
     fi
   fi
   echo "  Installed: $HOOKS_DIR/$hook"

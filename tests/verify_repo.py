@@ -139,9 +139,14 @@ def verify_synced_files() -> None:
 
 def verify_hook_checksums() -> None:
     section("Hook Checksums")
+    for sub in ("hooks", "tools"):
+        _verify_manifest(sub)
 
-    manifest = ROOT / "src" / "hooks" / "checksums.sha256"
-    ensure(manifest.exists(), "src/hooks/checksums.sha256 missing (hook integrity manifest)")
+
+def _verify_manifest(sub: str) -> None:
+    rel = f"src/{sub}/checksums.sha256"
+    manifest = ROOT / "src" / sub / "checksums.sha256"
+    ensure(manifest.exists(), f"{rel} missing (integrity manifest)")
 
     listed: dict[str, str] = {}
     for line in manifest.read_text(encoding="utf-8").splitlines():
@@ -149,21 +154,21 @@ def verify_hook_checksums() -> None:
         if not line:
             continue
         parts = line.split(None, 1)
-        ensure(len(parts) == 2, f"malformed checksums.sha256 line: {line!r}")
+        ensure(len(parts) == 2, f"malformed {rel} line: {line!r}")
         digest, name = parts[0], parts[1].lstrip("*").strip()
         listed[name] = digest.lower()
 
     for name, want in listed.items():
-        target = ROOT / "src" / "hooks" / name
-        ensure(target.exists(), f"checksums.sha256 lists a missing file: {name}")
+        target = ROOT / "src" / sub / name
+        ensure(target.exists(), f"{rel} lists a missing file: {name}")
         actual = hashlib.sha256(target.read_bytes()).hexdigest()
         ensure(
             actual == want,
-            f"checksums.sha256 is stale for {name}: recorded {want}, actual {actual}. "
-            f"Regenerate: cd src/hooks && sha256sum {' '.join(listed)} > checksums.sha256",
+            f"{rel} is stale for {name}: recorded {want}, actual {actual}. "
+            f"Regenerate: cd src/{sub} && sha256sum {' '.join(listed)} > checksums.sha256",
         )
 
-    print(f"src/hooks/checksums.sha256 verified ({len(listed)} hook file(s))")
+    print(f"{rel} verified ({len(listed)} file(s))")
 
 
 def verify_manifests_and_syntax() -> None:

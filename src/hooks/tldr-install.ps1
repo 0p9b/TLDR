@@ -24,7 +24,7 @@ $HooksDir = Join-Path $ClaudeDir "hooks"
 $Settings = Join-Path $ClaudeDir "settings.json"
 $RepoUrl = "https://raw.githubusercontent.com/0p9b/TLDR/main/src/hooks"
 
-$HookFiles = @("package.json", "tldr-config.js", "tldr-activate.js", "tldr-mode-tracker.js", "tldr-stats.js", "tldr-statusline.sh", "tldr-statusline.ps1", "tldrcrew-model-overrides.js")
+$HookFiles = @("package.json", "tldr-config.js", "tldr-instructions.js", "tldr-activate.js", "tldr-mode-tracker.js", "tldr-stats.js", "tldr-statusline.sh", "tldr-statusline.ps1", "tldrcrew-model-overrides.js")
 
 # Resolve source — works from repo clone or remote
 $ScriptDir = if ($PSScriptRoot) { $PSScriptRoot } else { $null }
@@ -90,7 +90,9 @@ if (-not (Test-Path $HooksDir)) {
     New-Item -ItemType Directory -Path $HooksDir -Force | Out-Null
 }
 
-# 2. Copy or download hook files
+# 2. Copy or download hook files. Downloads are verified against the published
+# SHA-256 manifest (checksums.sha256); no manifest or a mismatch aborts.
+$Checksums = $null
 foreach ($hook in $HookFiles) {
     $dest = Join-Path $HooksDir $hook
     $localSource = if ($ScriptDir) { Join-Path $ScriptDir $hook } else { $null }
@@ -99,6 +101,24 @@ foreach ($hook in $HookFiles) {
         Copy-Item $localSource $dest -Force
     } else {
         Invoke-WebRequest -Uri "$RepoUrl/$hook" -OutFile $dest -UseBasicParsing -MaximumRedirection 0
+        if ($null -eq $Checksums) {
+            $Checksums = @{}
+            try {
+                $manifest = (Invoke-WebRequest -Uri "$RepoUrl/checksums.sha256" -UseBasicParsing -MaximumRedirection 0).Content
+                foreach ($line in ($manifest -split "`n")) {
+                    if ($line.Trim() -match '^([0-9a-fA-F]{64})\s+\*?(.+)$') {
+                        $Checksums[(Split-Path -Leaf $Matches[2].Trim())] = $Matches[1].ToLower()
+                    }
+                }
+            } catch { }
+        }
+        $want = $Checksums[$hook]
+        $got = (Get-FileHash -Algorithm SHA256 -Path $dest).Hash.ToLower()
+        if (-not $want -or $want -ne $got) {
+            Remove-Item $dest -Force -ErrorAction SilentlyContinue
+            Write-Error "Integrity check failed for $hook (expected $want, got $got) - aborting."
+            exit 1
+        }
     }
     Write-Host "  Installed: $dest"
 }
