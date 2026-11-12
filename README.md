@@ -126,7 +126,7 @@ tldr update                 # or: node bin/install.js update
 tldr update --check         # report available update only
 ```
 
-Refreshes the git tree (local clone or `~/.tldr/src`), then reinstalls agent hooks/skills. Details: **[docs/INSTALL.md § Updating](docs/INSTALL.md#updating)**. Slash: `/tldr-update`.
+Refreshes the git tree (local clone or `~/.tldr/src`), then reinstalls agent hooks/skills. Details: **[docs/INSTALL.md § Updating](docs/INSTALL.md#updating)**.
 
 ## Verify (prompt install)
 

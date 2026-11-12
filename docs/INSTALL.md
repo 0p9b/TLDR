@@ -177,7 +177,7 @@ cat "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/.tldr-active"
 
 If it's missing or empty, the SessionStart hook didn't fire. See troubleshooting below.
 
-Statusline should show `[TLDR]` (orange) at the bottom of Claude Code. After your first `/tldr-stats` run it appends a savings counter like `[TLDR] ⛏ 12.4k`.
+Statusline should show `[TLDR]` (orange) at the bottom of Claude Code.
 
 ## Updating
 

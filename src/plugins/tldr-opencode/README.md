@@ -10,7 +10,7 @@ opencode's `event` dispatcher, `chat.message`, and
 |---|---|
 | `plugin.js` | ESM Bun module. Default-exports an opencode `Plugin` factory. |
 | `package.json` | Marks the directory as ESM so Bun loads `plugin.js` correctly. |
-| `commands/*.md` | Six slash-command prompt templates (`/tldr`, `/tldr-commit`, …). |
+| `commands/*.md` | The `/tldr` slash-command prompt template. |
 
 The installer (`bin/install.js --only opencode`) copies these alongside
 `src/hooks/tldr-config.js` (for the symlink-safe flag-write helpers, renamed
@@ -25,8 +25,8 @@ to `tldr-config.cjs` because this directory is `"type": "module"`) into
   `safeWriteFlag` helper Claude Code uses (O_NOFOLLOW, atomic temp+rename,
   0600 perms, symlink refusal, ownership check). Also asserted once at
   plugin factory time so one-shot `opencode run` sessions are covered.
-- `chat.message` → flips the flag in response to `/tldr[ <level>]`,
-  `/tldr-commit`, `/tldr-review`, `/tldr-compress` (typed literally or
+- `chat.message` → flips the flag in response to `/tldr[ <level>]`
+  (typed literally or
   expanded by the TUI into the command template), and natural language
   ("turn on TLDR", "stop tldr", "normal mode").
 - `experimental.chat.system.transform` → when a non-independent mode is

@@ -14,8 +14,7 @@ TLDR like simple. Small focused PR > big rewrite.
 
 ## Quick orientation
 
-The repo distributes one skill (`tldr`) plus a handful of sub-skills
-(tldr-commit, tldr-review, tldr-compress, tldrcrew-*) to many
+The repo distributes one skill (`tldr`) and one command (`/tldr`) to many
 agents through different distribution mechanisms (Claude Code plugin, Codex
 plugin, Gemini extension, Cursor/Windsurf/Cline rule files, `npx skills` for
 the long tail). A single Node installer at `bin/install.js` detects which
@@ -32,11 +31,6 @@ copies, and the installer reads them directly.
 | I want to change... | Edit this file |
 |---|---|
 | TLDR behavior (intensity levels, voice, rules) | `skills/tldr/SKILL.md` |
-| TLDR commit-message format | `skills/tldr-commit/SKILL.md` |
-| TLDR code-review format | `skills/tldr-review/SKILL.md` |
-| TLDR compress logic | `skills/tldr-compress/SKILL.md` and `skills/tldr-compress/scripts/` |
-| TLDR quick-reference card | `skills/tldr-help/SKILL.md` |
-| tldrcrew decision guide (when to delegate to subagents) | `skills/tldrcrew/SKILL.md` |
 | tldrcrew subagent definitions | `agents/tldrcrew-investigator.md`, `agents/tldrcrew-builder.md`, `agents/tldrcrew-reviewer.md` |
 | Auto-activation rule body (Cursor/Windsurf/Cline/Copilot) | `src/rules/tldr-activate.md` |
 | Add support for a new agent | `bin/install.js` (PROVIDERS array) |
@@ -141,7 +135,7 @@ relabel another project's data.
 
 ## Pull-request guidelines
 
-- **Conventional Commits** for the commit subject. See `skills/tldr-commit/SKILL.md` for the format we use here.
+- **Conventional Commits** for the commit subject.
 - **One concern per PR.** A README copy-edit and an installer fix go in separate PRs.
 - **Update `package.json` `files`** if you add a new top-level directory the installer needs to ship to npm. Files outside that array don't get published.
 - **Show before/after** for prose changes to any `SKILL.md`. One sentence on why the new wording is better.

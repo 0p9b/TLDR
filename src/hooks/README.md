@@ -77,8 +77,6 @@ fi
 Badge examples:
 - `/tldr` → `[TLDR]`
 - `/tldr ultra` → `[TLDR:ULTRA]`
-- `/tldr-commit` → `[TLDR:COMMIT]`
-- `/tldr-review` → `[TLDR:REVIEW]`
 
 ## How It Works
 

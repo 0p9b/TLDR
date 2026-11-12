@@ -12,7 +12,6 @@ const { pathToFileURL } = require('url');
 
 const REPO_ROOT = path.resolve(__dirname, '..');
 const PLUGIN = path.join(REPO_ROOT, 'src', 'plugins', 'tldr-opencode', 'plugin.js');
-const STATS_TEMPLATE = path.join(REPO_ROOT, 'src', 'plugins', 'tldr-opencode', 'commands', 'tldr-stats.md');
 
 const sandbox = fs.mkdtempSync(path.join(os.tmpdir(), 'tldr-ocstats-'));
 const xdg = path.join(sandbox, 'xdg');
@@ -72,13 +71,6 @@ function resetFlag() {
       await chat({}, out);
       assert.ok(out.parts[0].text.includes(STATS_REPLY_TEXT), `not intercepted: ${text}`);
     }
-  });
-
-  await test('expanded command template (commands/tldr-stats.md body) is intercepted', async () => {
-    const body = fs.readFileSync(STATS_TEMPLATE, 'utf8').replace(/^---[\s\S]*?---\n/, '');
-    const out = msg(body);
-    await chat({}, out);
-    assert.ok(out.parts[0].text.includes(STATS_REPLY_TEXT), 'template body not intercepted');
   });
 
   await test('stats interception never changes the mode flag', async () => {

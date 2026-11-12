@@ -27,9 +27,7 @@ Once installed, nothing in TLDR touches the network. Verified against the code (
 
 - **The skill itself** (`skills/tldr/SKILL.md`) is a markdown prompt. It contains no code.
 - **The hooks** (`src/hooks/*.js`, statusline scripts) are local Node/shell scripts. They read and write local files only (flag file, session log, statusline savings file). No `http`/`https`/`fetch` anywhere in them.
-- **`/tldr-stats`** reads Claude Code's session JSONL from your local disk and prints counts. USD figures come from pricing constants hardcoded in the script. Nothing leaves your machine.
 - **`tldr-shrink`** (MCP middleware) spawns the MCP server *you* configure, locally, and compresses its output in-process. It makes no network calls of its own; any network activity belongs to the server you wrapped.
-- **`/tldr-compress`** rewrites a local file you name and saves a `.original.md` backup next to it. Local file I/O only.
 
 ### At install time: exactly these network requests, nothing else
 
@@ -41,7 +39,7 @@ Nothing is uploaded in any of these steps. Details and the full list of paths wr
 
 ### What stays on your machine
 
-Everything. Skill/rule files in your agents' config dirs, the mode flag file and merged `settings.json` under `~/.claude/` (or `$CLAUDE_CONFIG_DIR`), the lifetime-savings statusline file, Hermes `SOUL.md` + `~/.hermes/skills/productivity/` skill copies, and `.original.md` backups from `/tldr-compress`. Uninstall removes what the installer wrote: `npx -y github:0p9b/TLDR -- --uninstall`.
+Everything. Skill/rule files in your agents' config dirs, the mode flag file and merged `settings.json` under `~/.claude/` (or `$CLAUDE_CONFIG_DIR`), the lifetime-savings statusline file, Hermes `SOUL.md` + `~/.hermes/skills/productivity/` skill copies. Uninstall removes what the installer wrote: `npx -y github:0p9b/TLDR -- --uninstall`.
 
 ### Enterprise / air-gapped use
 
@@ -50,4 +48,3 @@ TLDR is self-contained after install and fully functional offline. There is no l
 ## About scanner warnings
 
 - **Windows Defender / SmartScreen on `install.ps1`:** piping a script from the internet into `iex` and writing into agent config directories matches generic dropper heuristics, so AV tools may warn. The script is short and readable in this repo; the hook files it installs are SHA-256-verified against the pinned release manifest. If you'd rather not pipe-to-shell, clone the repo and run `node bin/install.js` — same result, fully inspectable first.
-- **Risk scoring on `tldr-compress`:** the compress skill instructs the agent to read a file you name, rewrite it in place, and save a backup. In-place file rewriting is exactly what generic risk scoring flags. It is a real capability, not hidden — but there is no network access, no shell execution beyond what's documented in [`skills/tldr-compress/`](../skills/tldr-compress/), and it never touches files you didn't name.

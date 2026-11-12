@@ -18,10 +18,10 @@ function load(ext) {
   return reg;
 }
 
-test('registers the /tldr and /tldr-stats commands and the three events it needs', async () => {
+test('registers the /tldr command and the three events it needs', async () => {
   const { default: ext } = await import(extUrl);
   const reg = load(ext);
-  assert.deepEqual(Object.keys(reg.cmds), ['tldr', 'tldr-stats']);
+  assert.deepEqual(Object.keys(reg.cmds), ['tldr']);
   for (const ev of ['input', 'session_start', 'before_agent_start']) {
     assert.equal(typeof reg.on[ev], 'function', `missing handler: ${ev}`);
   }
@@ -106,15 +106,3 @@ test('session_start writes the flag so it matches the injected mode', async () =
   assert.equal(fs.readFileSync(flag, 'utf8'), 'full');
 });
 
-test('/tldr-stats says it is unavailable in Pi instead of reading Claude logs', async () => {
-  const { default: ext } = await import(extUrl);
-  const reg = load(ext);
-  const notes = [];
-  await reg.cmds['tldr-stats'].handler('', { ui: { notify: (m, lvl) => notes.push([m, lvl]) } });
-  assert.equal(notes.length, 1);
-  assert.match(notes[0][0], /Claude Code session logs/);
-  assert.match(notes[0][0], /Not available in Pi/);
-  assert.equal(notes[0][1], 'info');
-  // No ctx at all must not throw either.
-  await reg.cmds['tldr-stats'].handler('--all');
-});

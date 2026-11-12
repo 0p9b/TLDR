@@ -81,10 +81,6 @@ for (const prov of NATIVE) {
       assert.ok(fs.existsSync(skill), `${prov.id}: skills/tldr/SKILL.md not copied`);
       assert.match(fs.readFileSync(skill, 'utf8'), /name:\s*tldr/, `${prov.id}: SKILL.md frontmatter missing`);
 
-      // Full TLDR skill suite installs, not just skills/tldr (parity with opencode/hermes).
-      const suiteSkill = path.join(dirFor(home, prov), 'skills', 'tldr-commit', 'SKILL.md');
-      assert.ok(fs.existsSync(suiteSkill), `${prov.id}: full skill suite not copied (tldr-commit missing)`);
-
       if (prov.rules) {
         const rules = rulesFor(home, prov);
         assert.ok(fs.existsSync(rules), `${prov.id}: AGENTS.md not created`);
@@ -128,16 +124,11 @@ for (const prov of NATIVE) {
       }
       fs.mkdirSync(path.dirname(skillFor(home, prov)), { recursive: true });
       fs.writeFileSync(skillFor(home, prov), '---\nname: tldr\n---\n');
-      // A second suite skill must also be swept (uninstall loops the full suite).
-      const suiteSkill = path.join(dirFor(home, prov), 'skills', 'tldr-commit', 'SKILL.md');
-      fs.mkdirSync(path.dirname(suiteSkill), { recursive: true });
-      fs.writeFileSync(suiteSkill, '---\nname: tldr-commit\n---\n');
 
       const r = runInstaller(['--uninstall'], home);
       assert.notEqual(r.status, 2, `argv error: ${r.stderr}`);
 
       assert.equal(fs.existsSync(skillFor(home, prov)), false, `${prov.id}: skill not removed`);
-      assert.equal(fs.existsSync(suiteSkill), false, `${prov.id}: full-suite skill not removed`);
       if (prov.rules) {
         const text = fs.readFileSync(rulesFor(home, prov), 'utf8');
         assert.equal(countMarkers(text, BEGIN), 0, `${prov.id}: begin marker survived`);

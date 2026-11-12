@@ -155,9 +155,7 @@ test('hermes dry-run uninstall leaves the managed block in place', () => {
 });
 
 // ── 6. Skill suite copied into ~/.hermes/skills/productivity/ ──────────────
-const HERMES_SKILLS = [
-  'tldr', 'tldr-commit', 'tldr-review', 'tldr-help', 'tldr-stats', 'tldr-compress', 'tldrcrew', 'tldr-update',
-];
+const HERMES_SKILLS = ['tldr'];
 
 test('hermes install copies TLDR skill suite into skills/productivity', () => {
   const home = freshHome();

@@ -70,19 +70,6 @@ export default function tldrExtension(pi) {
     },
   });
 
-  // /tldr-stats: the Claude hook's report() reads Claude Code session logs and
-  // writes into Claude's state dir. Pi sessions are not those logs, so report()
-  // would show someone else's numbers. Answer with a short message instead.
-  pi.registerCommand('tldr-stats', {
-    description: 'TLDR token stats (Claude Code only; not available in Pi)',
-    handler: async (_args, ctx) => {
-      ctx?.ui?.notify?.(
-        'TLDR: /tldr-stats reads Claude Code session logs, which Pi does not write. Not available in Pi.',
-        'info'
-      );
-    },
-  });
-
   // Natural-language toggles, resolved by the same parser as the other agents.
   pi.on('input', async (event) => {
     if (event?.source === 'extension') return;

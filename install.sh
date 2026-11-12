@@ -22,8 +22,7 @@ Behavior:
   - If SOUL.md already exists, --with-hermes preserves it and appends or updates
     a managed TLDR block instead of blindly overwriting the whole file.
   - --overwrite-hermes replaces ~/.hermes/SOUL.md with TLDR.md only.
-  - Hermes skill-suite install (tldr, tldr-commit, tldr-review, tldr-help,
-    tldr-stats, tldr-compress, tldrcrew → ~/.hermes/skills/productivity/) is
+  - Hermes skill install (tldr → ~/.hermes/skills/productivity/) is
     handled by the full installer: node bin/install.js --only hermes
 EOF
 }

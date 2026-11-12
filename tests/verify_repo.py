@@ -107,10 +107,6 @@ def verify_skill_frontmatter_upload_compatibility() -> None:
 
     skill_paths = [
         ROOT / "skills/tldr/SKILL.md",
-        ROOT / "skills/tldr-commit/SKILL.md",
-        ROOT / "skills/tldr-help/SKILL.md",
-        ROOT / "skills/tldr-review/SKILL.md",
-        ROOT / "skills/tldr-compress/SKILL.md",
     ]
     for path in skill_paths:
         description = _frontmatter_description(path)
@@ -206,59 +202,6 @@ def verify_powershell_static() -> None:
     print("Windows statusline wired")
 
 
-def load_compress_modules():
-    sys.path.insert(0, str(ROOT / "skills/tldr-compress"))
-    import scripts.benchmark  # noqa: F401
-    import scripts.cli as cli
-    import scripts.compress  # noqa: F401
-    import scripts.detect as detect
-    import scripts.validate as validate
-
-    return cli, detect, validate
-
-
-def verify_compress_fixtures() -> None:
-    section("Compress Fixtures")
-    _, detect, validate = load_compress_modules()
-
-    fixtures = sorted((ROOT / "tests/tldr-compress").glob("*.original.md"))
-    ensure(fixtures, "No tldr-compress fixtures found")
-
-    for original in fixtures:
-        compressed = original.with_name(original.name.replace(".original.md", ".md"))
-        ensure(compressed.exists(), f"Missing compressed fixture for {original.name}")
-        result = validate.validate(original, compressed)
-        ensure(result.is_valid, f"Fixture validation failed for {compressed.name}: {result.errors}")
-        ensure(detect.should_compress(compressed), f"Fixture should be compressible: {compressed.name}")
-
-    print(f"Validated {len(fixtures)} tldr-compress fixture pairs")
-
-
-def verify_compress_cli() -> None:
-    section("Compress CLI")
-
-    skip_result = run(
-        ["python3", "-m", "scripts", "../../install.sh"],
-        cwd=ROOT / "skills/tldr-compress",
-        check=False,
-    )
-    ensure(skip_result.returncode == 0, "compress CLI skip path should exit 0")
-    ensure("Detected: code" in skip_result.stdout, "compress CLI skip path missing detection output")
-    ensure(
-        "Skipping: file is not natural language" in skip_result.stdout,
-        "compress CLI skip path missing skip output",
-    )
-
-    missing_result = run(
-        ["python3", "-m", "scripts", "../../does-not-exist.md"],
-        cwd=ROOT / "skills/tldr-compress",
-        check=False,
-    )
-    ensure(missing_result.returncode == 1, "compress CLI missing-file path should exit 1")
-    ensure("File not found" in missing_result.stdout, "compress CLI missing-file output mismatch")
-
-    print("Compress CLI skip/error paths OK")
-
 
 
 def main() -> int:
@@ -268,8 +211,6 @@ def main() -> int:
         verify_hook_checksums,
         verify_manifests_and_syntax,
         verify_powershell_static,
-        verify_compress_fixtures,
-        verify_compress_cli,
     ]
 
     try:

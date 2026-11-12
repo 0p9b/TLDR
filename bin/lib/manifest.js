@@ -6,11 +6,11 @@
 
 // TLDR skill suite copied into every native agent's skills dir.
 const SKILL_DIRS = [
-  'tldr', 'tldr-commit', 'tldr-review', 'tldr-help', 'tldr-stats', 'tldr-compress', 'tldrcrew', 'tldr-update',
+  'tldr',
 ];
 
 const OPENCODE_AGENT_FILES = ['tldrcrew-investigator.md', 'tldrcrew-builder.md', 'tldrcrew-reviewer.md'];
-const OPENCODE_COMMAND_FILES = ['tldr.md', 'tldr-commit.md', 'tldr-review.md', 'tldr-compress.md', 'tldr-stats.md', 'tldr-help.md', 'tldr-update.md'];
+const OPENCODE_COMMAND_FILES = ['tldr.md'];
 const OPENCODE_PLUGIN_REL = './plugins/tldr/plugin.js';
 
 // Hook files to copy. Statusline ships in both .sh (macOS/Linux) and .ps1
