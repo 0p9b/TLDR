@@ -45,3 +45,12 @@ SOFTWARE.
 The private fork was merged and rebranded into this repository.
 
 See also: [`ATTRIBUTION.md`](ATTRIBUTION.md).
+
+## Website fonts
+
+The landing page (`docs/index.html`) self-hosts two variable fonts under `docs/assets/fonts/`:
+
+- Bricolage Grotesque (`bricolage-latin.woff2`), © The Bricolage Grotesque Project Authors
+- Geist Mono (`geist-mono-latin.woff2`), © The Geist Project Authors
+
+Both are licensed under the SIL Open Font License 1.1 (https://openfontlicense.org). Latin subsets, served as distributed by Google Fonts.
