@@ -6,7 +6,7 @@ Knowledge graph for this repo built and verified locally. Ship decision made by 
 
 ## Done
 
-- Built the full graphify graph for `/Users/user/dev/TLDR`: AST over 93 code files plus semantic extraction over 54 docs/images, 91 labeled communities.
+- Built the full graphify graph for `<repo>`: AST over 93 code files plus semantic extraction over 54 docs/images, 91 labeled communities.
 - Base commit at session start: `be6825c` (`feat(installer): make the statusline badge opt-in`).
 - Evidence: `graphify query`, `graphify explain`, `graphify path` each returned real graph output against `graphify-out/graph.json` (1032 nodes / 1783 edges).
 
@@ -14,7 +14,7 @@ Knowledge graph for this repo built and verified locally. Ship decision made by 
 
 - Written: `graphify-out/{graph.json, graph.html, GRAPH_REPORT.md, manifest.json, cost.json, cache/}` — generated, no source file modified.
 - Written: this `HANDOFF.md`, the `AGENTS.md` pointer, and the `@AGENTS.md` import in `CLAUDE.md`.
-- Shipped: nothing yet at the time of writing; the commit that carries this file is the ship.
+- Shipped: `583a53d` (graph + handoff) and `4372fbb` (gitignore) reached `origin/main` on 2026-11-19. Later local commits: `b879253` (statusline test fix), `bcea6eb` (untrack `graphify-out/`).
 - Externally verified: no. Everything here ran locally.
 
 ## Verified and not verified
@@ -33,7 +33,7 @@ None.
 ## Next steps
 
 ```bash
-cd /Users/user/dev/TLDR
+cd <repo>
 graphify query "how does the mode tracker flag file work" --budget 3000
 graphify explain "installHooks()"
 graphify update .        # incremental re-extract after code/doc edits
