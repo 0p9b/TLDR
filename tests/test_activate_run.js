@@ -84,11 +84,11 @@ test('--config-dir suppresses the statusline setup nudge', (dir) => {
   assert.strictEqual(out.includes('STATUSLINE SETUP NEEDED'), false);
 });
 
-test('without --config-dir, CLAUDE_CONFIG_DIR is the flag dir and a missing statusLine is nudged', (dir) => {
+test('without --config-dir, CLAUDE_CONFIG_DIR is the flag dir and no statusline nudge is emitted (opt-in)', (dir) => {
   const out = withDefaultMode('full', () =>
     run({ argv: ['node', 'tldr-activate.js'], env: { CLAUDE_CONFIG_DIR: dir } }));
   assert.strictEqual(readFlag(flagIn(dir)), 'full');
-  assert.match(out, /STATUSLINE SETUP NEEDED/);
+  assert.strictEqual(out.includes('STATUSLINE SETUP NEEDED'), false);
 });
 
 test('default mode off writes no flag and emits OK in text format', (dir) => {
