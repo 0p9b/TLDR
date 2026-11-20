@@ -6,9 +6,9 @@ Knowledge graph for this repo built and verified locally. Ship decision made by 
 
 ## Done
 
-- Built the full graphify graph for `<repo>`: AST over 93 code files plus semantic extraction over 54 docs/images, 91 labeled communities.
+- Built the full graphify graph for `<repo>`: AST over 93 code files plus semantic extraction over 54 docs/images, with labeled communities (node, edge and community counts live in `graphify-out/GRAPH_REPORT.md`; they change on every refresh).
 - Base commit at session start: `be6825c` (`feat(installer): make the statusline badge opt-in`).
-- Evidence: `graphify query`, `graphify explain`, `graphify path` each returned real graph output against `graphify-out/graph.json` (1032 nodes / 1783 edges).
+- Evidence: `graphify query`, `graphify explain`, `graphify path` each returned real graph output against `graphify-out/graph.json` (counts in `graphify-out/GRAPH_REPORT.md`).
 
 ## Current state
 
