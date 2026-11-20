@@ -2,7 +2,7 @@
 
 ## Status
 
-Knowledge graph for this repo built and verified locally. Ship decision made by re-running `/finalize`: commit and push.
+Knowledge graph built and verified locally. The graph files are untracked and ignored since `bcea6eb`. Finalize audit 2026-11-20: phases 0 to 6 run; `npm test` passes on the audited head.
 
 ## Done
 
@@ -14,7 +14,7 @@ Knowledge graph for this repo built and verified locally. Ship decision made by 
 
 - Written: `graphify-out/{graph.json, graph.html, GRAPH_REPORT.md, manifest.json, cost.json, cache/}` — generated, no source file modified.
 - Written: this `HANDOFF.md`, the `AGENTS.md` pointer, and the `@AGENTS.md` import in `CLAUDE.md`.
-- Shipped: `583a53d` (graph + handoff) and `4372fbb` (gitignore) reached `origin/main` on 2026-11-19. Later local commits: `b879253` (statusline test fix), `bcea6eb` (untrack `graphify-out/`).
+- Shipped: `583a53d` (graph + handoff) and `4372fbb` (gitignore) reached `origin/main` on 2026-11-19. Later commits on `origin/main`: `b879253` (statusline test fix), `bcea6eb` (untrack `graphify-out/`), `dda119a` and `3dfa544` (HANDOFF edits).
 - Externally verified: no. Everything here ran locally.
 
 ## Verified and not verified
@@ -24,19 +24,18 @@ Knowledge graph for this repo built and verified locally. Ship decision made by 
 - Not verified: `graph.html` fetches `vis-network` from `https://unpkg.com`, so it needs network to render.
 - Not verified: semantic token cost. `cost.json` records 0 because the harness exposes no per-subagent usage; the real figure is unmeasured, not zero.
 - Known graph damage: 130 dangling-endpoint edges, 1 self-loop, 190 collapsed endpoint pairs. Usable, but those edges are dropped or unresolved.
-- Pre-existing test failure: `npm run test` fails 1 of 10 in `tests/test_activate_run.js` ("without --config-dir, CLAUDE_CONFIG_DIR is the flag dir and a missing statusLine is nudged"). Reproduced with `graphify-out/` removed, so it predates this session.
+- Verified on `3dfa544`: `npm test` exits 0 and all test suites pass. The earlier failure in `tests/test_activate_run.js` was fixed by `b879253`.
 
 ## Open user gates
 
-None.
+- Public history at `583a53d` still holds `graphify-out/` and a local home path. Decision: leave it; no history rewrite.
 
 ## Next steps
 
 ```bash
-cd <repo>
 graphify query "how does the mode tracker flag file work" --budget 3000
 graphify explain "installHooks()"
-graphify update .        # incremental re-extract after code/doc edits
+graphify update .        # code edits only; it skips doc edits and can rename communities
 graphify export html     # regenerate graph.html after update
 ```
 
@@ -49,7 +48,7 @@ graphify export html     # regenerate graph.html after update
 ## How to run and test
 
 ```bash
-npm run test             # node tests/run-all.mjs — 9 pass, 1 pre-existing failure
+npm test                 # node tests/run-all.mjs; all suites pass on 3dfa544
 graphify query "<question>"
 graphify path "A" "B"
 graphify explain "X"

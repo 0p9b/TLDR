@@ -148,7 +148,7 @@ grep -q "^## Prime directive" ~/.hermes/SOUL.md 2>/dev/null && echo "✓ ~/.herm
 | `install.ps1` | Windows entry → `bin/install.js` |
 | `bin/install.js` | Unified multi-agent installer |
 | `skills/` | TLDR skill suite (source of truth for behavior) |
-| `plugins/tldr/` | Claude Code / distribution mirrors (CI-synced) |
+| `src/plugins/tldr-opencode/`, `src/plugins/tldr-pi/` | opencode plugin and Pi extension sources |
 | `src/hooks/` | Claude Code SessionStart / mode hooks |
 | `docs/INSTALL.md` | Full installer documentation |
 | `.github/CONTRIBUTING.md` | How to change skills or add agents |
